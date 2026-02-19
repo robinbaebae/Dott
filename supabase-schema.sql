@@ -58,3 +58,14 @@ CREATE POLICY "Allow all on automations" ON automations FOR ALL USING (true) WIT
 
 ALTER TABLE trend_articles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on trend_articles" ON trend_articles FOR ALL USING (true) WITH CHECK (true);
+
+CREATE TABLE google_tokens (
+  id text PRIMARY KEY DEFAULT 'default',
+  access_token text NOT NULL,
+  refresh_token text NOT NULL,
+  expiry_date bigint NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE google_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on google_tokens" ON google_tokens FOR ALL USING (true) WITH CHECK (true);

@@ -41,6 +41,14 @@ export interface TrendArticle {
   created_at: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;   // ISO 8601
+  end: string;
+  allDay: boolean;
+}
+
 export type TaskStatus = Task['status'];
 export type AutomationType = Automation['type'];
 export type TrendCategory = TrendArticle['category'];

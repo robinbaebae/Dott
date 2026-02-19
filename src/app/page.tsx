@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Task, ChatSession, TrendArticle } from '@/types';
 import { supabase } from '@/lib/supabase';
+import WeeklyCalendar from '@/components/dashboard/WeeklyCalendar';
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,6 +66,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 주간 캘린더 */}
+      <WeeklyCalendar />
 
       <div className="grid grid-cols-2 gap-6">
         {/* 최근 채팅 */}
