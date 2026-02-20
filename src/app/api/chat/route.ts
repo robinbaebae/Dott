@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       } catch (error) {
         console.error('Stream error:', error);
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'error', content: '응답 생성 중 오류가 발생했습니다.' })}\n\n`)
+          encoder.encode(`data: ${JSON.stringify({ type: 'error', content: 'An error occurred while generating a response.' })}\n\n`)
         );
         controller.close();
       }

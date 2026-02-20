@@ -32,13 +32,13 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+          placeholder="Type a message... (Shift+Enter for new line)"
           className="resize-none min-h-[44px] max-h-[160px]"
           rows={1}
           disabled={disabled}
         />
         <Button onClick={handleSend} disabled={!input.trim() || disabled} size="default">
-          전송
+          Send
         </Button>
       </div>
     </div>

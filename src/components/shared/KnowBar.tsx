@@ -1,81 +1,66 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, CheckCircle2 } from 'lucide-react';
 
-export default function DashboardSearch() {
+export default function KnowBar() {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
+  const [taskCreated, setTaskCreated] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = async () => {
+  const handleSubmit = async () => {
     if (!query.trim() || isLoading) return;
 
     setIsLoading(true);
     setShowResponse(true);
     setResponse('');
+    setTaskCreated(false);
+    setTaskTitle('');
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/knowbar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: null,
-          message: query,
-          history: [],
-        }),
+        body: JSON.stringify({ message: query.trim() }),
       });
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) return;
-
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value);
-        const lines = text.split('\n\n').filter(Boolean);
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.type === 'text') {
-              fullText += data.content;
-              setResponse(fullText);
-            }
-          } catch {
-            // skip malformed chunks
-          }
+      if (res.ok) {
+        const data = await res.json();
+        setResponse(data.response);
+        if (data.taskCreated) {
+          setTaskCreated(true);
+          setTaskTitle(data.taskTitle);
         }
+      } else {
+        setResponse('Something went wrong. Please try again.');
       }
-    } catch (err) {
-      console.error('Search error:', err);
-      setResponse('An error occurred during search.');
+    } catch {
+      setResponse('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+      setQuery('');
     }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSearch();
+      handleSubmit();
     }
   };
 
   const dismissResponse = () => {
     setShowResponse(false);
     setResponse('');
+    setTaskCreated(false);
+    setTaskTitle('');
   };
 
-  // Auto-scroll response
   useEffect(() => {
     if (responseRef.current) {
       responseRef.current.scrollTop = responseRef.current.scrollHeight;
@@ -110,6 +95,14 @@ export default function DashboardSearch() {
           >
             <X className="size-3" />
           </button>
+
+          {taskCreated && (
+            <div className="flex items-center gap-2 mb-2 text-green-600">
+              <CheckCircle2 className="size-4" />
+              <span className="text-sm font-medium">Task added: {taskTitle}</span>
+            </div>
+          )}
+
           <div
             ref={responseRef}
             className="text-sm whitespace-pre-wrap max-h-[200px] overflow-auto pr-6"

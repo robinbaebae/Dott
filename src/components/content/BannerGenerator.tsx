@@ -15,9 +15,9 @@ import { ImagePlus, X, ExternalLink } from 'lucide-react';
 import { BannerDesign } from '@/types';
 
 const SIZES = [
-  { value: '1080x1080', label: '정사각형 (1080x1080)' },
-  { value: '1200x628', label: '페이스북/링크드인 (1200x628)' },
-  { value: '1080x1920', label: '스토리/릴스 (1080x1920)' },
+  { value: '1080x1080', label: 'Square (1080x1080)' },
+  { value: '1200x628', label: 'Facebook/LinkedIn (1200x628)' },
+  { value: '1080x1920', label: 'Story/Reels (1080x1920)' },
 ];
 
 export default function BannerGenerator() {
@@ -72,26 +72,26 @@ export default function BannerGenerator() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">온드 미디어 컨텐츠 생성</CardTitle>
+        <CardTitle className="text-lg">Owned Media Content</CardTitle>
         <p className="text-sm text-muted-foreground">
-          카피와 레퍼런스를 입력하면 AI가 배너를 디자인합니다
+          Enter copy and references to let AI design your banner
         </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-1.5 block">카피 *</label>
+            <label className="text-sm font-medium mb-1.5 block">Copy *</label>
             <Textarea
-              placeholder="배너에 들어갈 카피를 입력하세요"
+              placeholder="Enter the copy for your banner"
               value={copy}
               onChange={(e) => setCopy(e.target.value)}
               rows={3}
             />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1.5 block">레퍼런스 / 참고사항</label>
+            <label className="text-sm font-medium mb-1.5 block">Reference / Notes</label>
             <Textarea
-              placeholder="디자인 스타일, 색상, 톤앤매너 등"
+              placeholder="Design style, colors, tone, etc."
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               rows={2}
@@ -100,7 +100,7 @@ export default function BannerGenerator() {
 
           {/* Image upload */}
           <div>
-            <label className="text-sm font-medium mb-1.5 block">참고 이미지</label>
+            <label className="text-sm font-medium mb-1.5 block">Reference Image</label>
             <input
               ref={fileInputRef}
               type="file"
@@ -117,7 +117,7 @@ export default function BannerGenerator() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{referenceImageName}</p>
-                  <p className="text-xs text-muted-foreground">참고 이미지로 사용됩니다</p>
+                  <p className="text-xs text-muted-foreground">Will be used as reference</p>
                 </div>
                 <Button variant="ghost" size="icon-xs" onClick={removeImage}>
                   <X className="size-3" />
@@ -130,13 +130,13 @@ export default function BannerGenerator() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <ImagePlus className="size-4" />
-                이미지 업로드
+                Upload image
               </Button>
             )}
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1.5 block">사이즈</label>
+            <label className="text-sm font-medium mb-1.5 block">Size</label>
             <Select value={size} onValueChange={setSize}>
               <SelectTrigger>
                 <SelectValue />
@@ -156,16 +156,16 @@ export default function BannerGenerator() {
             disabled={!copy.trim() || isGenerating}
             className="w-full"
           >
-            {isGenerating ? '생성 중...' : '컨텐츠 생성'}
+            {isGenerating ? 'Generating...' : 'Generate content'}
           </Button>
 
           {/* Generated result - link instead of preview */}
           {banner && (
             <div className="flex items-center gap-3 p-4 border rounded-lg bg-green-500/5 border-green-500/20">
               <div className="flex-1">
-                <p className="text-sm font-medium text-green-700">컨텐츠가 생성되었습니다</p>
+                <p className="text-sm font-medium text-green-700">Content generated successfully</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  링크를 열어 결과를 확인하세요
+                  Open the link to view the result
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild>
@@ -176,7 +176,7 @@ export default function BannerGenerator() {
                   className="gap-1.5"
                 >
                   <ExternalLink className="size-3" />
-                  열기
+                  Open
                 </a>
               </Button>
             </div>
@@ -184,7 +184,7 @@ export default function BannerGenerator() {
 
           {isGenerating && (
             <div className="flex items-center justify-center py-4">
-              <p className="text-sm text-muted-foreground">AI가 디자인을 생성하고 있습니다...</p>
+              <p className="text-sm text-muted-foreground">AI is generating the design...</p>
             </div>
           )}
         </div>

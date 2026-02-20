@@ -14,7 +14,6 @@ export default function FloatingActions() {
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
     >
-      {/* Expanded action buttons */}
       <div
         className={`flex flex-col gap-2 transition-all duration-300 ${
           expanded
@@ -24,22 +23,21 @@ export default function FloatingActions() {
       >
         <Link href="/chat">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            💬 AI에게 질문하기
+            Ask AI
           </Button>
         </Link>
-        <Link href="/tasks">
+        <Link href="/insights">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            📋 업무 추가하기
+            Insights
           </Button>
         </Link>
         <Link href="/automation">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            🎨 컨텐츠 만들기
+            Create content
           </Button>
         </Link>
       </div>
 
-      {/* Floating trigger button */}
       <Button
         size="icon"
         className="rounded-full size-12 shadow-lg"

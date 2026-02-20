@@ -4,74 +4,72 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { href: '/', label: '대시보드', icon: '📊' },
-  { href: '/tasks', label: '업무 관리', icon: '📋' },
-  { href: '/automation', label: '컨텐츠', icon: '🎨' },
-  { href: '/trends', label: '트렌드', icon: '📈' },
+  { href: '/', label: 'Dashboard' },
+  { href: '/insights', label: 'Insights' },
+  { href: '/automation', label: 'Content' },
+  { href: '/ads', label: 'Ad Management' },
+  { href: '/trends', label: 'Trends' },
 ];
 
 export default function TopNav() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+
+  if (pathname === '/' && status !== 'authenticated') {
+    return null;
+  }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur-sm bg-background/80">
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-6">
-        {/* Left: Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <h1 className="text-lg font-bold">🐰 Ditto</h1>
-        </Link>
+    <>
+      {/* Gradient accent bar */}
+      <div className="gradient-top w-full fixed top-0 z-[60]" />
 
-        {/* Center: Nav items */}
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors',
-                pathname === item.href
-                  ? 'bg-accent text-accent-foreground font-medium'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-              )}
-            >
-              <span className="text-xs">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      {/* Floating dark pill nav */}
+      <header className="fixed top-5 left-0 right-0 z-50 px-6">
+        <nav className="max-w-4xl mx-auto nav-blur text-white px-6 py-3 rounded-full flex items-center justify-between border border-white/10 shadow-2xl">
+          {/* Left: Logo */}
+          <Link href="/" className="shrink-0">
+            <img src="/logo.png" alt="Ditto" className="h-10 w-10 rounded-full" />
+          </Link>
 
-        {/* Right: Auth + Team label */}
-        <div className="flex items-center gap-3 shrink-0">
-          {session ? (
-            <>
-              <p className="text-xs text-muted-foreground">
-                {session.user?.name ?? '코드앤버터 마케팅팀'}
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="text-xs"
+          {/* Center: Nav links */}
+          <div className="flex items-center gap-8 text-sm text-gray-300">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'hover:text-white transition-colors',
+                  pathname === item.href && 'text-white'
+                )}
               >
-                로그아웃
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signIn('google')}
-              className="text-xs"
-            >
-              로그인
-            </Button>
-          )}
-        </div>
-      </div>
-    </header>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right: Auth */}
+          <div className="shrink-0">
+            {session ? (
+              <button
+                onClick={() => signOut()}
+                className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+              >
+                {session.user?.name ?? 'Sign out'}
+              </button>
+            ) : (
+              <button
+                onClick={() => signIn('google')}
+                className="bg-white text-black px-5 py-2 rounded-full text-sm hover:bg-[#FF4D00] hover:text-white transition-all duration-300 cursor-pointer"
+              >
+                Get started
+              </button>
+            )}
+          </div>
+        </nav>
+      </header>
+    </>
   );
 }

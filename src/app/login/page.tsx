@@ -6,21 +6,20 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function LoginPage() {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)]">
+    <div className="flex items-center justify-center min-h-screen">
       <Card className="w-full max-w-sm">
         <CardContent className="pt-8 pb-8">
           <div className="text-center space-y-6">
             <div>
-              <p className="text-4xl mb-2">🐰</p>
-              <h1 className="text-2xl font-bold">Ditto</h1>
+              <img src="/logo.png" alt="Ditto" className="w-16 h-16 rounded-lg mx-auto mb-4" />
               <p className="text-sm text-muted-foreground mt-1">
-                마케팅 AI 어시스턴트
+                marketing AI assistant
               </p>
             </div>
 
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Google 계정으로 로그인하면 캘린더와 Gmail이 자동 연동됩니다
+                Sign in with Google to connect Calendar and Gmail
               </p>
               <Button
                 onClick={() => signIn('google', { callbackUrl: '/' })}
@@ -44,7 +43,7 @@ export default function LoginPage() {
                     fill="#EA4335"
                   />
                 </svg>
-                Google로 로그인
+                Sign in with Google
               </Button>
             </div>
           </div>

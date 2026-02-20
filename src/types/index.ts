@@ -88,14 +88,26 @@ export interface ThreadsPost {
   fetched_at: string;
 }
 
+export interface Insight {
+  id: string;
+  url: string;
+  title: string;
+  description: string;
+  content_type: 'article' | 'video' | 'tweet' | 'pdf' | 'other';
+  thumbnail_url: string;
+  source_domain: string;
+  created_at: string;
+}
+
 export type TaskStatus = Task['status'];
 export type AutomationType = Automation['type'];
 export type TrendCategory = TrendArticle['category'];
+export type InsightContentType = Insight['content_type'];
 
 export const TREND_CATEGORIES: { value: TrendCategory; label: string }[] = [
-  { value: 'beauty', label: '뷰티' },
-  { value: 'fashion', label: '패션' },
-  { value: 'ai', label: 'AI' },
-  { value: 'planning', label: '기획' },
-  { value: 'marketing', label: '마케팅' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'planning', label: 'Planning' },
+  { value: 'ai', label: 'AI/Tech' },
+  { value: 'fashion', label: 'Fashion' },
+  { value: 'beauty', label: 'Beauty' },
 ];

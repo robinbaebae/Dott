@@ -10,28 +10,19 @@ const parser = new Parser({
   timeout: 10000,
 });
 
-const FEEDS = [
-  {
-    url: 'https://news.google.com/rss/search?q=뷰티+트렌드&hl=ko&gl=KR&ceid=KR:ko',
-    category: 'beauty' as const,
-  },
-  {
-    url: 'https://news.google.com/rss/search?q=패션+트렌드&hl=ko&gl=KR&ceid=KR:ko',
-    category: 'fashion' as const,
-  },
-  {
-    url: 'https://news.google.com/rss/search?q=AI+인공지능+트렌드&hl=ko&gl=KR&ceid=KR:ko',
-    category: 'ai' as const,
-  },
-  {
-    url: 'https://news.google.com/rss/search?q=서비스+기획+IT+기획&hl=ko&gl=KR&ceid=KR:ko',
-    category: 'planning' as const,
-  },
-  {
-    url: 'https://news.google.com/rss/search?q=디지털+마케팅+트렌드&hl=ko&gl=KR&ceid=KR:ko',
-    category: 'marketing' as const,
-  },
+const FEED_QUERIES: { query: string; category: 'beauty' | 'fashion' | 'ai' | 'planning' | 'marketing' }[] = [
+  { query: '디지털 마케팅 트렌드', category: 'marketing' },
+  { query: '서비스 기획 IT 기획', category: 'planning' },
+  { query: 'AI 인공지능 트렌드', category: 'ai' },
+  { query: 'IT 테크 기술 트렌드', category: 'ai' },
+  { query: '패션 트렌드', category: 'fashion' },
+  { query: '뷰티 트렌드', category: 'beauty' },
 ];
+
+const FEEDS = FEED_QUERIES.map(({ query, category }) => ({
+  url: `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`,
+  category,
+}));
 
 function extractSource(title: string): { cleanTitle: string; source: string | null } {
   // Google News titles format: "기사 제목 - 매체명"

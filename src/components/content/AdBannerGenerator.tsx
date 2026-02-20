@@ -8,19 +8,19 @@ import { ImagePlus, X, ExternalLink, Loader2 } from 'lucide-react';
 import { BannerDesign } from '@/types';
 
 const GDN_SIZES = [
-  { value: '300x250', label: 'Medium Rectangle', group: '인기' },
-  { value: '336x280', label: 'Large Rectangle', group: '인기' },
-  { value: '728x90', label: 'Leaderboard', group: '인기' },
-  { value: '300x600', label: 'Half Page', group: '인기' },
-  { value: '320x50', label: 'Mobile Banner', group: '모바일' },
-  { value: '320x100', label: 'Large Mobile Banner', group: '모바일' },
-  { value: '160x600', label: 'Wide Skyscraper', group: '기타' },
-  { value: '468x60', label: 'Banner', group: '기타' },
-  { value: '970x90', label: 'Large Leaderboard', group: '기타' },
-  { value: '970x250', label: 'Billboard', group: '기타' },
-  { value: '250x250', label: 'Square', group: '기타' },
-  { value: '200x200', label: 'Small Square', group: '기타' },
-  { value: '120x600', label: 'Skyscraper', group: '기타' },
+  { value: '300x250', label: 'Medium Rectangle', group: 'Popular' },
+  { value: '336x280', label: 'Large Rectangle', group: 'Popular' },
+  { value: '728x90', label: 'Leaderboard', group: 'Popular' },
+  { value: '300x600', label: 'Half Page', group: 'Popular' },
+  { value: '320x50', label: 'Mobile Banner', group: 'Mobile' },
+  { value: '320x100', label: 'Large Mobile Banner', group: 'Mobile' },
+  { value: '160x600', label: 'Wide Skyscraper', group: 'Other' },
+  { value: '468x60', label: 'Banner', group: 'Other' },
+  { value: '970x90', label: 'Large Leaderboard', group: 'Other' },
+  { value: '970x250', label: 'Billboard', group: 'Other' },
+  { value: '250x250', label: 'Square', group: 'Other' },
+  { value: '200x200', label: 'Small Square', group: 'Other' },
+  { value: '120x600', label: 'Skyscraper', group: 'Other' },
 ];
 
 export default function AdBannerGenerator() {
@@ -99,16 +99,16 @@ export default function AdBannerGenerator() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">광고 배너 생성</CardTitle>
+        <CardTitle className="text-lg">Ad Banner Generator</CardTitle>
         <p className="text-sm text-muted-foreground">
-          기존 배너를 업로드하면 GDN 사이즈 베리에이션을 생성합니다
+          Upload a banner to generate GDN size variations
         </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-5">
           {/* Source image upload */}
           <div>
-            <label className="text-sm font-medium mb-1.5 block">원본 배너 *</label>
+            <label className="text-sm font-medium mb-1.5 block">Source Banner *</label>
             <input
               ref={fileInputRef}
               type="file"
@@ -125,7 +125,7 @@ export default function AdBannerGenerator() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{sourceImageName}</p>
-                  <p className="text-xs text-muted-foreground">원본 배너</p>
+                  <p className="text-xs text-muted-foreground">Source banner</p>
                 </div>
                 <Button variant="ghost" size="icon-xs" onClick={removeImage}>
                   <X className="size-3" />
@@ -138,7 +138,7 @@ export default function AdBannerGenerator() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <ImagePlus className="size-5" />
-                배너 이미지 업로드
+                Upload banner image
               </Button>
             )}
           </div>
@@ -146,13 +146,13 @@ export default function AdBannerGenerator() {
           {/* GDN Size selection */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium">타겟 사이즈 *</label>
+              <label className="text-sm font-medium">Target Sizes *</label>
               <Button variant="ghost" size="xs" onClick={selectAll}>
-                {selectedSizes.length === GDN_SIZES.length ? '전체 해제' : '전체 선택'}
+                {selectedSizes.length === GDN_SIZES.length ? 'Deselect all' : 'Select all'}
               </Button>
             </div>
 
-            {['인기', '모바일', '기타'].map((group) => (
+            {['Popular', 'Mobile', 'Other'].map((group) => (
               <div key={group} className="mb-2">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
                   {group}
@@ -190,14 +190,14 @@ export default function AdBannerGenerator() {
             className="w-full"
           >
             {isGenerating
-              ? `생성 중... (${results.size}/${selectedSizes.length})`
-              : `${selectedSizes.length}개 사이즈 생성`}
+              ? `Generating... (${results.size}/${selectedSizes.length})`
+              : `Generate ${selectedSizes.length} sizes`}
           </Button>
 
           {/* Results */}
           {results.size > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">생성 결과</p>
+              <p className="text-sm font-medium">Results</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {Array.from(results.entries()).map(([size, banner]) => (
                   <div
@@ -218,7 +218,7 @@ export default function AdBannerGenerator() {
                         className="gap-1"
                       >
                         <ExternalLink className="size-3" />
-                        열기
+                        Open
                       </a>
                     </Button>
                   </div>

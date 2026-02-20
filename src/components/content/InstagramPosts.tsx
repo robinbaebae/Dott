@@ -54,7 +54,7 @@ export default function InstagramPosts() {
           <CardTitle className="text-base">Instagram</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">로딩 중...</p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </CardContent>
       </Card>
     );
@@ -68,12 +68,11 @@ export default function InstagramPosts() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <p className="text-4xl mb-3">📸</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Instagram을 연결하면 게시물 성과를 확인할 수 있어요
+              Connect Instagram to view your post performance
             </p>
             <Button asChild>
-              <a href="/api/instagram/auth">Instagram 연결하기</a>
+              <a href="/api/instagram/auth">Connect Instagram</a>
             </Button>
           </div>
         </CardContent>
@@ -92,11 +91,11 @@ export default function InstagramPosts() {
               size="icon-xs"
               onClick={handleRefresh}
               disabled={refreshing}
-              title="새로고침"
+              title="Refresh"
             >
               <RefreshCw className={`size-3 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
-            <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="연결 해제">
+            <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="Disconnect">
               <Unplug className="size-3" />
             </Button>
           </div>
@@ -105,7 +104,7 @@ export default function InstagramPosts() {
       <CardContent>
         {posts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            게시물이 없습니다. 새로고침을 눌러주세요.
+            No posts found. Try refreshing.
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -122,20 +121,20 @@ export default function InstagramPosts() {
                     {post.media_type}
                   </Badge>
                   <p className="text-[10px] text-muted-foreground">
-                    {new Date(post.timestamp).toLocaleDateString('ko-KR')}
+                    {new Date(post.timestamp).toLocaleDateString()}
                   </p>
                 </div>
                 <p className="text-xs line-clamp-2 mb-2">
-                  {post.caption || '(캡션 없음)'}
+                  {post.caption || '(No caption)'}
                 </p>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <span>❤️ {post.like_count}</span>
-                  <span>💬 {post.comments_count}</span>
+                  <span>likes {post.like_count}</span>
+                  <span>comments {post.comments_count}</span>
                   {post.impressions != null && post.impressions > 0 && (
-                    <span>👁 {post.impressions}</span>
+                    <span>impressions {post.impressions}</span>
                   )}
                   {post.reach != null && post.reach > 0 && (
-                    <span>📡 {post.reach}</span>
+                    <span>reach {post.reach}</span>
                   )}
                 </div>
               </a>

@@ -122,7 +122,7 @@ export function useChat() {
         const updated = [...prev];
         const last = updated[updated.length - 1];
         if (last.role === 'assistant') {
-          updated[updated.length - 1] = { ...last, content: '오류가 발생했습니다. 다시 시도해주세요.' };
+          updated[updated.length - 1] = { ...last, content: 'An error occurred. Please try again.' };
         }
         return updated;
       });

@@ -16,9 +16,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Task, TaskStatus } from '@/types';
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
-  todo: { label: '할 일', color: 'bg-gray-100 text-gray-800' },
-  in_progress: { label: '진행 중', color: 'bg-blue-100 text-blue-800' },
-  done: { label: '완료', color: 'bg-green-100 text-green-800' },
+  todo: { label: 'To do', color: 'bg-gray-100 text-gray-800' },
+  in_progress: { label: 'In progress', color: 'bg-blue-100 text-blue-800' },
+  done: { label: 'Done', color: 'bg-green-100 text-green-800' },
 };
 
 const COLUMNS: TaskStatus[] = ['todo', 'in_progress', 'done'];
@@ -91,23 +91,23 @@ export default function TaskBoard() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">업무 보드</h2>
+        <h2 className="text-lg font-semibold">Task Board</h2>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">+ 새 업무</Button>
+            <Button size="sm">+ New task</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>새 업무 추가</DialogTitle>
+              <DialogTitle>Add new task</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 mt-2">
               <Input
-                placeholder="업무 제목"
+                placeholder="Task title"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
               />
               <Textarea
-                placeholder="설명 (선택)"
+                placeholder="Description (optional)"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
               />
@@ -117,7 +117,7 @@ export default function TaskBoard() {
                 onChange={(e) => setNewDueDate(e.target.value)}
               />
               <Button onClick={createTask} className="w-full">
-                추가
+                Add
               </Button>
             </div>
           </DialogContent>
@@ -163,14 +163,14 @@ export default function TaskBoard() {
                       <div className="flex items-center justify-between">
                         {task.due_date && (
                           <span className="text-xs text-muted-foreground">
-                            📅 {task.due_date}
+                            {task.due_date}
                           </span>
                         )}
                         <button
                           onClick={() => deleteTask(task.id)}
                           className="text-xs text-muted-foreground hover:text-destructive transition-colors ml-auto"
                         >
-                          삭제
+                          Delete
                         </button>
                       </div>
                     </CardContent>

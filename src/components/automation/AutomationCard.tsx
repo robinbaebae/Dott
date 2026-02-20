@@ -8,9 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Automation, AutomationType } from '@/types';
 
 const TYPE_LABELS: Record<AutomationType, string> = {
-  content_generation: '콘텐츠 생성',
-  ad_report: '광고 리포트',
-  brand_copy: '브랜드 카피',
+  content_generation: 'Content Generation',
+  ad_report: 'Ad Report',
+  brand_copy: 'Brand Copy',
 };
 
 const TYPE_COLORS: Record<AutomationType, string> = {
@@ -49,10 +49,10 @@ export default function AutomationCard({ automation, onDelete, onRefresh }: Auto
         setResult(data.result);
         onRefresh();
       } else {
-        setResult('오류: ' + (data.error || '실행 실패'));
+        setResult('Error: ' + (data.error || 'Execution failed'));
       }
     } catch {
-      setResult('오류: 네트워크 오류');
+      setResult('Error: Network error');
     } finally {
       setIsRunning(false);
     }
@@ -72,13 +72,13 @@ export default function AutomationCard({ automation, onDelete, onRefresh }: Auto
             onClick={() => onDelete(automation.id)}
             className="text-sm text-muted-foreground hover:text-destructive transition-colors"
           >
-            삭제
+            Delete
           </button>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
-          <p className="text-xs text-muted-foreground mb-1">프롬프트 템플릿</p>
+          <p className="text-xs text-muted-foreground mb-1">Prompt template</p>
           <p className="text-sm bg-muted p-2 rounded-md line-clamp-3">
             {automation.prompt_template}
           </p>
@@ -86,7 +86,7 @@ export default function AutomationCard({ automation, onDelete, onRefresh }: Auto
 
         {showInput && (
           <Textarea
-            placeholder="추가 입력 (선택사항)"
+            placeholder="Additional input (optional)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             rows={2}
@@ -95,26 +95,26 @@ export default function AutomationCard({ automation, onDelete, onRefresh }: Auto
 
         <div className="flex gap-2">
           <Button onClick={handleRun} disabled={isRunning} size="sm">
-            {isRunning ? '실행 중...' : '▶ 실행'}
+            {isRunning ? 'Running...' : 'Run'}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowInput(!showInput)}
           >
-            {showInput ? '입력 숨기기' : '입력 추가'}
+            {showInput ? 'Hide input' : 'Add input'}
           </Button>
         </div>
 
         {result && (
           <div>
-            <p className="text-xs text-muted-foreground mb-1">실행 결과</p>
+            <p className="text-xs text-muted-foreground mb-1">Result</p>
             <div className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap max-h-64 overflow-auto">
               {result}
             </div>
             {automation.last_run_at && (
               <p className="text-xs text-muted-foreground mt-1">
-                마지막 실행: {new Date(automation.last_run_at).toLocaleString('ko-KR')}
+                Last run: {new Date(automation.last_run_at).toLocaleString()}
               </p>
             )}
           </div>

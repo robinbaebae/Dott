@@ -53,7 +53,7 @@ export default function ThreadsPosts() {
           <CardTitle className="text-base">Threads</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">로딩 중...</p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </CardContent>
       </Card>
     );
@@ -67,12 +67,11 @@ export default function ThreadsPosts() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <p className="text-4xl mb-3">🧵</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Threads를 연결하면 게시물 성과를 확인할 수 있어요
+              Connect Threads to view your post performance
             </p>
             <Button asChild>
-              <a href="/api/threads/auth">Threads 연결하기</a>
+              <a href="/api/threads/auth">Connect Threads</a>
             </Button>
           </div>
         </CardContent>
@@ -91,11 +90,11 @@ export default function ThreadsPosts() {
               size="icon-xs"
               onClick={handleRefresh}
               disabled={refreshing}
-              title="새로고침"
+              title="Refresh"
             >
               <RefreshCw className={`size-3 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
-            <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="연결 해제">
+            <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="Disconnect">
               <Unplug className="size-3" />
             </Button>
           </div>
@@ -104,7 +103,7 @@ export default function ThreadsPosts() {
       <CardContent>
         {posts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            게시물이 없습니다. 새로고침을 눌러주세요.
+            No posts found. Try refreshing.
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -118,17 +117,17 @@ export default function ThreadsPosts() {
               >
                 <div className="flex items-end justify-between mb-2">
                   <p className="text-[10px] text-muted-foreground">
-                    {new Date(post.timestamp).toLocaleDateString('ko-KR')}
+                    {new Date(post.timestamp).toLocaleDateString()}
                   </p>
                 </div>
                 <p className="text-xs line-clamp-3 mb-2">
-                  {post.text || '(내용 없음)'}
+                  {post.text || '(No content)'}
                 </p>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <span>❤️ {post.like_count}</span>
-                  <span>💬 {post.reply_count}</span>
-                  <span>🔄 {post.repost_count}</span>
-                  <span>💎 {post.quote_count}</span>
+                  <span>likes {post.like_count}</span>
+                  <span>replies {post.reply_count}</span>
+                  <span>reposts {post.repost_count}</span>
+                  <span>quotes {post.quote_count}</span>
                 </div>
               </a>
             ))}

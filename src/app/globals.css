@@ -1,14 +1,29 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+@font-face {
+  font-family: "Sansation";
+  src: url("/fonts/Sansation_Light.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sansation";
+  src: url("/fonts/Sansation_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Pretendard Variable", var(--font-geist-sans);
+  --font-sans: "Sansation", sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -50,13 +65,13 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #F2EFE9;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: #FF4D00;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -123,8 +138,28 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-weight: 200;
+    letter-spacing: 0.02em;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 200;
+  }
+}
+
+.font-bold, .font-semibold, .font-medium, .font-extrabold, .font-black {
+  font-weight: 300 !important;
+}
+
+/* Gradient accent bar */
+.gradient-top {
+  background: linear-gradient(90deg, #FF4D00 0%, #FF8A00 50%, #FF4D00 100%);
+  height: 4px;
+}
+
+/* Nav blur pill */
+.nav-blur {
+  backdrop-filter: blur(12px);
+  background-color: rgba(26, 26, 26, 0.92);
 }
 
 @layer utilities {

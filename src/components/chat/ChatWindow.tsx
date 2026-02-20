@@ -34,7 +34,7 @@ export default function ChatWindow() {
       <div className="w-64 border-r border-border bg-muted/30 flex flex-col shrink-0">
         <div className="p-3 border-b border-border">
           <Button onClick={startNewSession} className="w-full" size="sm">
-            + 새 대화
+            + New chat
           </Button>
         </div>
         <ScrollArea className="flex-1">
@@ -68,7 +68,7 @@ export default function ChatWindow() {
             ))}
             {sessions.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-4">
-                아직 대화가 없습니다
+                No conversations yet
               </p>
             )}
           </div>
@@ -80,17 +80,16 @@ export default function ChatWindow() {
         {messages.length === 0 && !currentSessionId ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-3">
-              <p className="text-4xl">🧈</p>
-              <h2 className="text-lg font-semibold">버터에게 물어보세요</h2>
+              <img src="/logo.png" alt="Ditto" className="w-12 h-12 rounded-lg mx-auto" />
+              <h2 className="text-lg">Ask Ditto anything</h2>
               <p className="text-sm text-muted-foreground max-w-sm">
-                마케팅 콘텐츠 작성, 광고 카피, 브랜드 전략 등<br />
-                무엇이든 도와드립니다.
+                Marketing content, ad copy, brand strategy, and more.
               </p>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {[
-                  '블로그 글 아이디어 추천해줘',
-                  '인스타그램 캡션 작성해줘',
-                  '이번 달 마케팅 계획 세워줘',
+                  'Suggest blog post ideas',
+                  'Write an Instagram caption',
+                  'Plan this month\'s marketing',
                 ].map((suggestion) => (
                   <button
                     key={suggestion}
