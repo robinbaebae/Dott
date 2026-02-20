@@ -2,7 +2,13 @@ import Parser from 'rss-parser';
 import { supabase } from './supabase';
 import { TrendArticle } from '@/types';
 
-const parser = new Parser();
+const parser = new Parser({
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (compatible; DittoBot/1.0)',
+    'Accept': 'application/rss+xml, application/xml, text/xml',
+  },
+  timeout: 10000,
+});
 
 const FEEDS = [
   {
@@ -12,6 +18,18 @@ const FEEDS = [
   {
     url: 'https://news.google.com/rss/search?q=패션+트렌드&hl=ko&gl=KR&ceid=KR:ko',
     category: 'fashion' as const,
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=AI+인공지능+트렌드&hl=ko&gl=KR&ceid=KR:ko',
+    category: 'ai' as const,
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=서비스+기획+IT+기획&hl=ko&gl=KR&ceid=KR:ko',
+    category: 'planning' as const,
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=디지털+마케팅+트렌드&hl=ko&gl=KR&ceid=KR:ko',
+    category: 'marketing' as const,
   },
 ];
 
@@ -69,7 +87,7 @@ export async function getArticles(category?: string): Promise<TrendArticle[]> {
     .order('pub_date', { ascending: false })
     .limit(50);
 
-  if (category && (category === 'beauty' || category === 'fashion')) {
+  if (category && ['beauty', 'fashion', 'ai', 'planning', 'marketing'].includes(category)) {
     query = query.eq('category', category);
   }
 

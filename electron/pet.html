@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 80px;
+      height: 80px;
+      overflow: hidden;
+      background: transparent;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    .pet-container {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+    .pet {
+      font-size: 48px;
+      animation: bounce 2s ease-in-out infinite;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      transition: transform 0.2s;
+    }
+    .pet:hover {
+      transform: scale(1.2);
+      animation-play-state: paused;
+    }
+    .pet-name {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', sans-serif;
+      color: #333;
+      font-weight: 600;
+      text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;
+      white-space: nowrap;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .tooltip {
+      display: none;
+      position: absolute;
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', sans-serif;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      -webkit-app-region: no-drag;
+    }
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid #1a1a2e;
+    }
+    .pet-container:hover .tooltip {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="pet-container" ondblclick="openApp()">
+    <div class="tooltip">더블클릭으로 Ditto 열기</div>
+    <div class="pet">🐰</div>
+    <div class="pet-name">Ditto</div>
+  </div>
+  <script>
+    function openApp() {
+      if (window.electronAPI) {
+        window.electronAPI.openMain();
+      }
+    }
+  </script>
+</body>
+</html>

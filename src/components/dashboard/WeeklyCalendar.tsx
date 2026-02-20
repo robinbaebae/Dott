@@ -14,7 +14,6 @@ import { ko } from 'date-fns/locale';
 import { CalendarDays, ChevronLeft, ChevronRight, Unplug } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { CalendarEvent, Task } from '@/types';
 
 export default function WeeklyCalendar() {
@@ -51,7 +50,6 @@ export default function WeeklyCalendar() {
       setEvents(calData.events ?? []);
 
       const tasksData: Task[] = await tasksRes.json();
-      // Filter tasks with due_date within the week
       const weekTasks = tasksData.filter((t) => {
         if (!t.due_date) return false;
         const d = parseISO(t.due_date);
@@ -70,7 +68,6 @@ export default function WeeklyCalendar() {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Check for ?google=connected param on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('google') === 'connected') {
@@ -117,7 +114,6 @@ export default function WeeklyCalendar() {
                 <CalendarDays className="size-4" />
                 주간 캘린더
               </CardTitle>
-              {/* Legend chips */}
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700">
                   캘린더
@@ -159,65 +155,92 @@ export default function WeeklyCalendar() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-1">
+          <div className="space-y-0">
             {days.map((day) => {
               const dayEvents = eventsForDay(day);
               const dayTasks = tasksForDay(day);
               const today = isToday(day);
+              const hasItems = dayEvents.length > 0 || dayTasks.length > 0;
+
               return (
                 <div
                   key={day.toISOString()}
-                  className={`rounded-lg border p-2 min-h-[160px] ${today ? 'border-primary bg-primary/5' : 'border-border'}`}
+                  className={`flex gap-4 py-2.5 border-b border-border last:border-b-0 ${
+                    today ? 'bg-primary/5 -mx-6 px-6 rounded-lg' : ''
+                  }`}
                 >
-                  <div className="text-center mb-1">
-                    <p className="text-[10px] text-muted-foreground">
+                  {/* Date column */}
+                  <div className="w-14 shrink-0 text-center pt-0.5">
+                    <p className="text-[10px] text-muted-foreground uppercase">
                       {format(day, 'EEE', { locale: ko })}
                     </p>
                     <p
-                      className={`text-sm font-medium ${today ? 'text-primary' : ''}`}
+                      className={`text-lg font-semibold leading-tight ${
+                        today ? 'text-primary' : ''
+                      }`}
                     >
                       {format(day, 'd')}
                     </p>
                   </div>
-                  <ScrollArea className="h-[120px]">
-                    <div className="space-y-1">
-                      {/* Google Calendar events - blue */}
+
+                  {/* Timeline line + items */}
+                  <div className="flex-1 relative">
+                    {hasItems && (
+                      <div className="absolute left-0 top-1 bottom-1 w-px bg-border" />
+                    )}
+
+                    {!hasItems && (
+                      <p className="text-xs text-muted-foreground py-1 pl-4">일정 없음</p>
+                    )}
+
+                    <div className="space-y-1.5 pl-4">
+                      {/* Google Calendar events */}
                       {dayEvents.map((event) => (
                         <div
                           key={event.id}
-                          className="rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] leading-tight"
+                          className="relative flex items-start gap-2"
                         >
-                          <p className="font-medium truncate text-blue-700">{event.title}</p>
-                          {!event.allDay && (
-                            <p className="text-blue-600/70">
-                              {format(parseISO(event.start), 'HH:mm')}
-                            </p>
-                          )}
-                          {event.allDay && (
-                            <p className="text-blue-600/70">종일</p>
-                          )}
+                          <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-blue-500 -translate-x-[3px]" />
+                          <div className="flex-1 rounded-md bg-blue-500/10 px-2.5 py-1.5">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-medium text-blue-700 truncate">
+                                {event.title}
+                              </p>
+                              <span className="text-[10px] text-blue-600/70 shrink-0">
+                                {event.allDay
+                                  ? '종일'
+                                  : format(parseISO(event.start), 'HH:mm')}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       ))}
 
-                      {/* Dotted separator when both exist */}
-                      {dayEvents.length > 0 && dayTasks.length > 0 && (
-                        <div className="border-t border-dashed border-border my-1" />
-                      )}
-
-                      {/* Tasks - green */}
+                      {/* Tasks */}
                       {dayTasks.map((task) => (
                         <div
                           key={task.id}
-                          className="rounded bg-green-500/10 px-1.5 py-0.5 text-[10px] leading-tight"
+                          className="relative flex items-start gap-2"
                         >
-                          <p className="font-medium truncate text-green-700">{task.title}</p>
-                          <p className="text-green-600/70">
-                            {task.status === 'todo' ? '할 일' : task.status === 'in_progress' ? '진행 중' : '완료'}
-                          </p>
+                          <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 -translate-x-[3px]" />
+                          <div className="flex-1 rounded-md bg-green-500/10 px-2.5 py-1.5">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-medium text-green-700 truncate">
+                                {task.title}
+                              </p>
+                              <span className="text-[10px] text-green-600/70 shrink-0">
+                                {task.status === 'todo'
+                                  ? '할 일'
+                                  : task.status === 'in_progress'
+                                  ? '진행 중'
+                                  : '완료'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               );
             })}

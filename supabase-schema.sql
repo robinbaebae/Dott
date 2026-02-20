@@ -38,7 +38,7 @@ CREATE TABLE trend_articles (
   title text NOT NULL,
   link text NOT NULL,
   source text,
-  category text DEFAULT 'beauty' CHECK (category IN ('beauty', 'fashion')),
+  category text DEFAULT 'beauty' CHECK (category IN ('beauty', 'fashion', 'ai', 'planning', 'marketing')),
   pub_date timestamptz,
   created_at timestamptz DEFAULT now()
 );

@@ -1,0 +1,20 @@
+appId: com.codeandbutter.ditto
+productName: Ditto
+directories:
+  output: dist-electron
+files:
+  - electron/**/*
+  - .next/**/*
+  - node_modules/**/*
+  - package.json
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage

@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Task, ChatSession, TrendArticle } from '@/types';
 import { supabase } from '@/lib/supabase';
 import WeeklyCalendar from '@/components/dashboard/WeeklyCalendar';
+import DashboardSearch from '@/components/dashboard/DashboardSearch';
+import FloatingActions from '@/components/dashboard/FloatingActions';
 
 export default function DashboardPage() {
   const [entered, setEntered] = useState(false);
@@ -17,14 +19,12 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [trends, setTrends] = useState<TrendArticle[]>([]);
 
-  // Check sessionStorage on mount
   useEffect(() => {
     if (sessionStorage.getItem('ditto_entered') === 'true') {
       setEntered(true);
     }
   }, []);
 
-  // Load dashboard data when entered
   useEffect(() => {
     if (!entered) return;
     async function load() {
@@ -97,7 +97,10 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">오늘의 마케팅 현황을 한눈에 확인하세요</p>
       </div>
 
-      {/* 주간 캘린더 */}
+      {/* AI 검색 입력창 */}
+      <DashboardSearch />
+
+      {/* 주간 캘린더 (타임라인) */}
       <WeeklyCalendar />
 
       {/* 업무 요약 카드 */}
@@ -128,63 +131,37 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* 최근 채팅 */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">최근 대화</CardTitle>
-              <Link href="/chat">
-                <Button variant="ghost" size="sm">모두 보기</Button>
-              </Link>
+      {/* 최근 채팅 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">최근 대화</CardTitle>
+            <Link href="/chat">
+              <Button variant="ghost" size="sm">모두 보기</Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">아직 대화가 없습니다</p>
+          ) : (
+            <div className="space-y-2">
+              {sessions.map((session) => (
+                <Link
+                  key={session.id}
+                  href="/chat"
+                  className="block p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <p className="text-sm font-medium truncate">{session.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(session.created_at).toLocaleDateString('ko-KR')}
+                  </p>
+                </Link>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            {sessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">아직 대화가 없습니다</p>
-            ) : (
-              <div className="space-y-2">
-                {sessions.map((session) => (
-                  <Link
-                    key={session.id}
-                    href="/chat"
-                    className="block p-2 rounded-lg hover:bg-muted transition-colors"
-                  >
-                    <p className="text-sm font-medium truncate">{session.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(session.created_at).toLocaleDateString('ko-KR')}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 빠른 액션 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">빠른 액션</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Link href="/chat" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                💬 AI에게 질문하기
-              </Button>
-            </Link>
-            <Link href="/tasks" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                📋 업무 추가하기
-              </Button>
-            </Link>
-            <Link href="/automation" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                🎨 컨텐츠 만들기
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 최근 업무 */}
       {tasks.length > 0 && (
@@ -259,6 +236,9 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Floating actions widget */}
+      <FloatingActions />
     </div>
   );
 }

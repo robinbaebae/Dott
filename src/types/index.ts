@@ -36,7 +36,7 @@ export interface TrendArticle {
   title: string;
   link: string;
   source: string | null;
-  category: 'beauty' | 'fashion';
+  category: 'beauty' | 'fashion' | 'ai' | 'planning' | 'marketing';
   pub_date: string | null;
   created_at: string;
 }
@@ -91,3 +91,11 @@ export interface ThreadsPost {
 export type TaskStatus = Task['status'];
 export type AutomationType = Automation['type'];
 export type TrendCategory = TrendArticle['category'];
+
+export const TREND_CATEGORIES: { value: TrendCategory; label: string }[] = [
+  { value: 'beauty', label: '뷰티' },
+  { value: 'fashion', label: '패션' },
+  { value: 'ai', label: 'AI' },
+  { value: 'planning', label: '기획' },
+  { value: 'marketing', label: '마케팅' },
+];

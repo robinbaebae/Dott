@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { href: '/', label: '대시보드', icon: '📊' },
-  { href: '/chat', label: 'AI 채팅', icon: '💬' },
   { href: '/tasks', label: '업무 관리', icon: '📋' },
   { href: '/automation', label: '컨텐츠', icon: '🎨' },
   { href: '/trends', label: '트렌드', icon: '📈' },
@@ -14,6 +15,7 @@ const navItems = [
 
 export default function TopNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur-sm bg-background/80">
@@ -42,8 +44,33 @@ export default function TopNav() {
           ))}
         </nav>
 
-        {/* Right: Team label */}
-        <p className="text-xs text-muted-foreground shrink-0">코드앤버터 마케팅팀</p>
+        {/* Right: Auth + Team label */}
+        <div className="flex items-center gap-3 shrink-0">
+          {session ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                {session.user?.name ?? '코드앤버터 마케팅팀'}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut()}
+                className="text-xs"
+              >
+                로그아웃
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signIn('google')}
+              className="text-xs"
+            >
+              로그인
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );

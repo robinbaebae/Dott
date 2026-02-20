@@ -4,15 +4,30 @@ import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendArticle, TrendCategory } from '@/types';
+import { TrendArticle, TrendCategory, TREND_CATEGORIES } from '@/types';
 
 const POLL_INTERVAL = 60 * 60 * 1000; // 1시간
 
 const CATEGORY_TABS: { value: TrendCategory | 'all'; label: string }[] = [
   { value: 'all', label: '전체' },
-  { value: 'beauty', label: '뷰티' },
-  { value: 'fashion', label: '패션' },
+  ...TREND_CATEGORIES,
 ];
+
+const CATEGORY_COLOR: Record<TrendCategory, string> = {
+  beauty: 'bg-purple-500',
+  fashion: 'bg-pink-500',
+  ai: 'bg-blue-500',
+  planning: 'bg-amber-500',
+  marketing: 'bg-green-500',
+};
+
+const CATEGORY_LABEL: Record<TrendCategory, string> = {
+  beauty: '뷰티',
+  fashion: '패션',
+  ai: 'AI',
+  planning: '기획',
+  marketing: '마케팅',
+};
 
 export default function TrendList() {
   const [articles, setArticles] = useState<TrendArticle[]>([]);
@@ -61,8 +76,8 @@ export default function TrendList() {
   return (
     <div className="space-y-4">
       {/* 헤더: 필터 탭 + 새로고침 */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex gap-1 flex-wrap">
           {CATEGORY_TABS.map((tab) => (
             <Button
               key={tab.value}
@@ -86,7 +101,7 @@ export default function TrendList() {
         </div>
       </div>
 
-      {/* 아티클 목록 */}
+      {/* 아티클 카드 그리드 */}
       {isLoading && articles.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">트렌드 기사를 불러오는 중...</p>
       ) : articles.length === 0 ? (
@@ -98,36 +113,33 @@ export default function TrendList() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {articles.map((article) => (
             <a
               key={article.id}
               href={article.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block"
+              className="block group"
             >
-              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-snug line-clamp-2">
-                        {article.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        {article.source && (
-                          <span className="text-xs text-muted-foreground">{article.source}</span>
-                        )}
-                        {article.pub_date && (
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(article.pub_date).toLocaleDateString('ko-KR')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                      {article.category === 'beauty' ? '뷰티' : '패션'}
-                    </Badge>
+              <Card className="overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all h-full">
+                <div className={`h-1 ${CATEGORY_COLOR[article.category]}`} />
+                <CardContent className="p-4">
+                  <Badge
+                    variant="secondary"
+                    className="text-xs mb-2"
+                  >
+                    {CATEGORY_LABEL[article.category]}
+                  </Badge>
+                  <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    {article.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                    {article.source && <span>{article.source}</span>}
+                    {article.source && article.pub_date && <span>·</span>}
+                    {article.pub_date && (
+                      <span>{new Date(article.pub_date).toLocaleDateString('ko-KR')}</span>
+                    )}
                   </div>
                 </CardContent>
               </Card>
