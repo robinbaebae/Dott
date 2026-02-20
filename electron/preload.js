@@ -8,5 +8,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onChatResponse: (cb) => ipcRenderer.on('pet-chat-response', (_e, msg) => cb(msg)),
   triggerAction: (action) => ipcRenderer.send('pet-action', action),
   resizePetWindow: (w, h) => ipcRenderer.send('pet-resize', { width: w, height: h }),
+  onDndPrompt: (cb) => ipcRenderer.on('pet-dnd-prompt', (_e, meetingTitle) => cb(meetingTitle)),
+  respondDnd: (accepted) => ipcRenderer.send('pet-dnd-response', accepted),
+  onDndEnd: (cb) => ipcRenderer.on('pet-dnd-end', () => cb()),
   platform: process.platform,
 });

@@ -31,6 +31,11 @@ let totalWorkSeconds = 0;
 let isWorking = false;
 let lastEncouragementMinutes = 0;
 
+// DND (Do Not Disturb) mode
+let dndMode = false;
+let currentMeetingId = null;
+let meetingCheckInterval = null;
+
 // Start Next.js server in production
 function startNextServer() {
   if (!isProd) return;
@@ -51,14 +56,16 @@ function getAppUrl() {
 }
 
 // --- Helper: send message to pet window ---
-function sendPetMessage(message) {
+function sendPetMessage(message, force = false) {
+  if (dndMode && !force) return; // suppress in DND mode
   if (petWindow && !petWindow.isDestroyed()) {
     petWindow.webContents.send('pet-message', message);
   }
 }
 
 // --- Helper: show notification and open main app on click ---
-function showNotification(title, body) {
+function showNotification(title, body, force = false) {
+  if (dndMode && !force) return; // suppress in DND mode
   const notif = new Notification({ title, body, silent: false });
   notif.on('click', () => {
     createMainWindow();
@@ -522,6 +529,9 @@ function startAllIntervals() {
     // Rebuild tray menu to update work time display
     if (tray) rebuildTrayMenu();
   }, 60 * 1000);
+
+  // Meeting DND check: every 30 sec
+  meetingCheckInterval = setInterval(checkMeetingStatus, 30 * 1000);
 }
 
 function stopAllIntervals() {
@@ -537,6 +547,10 @@ function stopAllIntervals() {
   if (workTimeInterval) {
     clearInterval(workTimeInterval);
     workTimeInterval = null;
+  }
+  if (meetingCheckInterval) {
+    clearInterval(meetingCheckInterval);
+    meetingCheckInterval = null;
   }
 }
 
@@ -645,6 +659,95 @@ ipcMain.on('pet-action', async (_event, action) => {
     case 'open':
       createMainWindow();
       break;
+  }
+});
+
+// =========================================================
+// Meeting DND (Do Not Disturb) Mode
+// =========================================================
+const { exec } = require('child_process');
+
+async function checkMeetingStatus() {
+  try {
+    const now = new Date();
+    const fiveMinLater = new Date(now.getTime() + 5 * 60 * 1000);
+    const appUrl = getAppUrl();
+
+    const res = await fetch(
+      `${appUrl}/api/calendar?timeMin=${now.toISOString()}&timeMax=${fiveMinLater.toISOString()}`
+    );
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.connected || !Array.isArray(data.events)) return;
+
+    // Find meetings happening right now (started within last minute)
+    const activeMeetings = data.events.filter((evt) => {
+      const start = new Date(evt.start?.dateTime || evt.start?.date);
+      const end = new Date(evt.end?.dateTime || evt.end?.date);
+      return start <= now && end > now;
+    });
+
+    if (activeMeetings.length > 0 && !currentMeetingId) {
+      // New meeting started — prompt DND
+      const meeting = activeMeetings[0];
+      currentMeetingId = meeting.id;
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet-dnd-prompt', meeting.summary || '미팅');
+      }
+    } else if (activeMeetings.length === 0 && currentMeetingId) {
+      // Meeting ended — auto-disable DND
+      currentMeetingId = null;
+      if (dndMode) {
+        dndMode = false;
+        setSystemDnd(false);
+        if (petWindow && !petWindow.isDestroyed()) {
+          petWindow.webContents.send('pet-dnd-end');
+        }
+      }
+    }
+  } catch {
+    // Calendar API might not be ready
+  }
+}
+
+function setSystemDnd(enabled) {
+  if (process.platform !== 'darwin') return;
+
+  // macOS: toggle Focus/DND via Shortcuts CLI or AppleScript
+  const script = enabled
+    ? `
+      tell application "System Events"
+        tell process "ControlCenter"
+          click (first menu bar item whose description contains "Focus") of menu bar 1
+          delay 0.5
+          try
+            click checkbox "Do Not Disturb" of group 1 of window "Control Center"
+          end try
+        end tell
+      end tell
+    `
+    : `
+      tell application "System Events"
+        tell process "ControlCenter"
+          click (first menu bar item whose description contains "Focus") of menu bar 1
+          delay 0.5
+          try
+            click checkbox "Do Not Disturb" of group 1 of window "Control Center"
+          end try
+        end tell
+      end tell
+    `;
+
+  exec(`osascript -e '${script}'`, (err) => {
+    if (err) console.log('DND toggle: system control unavailable, Ditto-level DND active');
+  });
+}
+
+ipcMain.on('pet-dnd-response', (_event, accepted) => {
+  if (accepted) {
+    dndMode = true;
+    setSystemDnd(true);
   }
 });
 
