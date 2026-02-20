@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/dashboard/Sidebar";
+import TopNav from "@/components/dashboard/TopNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "버터 - 마케팅 AI 어시스턴트",
+  title: "Ditto - 마케팅 AI 어시스턴트",
   description: "코드앤버터 1인 마케터를 위한 AI 어시스턴트",
 };
 
@@ -28,8 +28,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
+        <div className="flex flex-col h-screen overflow-hidden">
+          <TopNav />
           <main className="flex-1 overflow-auto">
             {children}
           </main>

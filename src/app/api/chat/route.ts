@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { streamChatResponse } from '@/lib/claude';
 import { MARKETING_SYSTEM_PROMPT } from '@/lib/prompts';
 import { supabase } from '@/lib/supabase';
+import { getInstagramContextForChat } from '@/lib/instagram';
 
 export async function POST(req: NextRequest) {
   const { sessionId, message, history } = await req.json();
@@ -24,6 +25,18 @@ export async function POST(req: NextRequest) {
     content: message,
   });
 
+  // Instagram 컨텍스트 가져오기
+  let snsContext = '';
+  try {
+    snsContext = await getInstagramContextForChat();
+  } catch {
+    // Instagram context is optional
+  }
+
+  const systemPrompt = snsContext
+    ? `${MARKETING_SYSTEM_PROMPT}\n\n${snsContext}`
+    : MARKETING_SYSTEM_PROMPT;
+
   // Claude 스트리밍 호출
   const messages = [
     ...history.map((m: { role: string; content: string }) => ({
@@ -33,7 +46,7 @@ export async function POST(req: NextRequest) {
     { role: 'user' as const, content: message },
   ];
 
-  const stream = await streamChatResponse(MARKETING_SYSTEM_PROMPT, messages);
+  const stream = await streamChatResponse(systemPrompt, messages);
 
   // ReadableStream으로 변환
   const encoder = new TextEncoder();

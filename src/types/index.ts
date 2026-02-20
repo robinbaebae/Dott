@@ -49,6 +49,45 @@ export interface CalendarEvent {
   allDay: boolean;
 }
 
+export interface BannerDesign {
+  id: string;
+  copy: string;
+  reference: string | null;
+  size: string;
+  html: string;
+  created_at: string;
+}
+
+export interface InstagramPost {
+  id: string;
+  ig_id: string;
+  caption: string;
+  media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
+  media_url: string;
+  permalink: string;
+  timestamp: string;
+  like_count: number;
+  comments_count: number;
+  impressions: number | null;
+  reach: number | null;
+  saved: number | null;
+  engagement: number | null;
+  fetched_at: string;
+}
+
+export interface ThreadsPost {
+  id: string;
+  text: string;
+  media_type: string;
+  permalink: string;
+  timestamp: string;
+  like_count: number;
+  reply_count: number;
+  repost_count: number;
+  quote_count: number;
+  fetched_at: string;
+}
+
 export type TaskStatus = Task['status'];
 export type AutomationType = Automation['type'];
 export type TrendCategory = TrendArticle['category'];

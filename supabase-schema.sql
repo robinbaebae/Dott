@@ -59,6 +59,79 @@ CREATE POLICY "Allow all on automations" ON automations FOR ALL USING (true) WIT
 ALTER TABLE trend_articles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on trend_articles" ON trend_articles FOR ALL USING (true) WITH CHECK (true);
 
+CREATE TABLE banners (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  copy text NOT NULL,
+  reference text,
+  size text NOT NULL DEFAULT '1080x1080',
+  html text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE banners ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on banners" ON banners FOR ALL USING (true) WITH CHECK (true);
+
+-- Instagram integration
+CREATE TABLE instagram_tokens (
+  id text PRIMARY KEY DEFAULT 'default',
+  access_token text NOT NULL,
+  user_id text NOT NULL DEFAULT '',
+  token_type text NOT NULL DEFAULT 'long_lived',
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE instagram_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on instagram_tokens" ON instagram_tokens FOR ALL USING (true) WITH CHECK (true);
+
+CREATE TABLE instagram_posts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  ig_id text NOT NULL,
+  caption text DEFAULT '',
+  media_type text NOT NULL DEFAULT 'IMAGE',
+  media_url text DEFAULT '',
+  permalink text DEFAULT '',
+  timestamp timestamptz,
+  like_count integer DEFAULT 0,
+  comments_count integer DEFAULT 0,
+  impressions integer DEFAULT 0,
+  reach integer DEFAULT 0,
+  saved integer DEFAULT 0,
+  engagement integer DEFAULT 0,
+  fetched_at timestamptz DEFAULT now()
+);
+CREATE UNIQUE INDEX instagram_posts_ig_id_idx ON instagram_posts(ig_id);
+ALTER TABLE instagram_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on instagram_posts" ON instagram_posts FOR ALL USING (true) WITH CHECK (true);
+
+-- Threads integration
+CREATE TABLE threads_tokens (
+  id text PRIMARY KEY DEFAULT 'default',
+  access_token text NOT NULL,
+  user_id text NOT NULL DEFAULT '',
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE threads_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on threads_tokens" ON threads_tokens FOR ALL USING (true) WITH CHECK (true);
+
+CREATE TABLE threads_posts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  threads_id text NOT NULL,
+  text text DEFAULT '',
+  media_type text DEFAULT '',
+  permalink text DEFAULT '',
+  timestamp timestamptz,
+  like_count integer DEFAULT 0,
+  reply_count integer DEFAULT 0,
+  repost_count integer DEFAULT 0,
+  quote_count integer DEFAULT 0,
+  fetched_at timestamptz DEFAULT now()
+);
+CREATE UNIQUE INDEX threads_posts_threads_id_idx ON threads_posts(threads_id);
+ALTER TABLE threads_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on threads_posts" ON threads_posts FOR ALL USING (true) WITH CHECK (true);
+
 CREATE TABLE google_tokens (
   id text PRIMARY KEY DEFAULT 'default',
   access_token text NOT NULL,

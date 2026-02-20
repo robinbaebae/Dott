@@ -10,11 +10,23 @@ import { supabase } from '@/lib/supabase';
 import WeeklyCalendar from '@/components/dashboard/WeeklyCalendar';
 
 export default function DashboardPage() {
+  const [entered, setEntered] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [landingInput, setLandingInput] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [trends, setTrends] = useState<TrendArticle[]>([]);
 
+  // Check sessionStorage on mount
   useEffect(() => {
+    if (sessionStorage.getItem('ditto_entered') === 'true') {
+      setEntered(true);
+    }
+  }, []);
+
+  // Load dashboard data when entered
+  useEffect(() => {
+    if (!entered) return;
     async function load() {
       const [tasksRes, sessionsRes, trendsRes] = await Promise.all([
         supabase.from('tasks').select('*').order('created_at', { ascending: false }),
@@ -26,18 +38,67 @@ export default function DashboardPage() {
       if (trendsRes.data) setTrends(trendsRes.data);
     }
     load();
-  }, []);
+  }, [entered]);
+
+  const handleLandingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!landingInput.trim()) return;
+    setTransitioning(true);
+    setTimeout(() => {
+      sessionStorage.setItem('ditto_entered', 'true');
+      setEntered(true);
+    }, 600);
+  };
 
   const todoCount = tasks.filter((t) => t.status === 'todo').length;
   const inProgressCount = tasks.filter((t) => t.status === 'in_progress').length;
   const doneCount = tasks.filter((t) => t.status === 'done').length;
 
+  // Landing state
+  if (!entered) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] transition-all duration-500 ${
+          transitioning ? 'opacity-0 -translate-y-8' : 'opacity-100 translate-y-0'
+        }`}
+      >
+        <div className="text-center space-y-6 max-w-2xl px-6">
+          <h1 className="text-6xl font-bold tracking-tight">
+            Me too, Same here
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            마케터의 고민에 공감하고, 함께 해결하는 AI 어시스턴트
+          </p>
+          <form onSubmit={handleLandingSubmit} className="mt-8">
+            <div className="flex gap-2 max-w-md mx-auto">
+              <input
+                type="text"
+                value={landingInput}
+                onChange={(e) => setLandingInput(e.target.value)}
+                placeholder="오늘 하고 싶은 말을 입력하세요"
+                className="flex-1 rounded-lg border border-input bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                autoFocus
+              />
+              <Button type="submit" disabled={!landingInput.trim()}>
+                시작하기
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Dashboard state
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6 animate-in fade-in duration-500">
       <div>
         <h1 className="text-2xl font-bold">대시보드</h1>
         <p className="text-sm text-muted-foreground mt-1">오늘의 마케팅 현황을 한눈에 확인하세요</p>
       </div>
+
+      {/* 주간 캘린더 */}
+      <WeeklyCalendar />
 
       {/* 업무 요약 카드 */}
       <div className="grid grid-cols-3 gap-4">
@@ -66,9 +127,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* 주간 캘린더 */}
-      <WeeklyCalendar />
 
       <div className="grid grid-cols-2 gap-6">
         {/* 최근 채팅 */}
@@ -121,7 +179,7 @@ export default function DashboardPage() {
             </Link>
             <Link href="/automation" className="block">
               <Button variant="outline" className="w-full justify-start gap-2">
-                ⚡ 자동화 실행하기
+                🎨 컨텐츠 만들기
               </Button>
             </Link>
           </CardContent>

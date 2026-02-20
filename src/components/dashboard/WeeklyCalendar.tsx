@@ -15,12 +15,13 @@ import { CalendarDays, ChevronLeft, ChevronRight, Unplug } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { CalendarEvent } from '@/types';
+import type { CalendarEvent, Task } from '@/types';
 
 export default function WeeklyCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -37,14 +38,29 @@ export default function WeeklyCalendar() {
     try {
       const timeMin = weekStart.toISOString();
       const timeMax = weekEnd.toISOString();
-      const res = await fetch(
-        `/api/calendar?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`,
-      );
-      const data = await res.json();
-      setConnected(data.connected);
-      setEvents(data.events ?? []);
+
+      const [calRes, tasksRes] = await Promise.all([
+        fetch(
+          `/api/calendar?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`,
+        ),
+        fetch('/api/tasks'),
+      ]);
+
+      const calData = await calRes.json();
+      setConnected(calData.connected);
+      setEvents(calData.events ?? []);
+
+      const tasksData: Task[] = await tasksRes.json();
+      // Filter tasks with due_date within the week
+      const weekTasks = tasksData.filter((t) => {
+        if (!t.due_date) return false;
+        const d = parseISO(t.due_date);
+        return d >= weekStart && d <= weekEnd;
+      });
+      setTasks(weekTasks);
     } catch {
       setEvents([]);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -77,6 +93,12 @@ export default function WeeklyCalendar() {
       return isSameDay(start, day);
     });
 
+  const tasksForDay = (day: Date) =>
+    tasks.filter((t) => {
+      if (!t.due_date) return false;
+      return isSameDay(parseISO(t.due_date), day);
+    });
+
   const handleDisconnect = async () => {
     await fetch('/api/calendar', { method: 'DELETE' });
     setConnected(false);
@@ -90,10 +112,21 @@ export default function WeeklyCalendar() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CalendarDays className="size-4" />
-              주간 캘린더
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarDays className="size-4" />
+                주간 캘린더
+              </CardTitle>
+              {/* Legend chips */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                  캘린더
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                  나의 할일
+                </span>
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">{dateRange}</p>
           </div>
           <div className="flex items-center gap-1">
@@ -129,11 +162,12 @@ export default function WeeklyCalendar() {
           <div className="grid grid-cols-7 gap-1">
             {days.map((day) => {
               const dayEvents = eventsForDay(day);
+              const dayTasks = tasksForDay(day);
               const today = isToday(day);
               return (
                 <div
                   key={day.toISOString()}
-                  className={`rounded-lg border p-2 min-h-[120px] ${today ? 'border-primary bg-primary/5' : 'border-border'}`}
+                  className={`rounded-lg border p-2 min-h-[160px] ${today ? 'border-primary bg-primary/5' : 'border-border'}`}
                 >
                   <div className="text-center mb-1">
                     <p className="text-[10px] text-muted-foreground">
@@ -145,22 +179,41 @@ export default function WeeklyCalendar() {
                       {format(day, 'd')}
                     </p>
                   </div>
-                  <ScrollArea className="h-[80px]">
+                  <ScrollArea className="h-[120px]">
                     <div className="space-y-1">
+                      {/* Google Calendar events - blue */}
                       {dayEvents.map((event) => (
                         <div
                           key={event.id}
-                          className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] leading-tight"
+                          className="rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] leading-tight"
                         >
-                          <p className="font-medium truncate">{event.title}</p>
+                          <p className="font-medium truncate text-blue-700">{event.title}</p>
                           {!event.allDay && (
-                            <p className="text-muted-foreground">
+                            <p className="text-blue-600/70">
                               {format(parseISO(event.start), 'HH:mm')}
                             </p>
                           )}
                           {event.allDay && (
-                            <p className="text-muted-foreground">종일</p>
+                            <p className="text-blue-600/70">종일</p>
                           )}
+                        </div>
+                      ))}
+
+                      {/* Dotted separator when both exist */}
+                      {dayEvents.length > 0 && dayTasks.length > 0 && (
+                        <div className="border-t border-dashed border-border my-1" />
+                      )}
+
+                      {/* Tasks - green */}
+                      {dayTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className="rounded bg-green-500/10 px-1.5 py-0.5 text-[10px] leading-tight"
+                        >
+                          <p className="font-medium truncate text-green-700">{task.title}</p>
+                          <p className="text-green-600/70">
+                            {task.status === 'todo' ? '할 일' : task.status === 'in_progress' ? '진행 중' : '완료'}
+                          </p>
                         </div>
                       ))}
                     </div>

@@ -122,5 +122,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .content-container {
+    @apply max-w-6xl mx-auto px-6;
   }
 }
