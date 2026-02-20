@@ -6,6 +6,8 @@ CREATE TABLE tasks (
   description text,
   status text NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done')),
   due_date date,
+  urgent boolean DEFAULT false,
+  important boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 
@@ -131,6 +133,23 @@ CREATE TABLE threads_posts (
 CREATE UNIQUE INDEX threads_posts_threads_id_idx ON threads_posts(threads_id);
 ALTER TABLE threads_posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on threads_posts" ON threads_posts FOR ALL USING (true) WITH CHECK (true);
+
+-- Insights
+CREATE TABLE insights (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  url text NOT NULL,
+  title text DEFAULT '',
+  description text DEFAULT '',
+  memo text DEFAULT '',
+  content_type text DEFAULT 'article' CHECK (content_type IN ('article', 'video', 'tweet', 'pdf', 'other', 'memory')),
+  thumbnail_url text DEFAULT '',
+  source_domain text DEFAULT '',
+  tags text[] DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+CREATE UNIQUE INDEX insights_url_idx ON insights(url);
+ALTER TABLE insights ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on insights" ON insights FOR ALL USING (true) WITH CHECK (true);
 
 CREATE TABLE google_tokens (
   id text PRIMARY KEY DEFAULT 'default',

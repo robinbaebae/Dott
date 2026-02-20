@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { TrendArticle } from '@/types';
 import { supabase } from '@/lib/supabase';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
-import KnowBar from '@/components/shared/KnowBar';
 import TaskBoard from '@/components/dashboard/TaskBoard';
 import ColorBar from '@/components/dashboard/ColorBar';
 import LandingPage from '@/components/landing/LandingPage';
@@ -52,8 +51,6 @@ function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-6 pt-24 pb-12 space-y-6 animate-in fade-in duration-500">
       <h1 className="text-2xl tracking-tight">Dashboard</h1>
-
-      <KnowBar />
 
       <DashboardCalendar />
 

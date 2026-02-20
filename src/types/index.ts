@@ -4,6 +4,8 @@ export interface Task {
   description: string | null;
   status: 'todo' | 'in_progress' | 'done' | 'on_hold';
   due_date: string | null;
+  urgent: boolean;
+  important: boolean;
   created_at: string;
 }
 
@@ -47,6 +49,7 @@ export interface CalendarEvent {
   start: string;   // ISO 8601
   end: string;
   allDay: boolean;
+  attendees?: { name: string; email: string }[];
 }
 
 export interface BannerDesign {
@@ -94,7 +97,8 @@ export interface Insight {
   title: string;
   description: string;
   memo: string;
-  content_type: 'article' | 'video' | 'tweet' | 'pdf' | 'other';
+  tags: string[];
+  content_type: 'article' | 'video' | 'tweet' | 'pdf' | 'other' | 'memory';
   thumbnail_url: string;
   source_domain: string;
   created_at: string;

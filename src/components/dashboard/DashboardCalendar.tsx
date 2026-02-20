@@ -271,6 +271,7 @@ function MonthView({
               <div className="space-y-0.5">
                 {dayEvents.slice(0, 2).map((e) => (
                   <div key={e.id} className="text-[9px] truncate rounded px-1 bg-blue-500/10 text-blue-700">
+                    {!e.allDay && <span className="text-blue-600/70">{format(parseISO(e.start), 'HH:mm')} </span>}
                     {e.title}
                   </div>
                 ))}
@@ -346,9 +347,14 @@ function TimelineView({
                         <span className="text-[10px] text-blue-600/70 shrink-0">
                           {event.allDay
                             ? 'All day'
-                            : format(parseISO(event.start), 'HH:mm')}
+                            : `${format(parseISO(event.start), 'HH:mm')}–${format(parseISO(event.end), 'HH:mm')}`}
                         </span>
                       </div>
+                      {event.attendees && event.attendees.length > 0 && (
+                        <p className="text-[10px] text-blue-600/60 mt-0.5 truncate">
+                          {event.attendees.map((a) => a.name || a.email).join(', ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

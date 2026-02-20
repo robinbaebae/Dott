@@ -88,6 +88,10 @@ export async function getCalendarEvents(timeMin: string, timeMax: string) {
     start: event.start?.dateTime ?? event.start?.date ?? '',
     end: event.end?.dateTime ?? event.end?.date ?? '',
     allDay: !event.start?.dateTime,
+    attendees: (event.attendees ?? []).map((a) => ({
+      name: a.displayName ?? a.email ?? '',
+      email: a.email ?? '',
+    })),
   }));
 }
 

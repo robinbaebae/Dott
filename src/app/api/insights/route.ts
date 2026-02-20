@@ -94,14 +94,19 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 });
 }
 
-// PATCH — update memo
+// PATCH — update memo and/or tags
 export async function PATCH(req: NextRequest) {
-  const { id, memo } = await req.json();
+  const body = await req.json();
+  const { id, memo, tags } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  const updates: Record<string, unknown> = {};
+  if (memo !== undefined) updates.memo = memo;
+  if (tags !== undefined) updates.tags = tags;
 
   const { data, error } = await supabase
     .from('insights')
-    .update({ memo })
+    .update(updates)
     .eq('id', id)
     .select()
     .single();

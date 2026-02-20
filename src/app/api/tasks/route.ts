@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
       description: body.description || null,
       status: body.status || 'todo',
       due_date: body.due_date || null,
+      urgent: body.urgent ?? false,
+      important: body.important ?? false,
     })
     .select()
     .single();
