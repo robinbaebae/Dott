@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import KnowBar from '@/components/shared/KnowBar';
 import TaskBoard from '@/components/dashboard/TaskBoard';
-import FloatingActions from '@/components/dashboard/FloatingActions';
+import ColorBar from '@/components/dashboard/ColorBar';
 import LandingPage from '@/components/landing/LandingPage';
 
 export default function Page() {
@@ -103,7 +103,7 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      <FloatingActions />
+      <ColorBar />
     </div>
   );
 }

@@ -19,9 +19,10 @@ const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
   todo: { label: 'To do', color: 'bg-gray-100 text-gray-800' },
   in_progress: { label: 'In progress', color: 'bg-blue-100 text-blue-800' },
   done: { label: 'Done', color: 'bg-green-100 text-green-800' },
+  on_hold: { label: 'On hold', color: 'bg-amber-100 text-amber-800' },
 };
 
-const COLUMNS: TaskStatus[] = ['todo', 'in_progress', 'done'];
+const COLUMNS: TaskStatus[] = ['todo', 'in_progress', 'done', 'on_hold'];
 
 export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -29,7 +30,9 @@ export default function TaskBoard() {
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newDueDate, setNewDueDate] = useState('');
+  const [newDueTime, setNewDueTime] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [reminderTask, setReminderTask] = useState<Task | null>(null);
 
   const loadTasks = useCallback(async () => {
     const res = await fetch('/api/tasks');
@@ -43,18 +46,25 @@ export default function TaskBoard() {
 
   const createTask = async () => {
     if (!newTitle.trim()) return;
+
+    let dueDate: string | null = null;
+    if (newDueDate) {
+      dueDate = newDueTime ? `${newDueDate}T${newDueTime}:00` : newDueDate;
+    }
+
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: newTitle,
         description: newDescription || null,
-        due_date: newDueDate || null,
+        due_date: dueDate,
       }),
     });
     setNewTitle('');
     setNewDescription('');
     setNewDueDate('');
+    setNewDueTime('');
     setDialogOpen(false);
     loadTasks();
   };
@@ -82,10 +92,20 @@ export default function TaskBoard() {
   };
 
   const handleDrop = (status: TaskStatus) => {
-    if (draggedTaskId) {
+    if (!draggedTaskId) return;
+
+    const task = tasks.find((t) => t.id === draggedTaskId);
+    if (status === 'on_hold' && task && task.status !== 'on_hold') {
       updateTaskStatus(draggedTaskId, status);
-      setDraggedTaskId(null);
+      setReminderTask({ ...task, status });
+    } else {
+      updateTaskStatus(draggedTaskId, status);
     }
+    setDraggedTaskId(null);
+  };
+
+  const dismissReminder = () => {
+    setReminderTask(null);
   };
 
   return (
@@ -111,11 +131,24 @@ export default function TaskBoard() {
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
               />
-              <Input
-                type="date"
-                value={newDueDate}
-                onChange={(e) => setNewDueDate(e.target.value)}
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                  <Input
+                    type="date"
+                    value={newDueDate}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Time</label>
+                  <Input
+                    type="time"
+                    value={newDueTime}
+                    onChange={(e) => setNewDueTime(e.target.value)}
+                  />
+                </div>
+              </div>
               <Button onClick={createTask} className="w-full">
                 Add
               </Button>
@@ -124,7 +157,37 @@ export default function TaskBoard() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      {/* Ditto reminder popup */}
+      {reminderTask && (
+        <div className="flex items-start gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          <div className="shrink-0 mt-1">
+            <img src="/logo.png" alt="Ditto" className="size-8 rounded-full" />
+          </div>
+          <div className="max-w-[85%]">
+            <div className="bg-[#1a1a1a] text-white rounded-2xl px-5 py-4 shadow-lg">
+              <p className="text-sm leading-relaxed">
+                <span className="font-medium">&quot;{reminderTask.title}&quot;</span> has been put on hold. Would you like me to remind you later?
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  onClick={dismissReminder}
+                  className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  No thanks
+                </button>
+                <button
+                  onClick={dismissReminder}
+                  className="text-xs bg-[#FF4D00] hover:bg-[#FF4D00]/80 text-white px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Remind me
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-4 gap-3">
         {COLUMNS.map((status) => (
           <div
             key={status}
@@ -163,7 +226,7 @@ export default function TaskBoard() {
                       <div className="flex items-center justify-between">
                         {task.due_date && (
                           <span className="text-xs text-muted-foreground">
-                            {task.due_date}
+                            {formatDueDate(task.due_date)}
                           </span>
                         )}
                         <button
@@ -182,4 +245,14 @@ export default function TaskBoard() {
       </div>
     </div>
   );
+}
+
+function formatDueDate(dateStr: string): string {
+  if (dateStr.includes('T')) {
+    const d = new Date(dateStr);
+    const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${date} ${time}`;
+  }
+  return dateStr;
 }

@@ -56,7 +56,7 @@ export default function AdsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 pt-24 pb-12 space-y-8 animate-in fade-in duration-500">
-      <h1 className="text-2xl tracking-tight">Ad Management</h1>
+      <h1 className="text-2xl tracking-tight">Ads</h1>
 
       <KnowBar />
 

@@ -2,7 +2,7 @@ export interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: 'todo' | 'in_progress' | 'done';
+  status: 'todo' | 'in_progress' | 'done' | 'on_hold';
   due_date: string | null;
   created_at: string;
 }
@@ -93,6 +93,7 @@ export interface Insight {
   url: string;
   title: string;
   description: string;
+  memo: string;
   content_type: 'article' | 'video' | 'tweet' | 'pdf' | 'other';
   thumbnail_url: string;
   source_domain: string;

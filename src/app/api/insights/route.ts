@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
         url,
         title: title || sourceDomain || url,
         description,
+        memo: '',
         content_type: contentType,
         thumbnail_url: thumbnailUrl,
         source_domain: sourceDomain,
@@ -91,6 +92,22 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
+}
+
+// PATCH — update memo
+export async function PATCH(req: NextRequest) {
+  const { id, memo } = await req.json();
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  const { data, error } = await supabase
+    .from('insights')
+    .update({ memo })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 // DELETE — remove an insight by id

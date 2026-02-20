@@ -352,25 +352,33 @@ function TimelineView({
                     </div>
                   </div>
                 ))}
-                {dayTasks.map((task) => (
-                  <div key={task.id} className="relative flex items-start gap-2">
-                    <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 -translate-x-[3px]" />
-                    <div className="flex-1 rounded-md bg-green-500/10 px-2.5 py-1.5">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-medium text-green-700 truncate">
-                          {task.title}
-                        </p>
-                        <span className="text-[10px] text-green-600/70 shrink-0">
-                          {task.status === 'todo'
-                            ? 'To do'
-                            : task.status === 'in_progress'
-                            ? 'In progress'
-                            : 'Done'}
-                        </span>
+                {dayTasks.map((task) => {
+                  const hasTime = task.due_date?.includes('T');
+                  const timeStr = hasTime
+                    ? new Date(task.due_date!).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    : null;
+                  return (
+                    <div key={task.id} className="relative flex items-start gap-2">
+                      <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 -translate-x-[3px]" />
+                      <div className="flex-1 rounded-md bg-green-500/10 px-2.5 py-1.5">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-medium text-green-700 truncate">
+                            {task.title}
+                          </p>
+                          <span className="text-[10px] text-green-600/70 shrink-0">
+                            {timeStr ?? (task.status === 'todo'
+                              ? 'To do'
+                              : task.status === 'in_progress'
+                              ? 'In progress'
+                              : task.status === 'on_hold'
+                              ? 'On hold'
+                              : 'Done')}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

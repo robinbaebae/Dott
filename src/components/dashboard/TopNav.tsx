@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard' },
-  { href: '/insights', label: 'Insights' },
   { href: '/automation', label: 'Content' },
-  { href: '/ads', label: 'Ad Management' },
-  { href: '/trends', label: 'Trends' },
+  { href: '/ads', label: 'Ads' },
+  { href: '/insights', label: 'Insight' },
+  { href: '/trends', label: 'Trend' },
 ];
 
 export default function TopNav() {

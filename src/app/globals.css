@@ -162,6 +162,33 @@
   background-color: rgba(26, 26, 26, 0.92);
 }
 
+/* KnowBar blinking cursor */
+@keyframes knowbar-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.knowbar-cursor {
+  animation: knowbar-blink 1s ease-in-out infinite;
+}
+
+/* KnowBar response markdown styling */
+.knowbar-response strong,
+.knowbar-response b {
+  font-weight: 400 !important;
+  color: #fff;
+}
+
+.knowbar-response ul,
+.knowbar-response ol {
+  padding-left: 1.2em;
+  margin: 0.3em 0;
+}
+
+.knowbar-response li {
+  margin: 0.15em 0;
+}
+
 @layer utilities {
   .content-container {
     @apply max-w-6xl mx-auto px-6;

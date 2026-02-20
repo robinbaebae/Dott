@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { Search, X, CheckCircle2 } from 'lucide-react';
+import { Search, CheckCircle2 } from 'lucide-react';
 
 export default function KnowBar() {
   const [query, setQuery] = useState('');
@@ -10,6 +10,7 @@ export default function KnowBar() {
   const [showResponse, setShowResponse] = useState(false);
   const [taskCreated, setTaskCreated] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
 
@@ -68,46 +69,91 @@ export default function KnowBar() {
   }, [response]);
 
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+    <div className="space-y-4">
+      {/* KnowBar input */}
+      <div
+        className="relative cursor-text"
+        onClick={() => inputRef.current?.focus()}
+      >
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-6 text-muted-foreground/60" />
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="I know what you want"
-          className="w-full rounded-xl border-2 border-[#FF4D00]/40 bg-background pl-12 pr-4 py-4 text-base placeholder:text-muted-foreground focus:outline-none focus:border-[#FF4D00] transition-colors"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder=""
+          className="w-full rounded-2xl border-2 border-[#FF4D00]/40 bg-background pl-14 pr-6 py-5 text-lg placeholder:text-muted-foreground focus:outline-none focus:border-[#FF4D00] focus:shadow-[0_0_0_4px_rgba(255,77,0,0.08)] transition-all duration-300"
         />
+        {/* Custom placeholder with blinking cursor */}
+        {!query && !isFocused && (
+          <div className="absolute left-14 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+            <span className="text-lg text-muted-foreground">I know what you want</span>
+            <span className="knowbar-cursor ml-0.5 text-lg text-[#FF4D00]">|</span>
+          </div>
+        )}
+        {!query && isFocused && (
+          <div className="absolute left-14 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+            <span className="knowbar-cursor text-lg text-[#FF4D00]">|</span>
+          </div>
+        )}
         {isLoading && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="absolute right-5 top-1/2 -translate-y-1/2">
+            <div className="size-5 border-2 border-[#FF4D00] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
       </div>
 
+      {/* Ditto response — black chat bubble */}
       {showResponse && response && (
-        <div className="relative rounded-lg border border-border bg-muted/30 p-4">
-          <button
-            onClick={dismissResponse}
-            className="absolute top-2 right-2 p-1 rounded hover:bg-muted"
-          >
-            <X className="size-3" />
-          </button>
+        <div className="flex items-start gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          {/* Avatar */}
+          <div className="shrink-0 mt-1">
+            <img src="/logo.png" alt="Ditto" className="size-8 rounded-full" />
+          </div>
 
-          {taskCreated && (
-            <div className="flex items-center gap-2 mb-2 text-green-600">
-              <CheckCircle2 className="size-4" />
-              <span className="text-sm font-medium">Task added: {taskTitle}</span>
+          {/* Bubble */}
+          <div className="max-w-[85%]">
+            <div
+              className="bg-[#1a1a1a] text-white rounded-2xl px-5 py-4 shadow-lg cursor-pointer hover:bg-[#2a2a2a] transition-colors"
+              onClick={dismissResponse}
+            >
+              {taskCreated && (
+                <div className="flex items-center gap-2 mb-2 text-emerald-400">
+                  <CheckCircle2 className="size-4" />
+                  <span className="text-sm font-medium">Task added: {taskTitle}</span>
+                </div>
+              )}
+
+              <div
+                ref={responseRef}
+                className="text-sm leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-auto knowbar-response"
+              >
+                {response}
+              </div>
+
+              <p className="text-[10px] text-white/30 mt-2 text-right">tap to dismiss</p>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          <div
-            ref={responseRef}
-            className="text-sm whitespace-pre-wrap max-h-[200px] overflow-auto pr-6"
-          >
-            {response}
+      {/* Loading bubble */}
+      {isLoading && !response && (
+        <div className="flex items-start gap-3 animate-in fade-in duration-200">
+          <div className="shrink-0 mt-1">
+            <img src="/logo.png" alt="Ditto" className="size-8 rounded-full" />
+          </div>
+          <div>
+            <div className="bg-[#1a1a1a] rounded-2xl px-5 py-4 shadow-lg">
+              <div className="flex items-center gap-1.5">
+                <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:0ms]" />
+                <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:150ms]" />
+                <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:300ms]" />
+              </div>
+            </div>
           </div>
         </div>
       )}
