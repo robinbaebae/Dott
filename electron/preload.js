@@ -11,5 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onDndPrompt: (cb) => ipcRenderer.on('pet-dnd-prompt', (_e, meetingTitle) => cb(meetingTitle)),
   respondDnd: (accepted) => ipcRenderer.send('pet-dnd-response', accepted),
   onDndEnd: (cb) => ipcRenderer.on('pet-dnd-end', () => cb()),
+  startDrag: () => ipcRenderer.send('pet-start-drag'),
+  dragMove: (x, y) => ipcRenderer.send('pet-drag-move', { x, y }),
   platform: process.platform,
 });

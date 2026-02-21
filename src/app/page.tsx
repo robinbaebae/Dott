@@ -52,10 +52,11 @@ function Dashboard() {
     <div className="max-w-6xl mx-auto px-6 pt-24 pb-12 space-y-6 animate-in fade-in duration-500">
       <h1 className="text-2xl tracking-tight">Dashboard</h1>
 
-      <DashboardCalendar />
-
-      {/* Task Board */}
-      <TaskBoard />
+      {/* Calendar + Task Board side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardCalendar compact />
+        <TaskBoard />
+      </div>
 
       {/* Recent trends */}
       <Card>

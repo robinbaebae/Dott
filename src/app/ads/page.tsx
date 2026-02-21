@@ -4,6 +4,8 @@ import SocialMediaTracker from '@/components/content/SocialMediaTracker';
 import SocialMediaChart from '@/components/content/SocialMediaChart';
 import InstagramPosts from '@/components/content/InstagramPosts';
 import ThreadsPosts from '@/components/content/ThreadsPosts';
+import BlogPosts from '@/components/content/BlogPosts';
+import AdPerformance from '@/components/content/AdPerformance';
 
 export default function DataPage() {
   return (
@@ -14,6 +16,8 @@ export default function DataPage() {
       <SocialMediaChart />
       <InstagramPosts />
       <ThreadsPosts />
+      <BlogPosts />
+      <AdPerformance />
     </div>
   );
 }

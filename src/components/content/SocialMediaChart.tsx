@@ -132,7 +132,7 @@ export default function SocialMediaChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Daily Trend</CardTitle>
+          <CardTitle className="text-base">Owned Media Trend</CardTitle>
         </CardHeader>
         <CardContent className="h-[260px] flex items-center justify-center">
           <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -151,7 +151,7 @@ export default function SocialMediaChart() {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Daily Trend — Last 7 Days</CardTitle>
+          <CardTitle className="text-base">Owned Media Trend — Last 7 Days</CardTitle>
           <div className="flex gap-1">
             {METRICS.map((m) => (
               <button

@@ -83,7 +83,7 @@ export default function SocialMediaTracker() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Social Media — Last 7 Days</CardTitle>
+          <CardTitle className="text-base">Owned Media — Last 7 Days</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">Loading...</p>
@@ -98,7 +98,7 @@ export default function SocialMediaTracker() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Social Media — Last 7 Days</CardTitle>
+          <CardTitle className="text-base">Owned Media — Last 7 Days</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -112,7 +112,7 @@ export default function SocialMediaTracker() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Social Media — Last 7 Days</CardTitle>
+        <CardTitle className="text-base">Owned Media — Last 7 Days</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

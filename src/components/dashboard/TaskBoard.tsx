@@ -236,7 +236,7 @@ export default function TaskBoard() {
               onDragOver={handleDragOver}
               onDragLeave={() => handleDragLeave(q.key)}
               onDrop={(e) => handleDrop(e, q)}
-              className={`rounded-xl border p-3 min-h-[200px] transition-all duration-200 ${
+              className={`rounded-xl border p-2.5 min-h-[160px] transition-all duration-200 ${
                 isDragOver ? q.dropHighlight : q.bgColor
               }`}
             >

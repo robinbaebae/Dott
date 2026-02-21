@@ -20,63 +20,58 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      width: 250px;
-      height: 160px;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background: transparent;
-      -webkit-app-region: drag;
       user-select: none;
+      font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     .pet-container {
-      width: 250px;
-      height: 160px;
+      width: 100%;
+      height: 100vh;
       display: flex;
       align-items: flex-end;
-      justify-content: center;
+      justify-content: flex-end;
       cursor: pointer;
       position: relative;
-      padding-bottom: 0;
+      padding: 0 10px 0 0;
     }
     .pet-wrapper {
       position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
+      -webkit-app-region: no-drag;
+      margin-bottom: 0;
     }
     .pet {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       animation: bounce 2s ease-in-out infinite;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      filter: drop-shadow(0 4px 12px rgba(255, 77, 0, 0.3));
       transition: transform 0.2s;
     }
     .pet img {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
       display: block;
     }
     .pet:hover {
-      transform: scale(1.2);
+      transform: scale(1.15);
       animation-play-state: paused;
-    }
-    .pet-name {
-      font-size: 9px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', sans-serif;
-      color: #333;
-      font-weight: 600;
-      text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;
-      white-space: nowrap;
-      margin-top: -4px;
     }
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
+      50% { transform: translateY(-5px); }
     }
+
+    /* Tooltip */
     .tooltip {
       display: none;
       position: absolute;
-      bottom: 70px;
+      bottom: 65px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(26, 26, 26, 0.92);
@@ -85,9 +80,7 @@
       color: white;
       padding: 4px 12px;
       border-radius: 10px;
-      font-size: 14px;
-      font-family: 'Sansation', 'Pretendard Variable', sans-serif;
-      font-weight: 400;
+      font-size: 11px;
       white-space: nowrap;
       box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       -webkit-app-region: no-drag;
@@ -102,257 +95,372 @@
       border-right: 4px solid transparent;
       border-top: 4px solid rgba(26, 26, 26, 0.92);
     }
-    .pet-wrapper:hover .tooltip {
-      display: block;
-    }
+    .pet-wrapper:hover .tooltip { display: block; }
 
-    /* Speech bubble — black bg + orange key color text */
+    /* Speech bubble */
     .speech-bubble {
       position: absolute;
-      bottom: 75px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 70px;
+      right: 10px;
       background: rgba(26, 26, 26, 0.92);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       color: #FF4D00;
-      padding: 8px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-family: 'Sansation', 'Pretendard Variable', sans-serif;
+      padding: 8px 16px;
+      border-radius: 14px 14px 4px 14px;
+      font-size: 13px;
       font-weight: 400;
-      line-height: 1.4;
+      line-height: 1.5;
       max-width: 220px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      text-align: left;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       -webkit-app-region: no-drag;
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateY(8px);
       z-index: 10;
     }
     .speech-bubble.visible {
       opacity: 1;
       pointer-events: auto;
-    }
-    .speech-bubble::after {
-      content: '';
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 6px solid rgba(26, 26, 26, 0.92);
-    }
-
-    /* Hide tooltip when bubble is visible */
-    .speech-bubble.visible ~ .pet-wrapper:hover .tooltip {
-      display: none;
+      transform: translateY(0);
     }
 
     /* ===== Menu Panel ===== */
     .menu-panel {
       display: none;
       position: absolute;
-      bottom: 75px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(26, 26, 26, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 14px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      padding: 6px 0;
-      min-width: 180px;
+      bottom: 70px;
+      right: 10px;
+      background: rgba(20, 20, 20, 0.88);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      padding: 6px;
+      min-width: 160px;
       z-index: 20;
       -webkit-app-region: no-drag;
     }
     .menu-panel.visible {
-      display: block;
-    }
-    .menu-panel::after {
-      content: '';
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 6px solid rgba(26, 26, 26, 0.92);
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
     }
     .menu-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 18px;
-      color: white;
-      font-size: 14px;
-      font-family: 'Pretendard Variable', -apple-system, sans-serif;
+      padding: 10px 14px;
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
       font-weight: 400;
       cursor: pointer;
-      transition: background 0.15s;
+      border-radius: 10px;
+      transition: all 0.15s ease;
     }
     .menu-item:hover {
-      background: rgba(255,255,255,0.12);
+      background: rgba(255, 77, 0, 0.12);
+      color: #FF4D00;
     }
-    .menu-item:first-child {
-      border-radius: 8px 8px 0 0;
-    }
-    .menu-item:last-child {
-      border-radius: 0 0 8px 8px;
+    .menu-icon {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
     }
 
-    /* ===== Chat Panel ===== */
+    /* ===== Chat Panel (Channel Talk Style) ===== */
     .chat-panel {
       display: none;
       position: absolute;
-      bottom: 75px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(26, 26, 26, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 14px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      width: 230px;
-      max-height: 260px;
+      bottom: 70px;
+      right: 0;
+      width: 340px;
+      height: 480px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 16px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
       z-index: 20;
       -webkit-app-region: no-drag;
-      display: none;
       flex-direction: column;
+      opacity: 0;
+      transform: translateY(16px) scale(0.96);
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
     .chat-panel.visible {
       display: flex;
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
-    .chat-panel::after {
-      content: '';
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 6px solid rgba(26, 26, 26, 0.92);
-    }
+
+    /* Chat Header — gradient */
     .chat-header {
+      background: linear-gradient(135deg, #FF4D00 0%, #FF6B2B 50%, #FF8A50 100%);
+      padding: 18px 18px 16px;
       display: flex;
       align-items: center;
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      gap: 8px;
+      gap: 12px;
+      position: relative;
     }
-    .chat-back {
-      cursor: pointer;
+    .chat-header-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.3);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .chat-header-avatar img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .chat-header-info {
+      flex: 1;
+    }
+    .chat-header-name {
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+    }
+    .chat-header-status {
+      color: rgba(255,255,255,0.75);
+      font-size: 11px;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ADE80;
+      display: inline-block;
+    }
+    .chat-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255,255,255,0.15);
       color: white;
       font-size: 16px;
-      padding: 2px 4px;
-      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: background 0.15s;
+      flex-shrink: 0;
     }
-    .chat-back:hover {
-      background: rgba(255,255,255,0.12);
+    .chat-close:hover {
+      background: rgba(255,255,255,0.25);
     }
-    .chat-title {
-      color: white;
-      font-size: 14px;
-      font-family: 'Pretendard Variable', -apple-system, sans-serif;
-      font-weight: 500;
-    }
-    .chat-messages {
+
+    /* Chat Body */
+    .chat-body {
       flex: 1;
+      background: #1A1A1A;
       overflow-y: auto;
-      padding: 10px 14px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      min-height: 80px;
-      max-height: 160px;
+      gap: 12px;
     }
-    .chat-messages::-webkit-scrollbar {
-      width: 4px;
-    }
-    .chat-messages::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.2);
+    .chat-body::-webkit-scrollbar { width: 4px; }
+    .chat-body::-webkit-scrollbar-track { background: transparent; }
+    .chat-body::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.12);
       border-radius: 2px;
     }
-    .chat-msg {
-      font-size: 13px;
-      font-family: 'Pretendard Variable', -apple-system, sans-serif;
-      line-height: 1.4;
-      padding: 6px 10px;
-      border-radius: 10px;
-      max-width: 85%;
-      word-break: break-word;
+
+    /* Welcome */
+    .chat-welcome {
+      text-align: center;
+      padding: 12px 0 8px;
     }
-    .chat-msg.user {
-      align-self: flex-end;
-      background: #4F46E5;
-      color: white;
+    .chat-welcome-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      margin: 0 auto 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(255, 77, 0, 0.25);
     }
-    .chat-msg.assistant {
-      align-self: flex-start;
-      background: rgba(255,255,255,0.12);
-      color: white;
+    .chat-welcome-avatar img {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
-    .chat-msg.loading {
-      align-self: flex-start;
-      background: rgba(255,255,255,0.08);
+    .chat-welcome-text {
       color: rgba(255,255,255,0.5);
-      font-style: italic;
+      font-size: 12px;
+      line-height: 1.5;
     }
-    .chat-input-area {
+
+    /* Message Row */
+    .msg-row {
       display: flex;
-      gap: 6px;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .msg-row.user {
+      flex-direction: row-reverse;
+    }
+    .msg-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .msg-avatar img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .msg-content {
+      max-width: 75%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .msg-row.user .msg-content {
+      align-items: flex-end;
+    }
+    .msg-bubble {
+      font-size: 13px;
+      line-height: 1.55;
       padding: 10px 14px;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .msg-row.assistant .msg-bubble {
+      background: #2A2A2A;
+      color: rgba(255,255,255,0.9);
+      border-radius: 4px 16px 16px 16px;
+    }
+    .msg-row.user .msg-bubble {
+      background: #FF4D00;
+      color: white;
+      border-radius: 16px 4px 16px 16px;
+    }
+    .msg-time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+      padding: 0 4px;
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .typing-dots {
+      background: #2A2A2A;
+      border-radius: 4px 16px 16px 16px;
+      padding: 12px 18px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* Chat Input */
+    .chat-input-area {
+      background: #1A1A1A;
+      padding: 12px 14px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chat-input-wrapper {
+      flex: 1;
+      background: #2A2A2A;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      padding: 0 4px 0 16px;
+      transition: box-shadow 0.2s;
+    }
+    .chat-input-wrapper:focus-within {
+      box-shadow: 0 0 0 2px rgba(255, 77, 0, 0.3);
     }
     .chat-input {
       flex: 1;
-      background: rgba(255,255,255,0.1);
+      background: transparent;
       border: none;
-      border-radius: 8px;
-      padding: 8px 10px;
+      padding: 10px 0;
       color: white;
       font-size: 13px;
       font-family: 'Pretendard Variable', -apple-system, sans-serif;
       outline: none;
     }
     .chat-input::placeholder {
-      color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.3);
     }
     .chat-send {
-      background: #4F46E5;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
       border: none;
-      border-radius: 8px;
+      background: #FF4D00;
       color: white;
-      padding: 6px 10px;
-      font-size: 14px;
+      font-size: 15px;
       cursor: pointer;
-      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
     }
     .chat-send:hover {
-      background: #4338CA;
+      background: #E64500;
+      transform: scale(1.05);
     }
     .chat-send:disabled {
-      opacity: 0.4;
+      background: #333;
+      color: rgba(255,255,255,0.2);
       cursor: not-allowed;
+      transform: none;
+    }
+    .chat-send svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
     }
 
     /* ===== DND Prompt ===== */
     .dnd-prompt {
       position: absolute;
-      bottom: 75px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 70px;
+      right: 10px;
       background: rgba(26, 26, 26, 0.92);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-radius: 14px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      padding: 14px 18px;
-      width: 220px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      padding: 16px 20px;
+      width: 240px;
       z-index: 25;
       -webkit-app-region: no-drag;
       opacity: 0;
@@ -363,23 +471,12 @@
       opacity: 1;
       pointer-events: auto;
     }
-    .dnd-prompt::after {
-      content: '';
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 6px solid rgba(26, 26, 26, 0.92);
-    }
     .dnd-prompt-text {
       color: #FF4D00;
       font-size: 13px;
-      font-family: 'Pretendard Variable', -apple-system, sans-serif;
       line-height: 1.5;
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .dnd-buttons {
       display: flex;
@@ -387,31 +484,20 @@
       justify-content: center;
     }
     .dnd-btn {
-      padding: 6px 18px;
-      border-radius: 8px;
+      padding: 7px 20px;
+      border-radius: 10px;
       border: none;
       font-size: 13px;
-      font-family: 'Pretendard Variable', -apple-system, sans-serif;
       font-weight: 500;
       cursor: pointer;
       transition: background 0.15s;
     }
-    .dnd-btn.yes {
-      background: #FF4D00;
-      color: white;
-    }
-    .dnd-btn.yes:hover {
-      background: #E64500;
-    }
-    .dnd-btn.no {
-      background: rgba(255,255,255,0.12);
-      color: white;
-    }
-    .dnd-btn.no:hover {
-      background: rgba(255,255,255,0.2);
-    }
+    .dnd-btn.yes { background: #FF4D00; color: white; }
+    .dnd-btn.yes:hover { background: #E64500; }
+    .dnd-btn.no { background: rgba(255,255,255,0.1); color: white; }
+    .dnd-btn.no:hover { background: rgba(255,255,255,0.18); }
 
-    /* DND active indicator */
+    /* DND badge */
     .dnd-badge {
       display: none;
       position: absolute;
@@ -421,15 +507,35 @@
       height: 12px;
       background: #FF4D00;
       border-radius: 50%;
-      border: 2px solid white;
+      border: 2px solid #1A1A1A;
     }
-    .dnd-badge.active {
-      display: block;
-    }
+    .dnd-badge.active { display: block; }
 
-    /* Hide tooltip when menu/chat is open */
+    /* Unread badge on pet */
+    .unread-badge {
+      display: none;
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      background: #FF4D00;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      border: 2px solid #1A1A1A;
+    }
+    .unread-badge.active { display: flex; }
+
+    /* Hide tooltip when panels are open */
     .menu-panel.visible ~ .pet-wrapper .tooltip,
-    .chat-panel.visible ~ .pet-wrapper .tooltip {
+    .chat-panel.visible ~ .pet-wrapper .tooltip,
+    .speech-bubble.visible ~ .pet-wrapper .tooltip {
       display: none !important;
     }
   </style>
@@ -440,23 +546,63 @@
 
     <!-- Menu Panel -->
     <div class="menu-panel" id="menuPanel">
-      <div class="menu-item" onclick="onMenuChat()">💬 Chat</div>
-      <div class="menu-item" onclick="onMenuAction('briefing')">📋 Briefing</div>
-      <div class="menu-item" onclick="onMenuAction('tasks')">📝 Tasks</div>
-      <div class="menu-item" onclick="onMenuAction('tokens')">💰 Tokens</div>
-      <div class="menu-item" onclick="onMenuAction('open')">🐰 Open Ditto</div>
+      <div class="menu-item" onclick="onMenuChat()">
+        <span class="menu-icon">💬</span> Chat
+      </div>
+      <div class="menu-item" onclick="onMenuAction('briefing')">
+        <span class="menu-icon">📋</span> Briefing
+      </div>
+      <div class="menu-item" onclick="onMenuAction('tasks')">
+        <span class="menu-icon">✅</span> Tasks
+      </div>
+      <div class="menu-item" onclick="onMenuAction('tokens')">
+        <span class="menu-icon">💰</span> Tokens
+      </div>
+      <div class="menu-item" onclick="onMenuAction('open')">
+        <span class="menu-icon">🚀</span> Open Ditto
+      </div>
     </div>
 
-    <!-- Chat Panel -->
+    <!-- Chat Panel (Channel Talk Style) -->
     <div class="chat-panel" id="chatPanel">
+      <!-- Header -->
       <div class="chat-header">
-        <span class="chat-back" onclick="chatBack()">←</span>
-        <span class="chat-title">Ditto Chat</span>
+        <div class="chat-header-avatar">
+          <img src="../public/logo.png" alt="Ditto" />
+        </div>
+        <div class="chat-header-info">
+          <div class="chat-header-name">Ditto</div>
+          <div class="chat-header-status">
+            <span class="status-dot"></span>
+            Active now
+          </div>
+        </div>
+        <button class="chat-close" onclick="closeAll()" title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
       </div>
-      <div class="chat-messages" id="chatMessages"></div>
+
+      <!-- Messages -->
+      <div class="chat-body" id="chatMessages">
+        <div class="chat-welcome">
+          <div class="chat-welcome-avatar">
+            <img src="../public/logo.png" alt="Ditto" />
+          </div>
+          <div class="chat-welcome-text">
+            Ditto AI Assistant<br/>
+            무엇이든 물어보세요
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
       <div class="chat-input-area">
-        <input class="chat-input" id="chatInput" type="text" placeholder="메시지 입력..." />
-        <button class="chat-send" id="chatSend" onclick="sendChat()">↑</button>
+        <div class="chat-input-wrapper">
+          <input class="chat-input" id="chatInput" type="text" placeholder="메시지를 입력하세요..." />
+          <button class="chat-send" id="chatSend" onclick="sendChat()">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -475,9 +621,9 @@
         <img src="../public/logo.png" alt="Ditto" />
         <div class="dnd-badge" id="dndBadge"></div>
       </div>
-      <div class="pet-name">Ditto</div>
     </div>
   </div>
+
   <script>
     let bubbleTimer = null;
     let menuOpen = false;
@@ -486,25 +632,58 @@
 
     const DEFAULT_SIZE = { width: 250, height: 160 };
     const EXPANDED_SIZE = { width: 250, height: 360 };
+    const CHAT_SIZE = { width: 360, height: 560 };
 
-    // ===== Double-click to open app =====
+    // ===== Drag + Click/Double-click handling =====
     let clickTimer = null;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    const DRAG_THRESHOLD = 5;
     const petWrapper = document.getElementById('petWrapper');
 
-    petWrapper.addEventListener('click', (e) => {
+    petWrapper.addEventListener('mousedown', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      if (clickTimer) {
-        // Double click
-        clearTimeout(clickTimer);
-        clickTimer = null;
-        openApp();
-        closeAll();
-      } else {
-        clickTimer = setTimeout(() => {
-          clickTimer = null;
-          toggleMenu();
-        }, 250);
+      isDragging = false;
+      dragStartX = e.screenX;
+      dragStartY = e.screenY;
+      if (window.electronAPI && window.electronAPI.startDrag) {
+        window.electronAPI.startDrag();
       }
+
+      const onMouseMove = (ev) => {
+        const dx = Math.abs(ev.screenX - dragStartX);
+        const dy = Math.abs(ev.screenY - dragStartY);
+        if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+          isDragging = true;
+          if (window.electronAPI && window.electronAPI.dragMove) {
+            window.electronAPI.dragMove(ev.screenX, ev.screenY);
+          }
+        }
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        if (!isDragging) {
+          if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = null;
+            openApp();
+            closeAll();
+          } else {
+            clickTimer = setTimeout(() => {
+              clickTimer = null;
+              toggleMenu();
+            }, 250);
+          }
+        }
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
     });
 
     // ===== Close on outside click / ESC =====
@@ -514,27 +693,23 @@
       if (menuOpen && !menuPanel.contains(e.target) && !petWrapper.contains(e.target)) {
         closeAll();
       }
-      if (chatOpen && !chatPanel.contains(e.target) && !petWrapper.contains(e.target)) {
+      if (chatOpen && !chatPanel.contains(e.target) && !petWrapper.contains(e.target) && !menuPanel.contains(e.target)) {
         closeAll();
       }
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeAll();
-      }
+      if (e.key === 'Escape') closeAll();
     });
 
     // ===== App open =====
     function openApp() {
-      if (window.electronAPI) {
-        window.electronAPI.openMain();
-      }
+      if (window.electronAPI) window.electronAPI.openMain();
     }
 
     // ===== Menu =====
     function toggleMenu() {
-      if (chatOpen) return; // don't toggle if in chat mode
+      if (chatOpen) return;
       if (menuOpen) {
         closeAll();
       } else {
@@ -556,25 +731,30 @@
       menuOpen = false;
       document.getElementById('menuPanel').classList.remove('visible');
       chatOpen = true;
-      document.getElementById('chatPanel').classList.add('visible');
-      resizeWindow(EXPANDED_SIZE.width, EXPANDED_SIZE.height);
+      const panel = document.getElementById('chatPanel');
+      panel.style.display = 'flex';
+      resizeWindow(CHAT_SIZE.width, CHAT_SIZE.height);
+      // Trigger animation after display change
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          panel.classList.add('visible');
+        });
+      });
       setTimeout(() => {
         document.getElementById('chatInput').focus();
-      }, 100);
-    }
-
-    function chatBack() {
-      chatOpen = false;
-      document.getElementById('chatPanel').classList.remove('visible');
-      menuOpen = true;
-      document.getElementById('menuPanel').classList.add('visible');
+      }, 150);
     }
 
     function closeAll() {
       menuOpen = false;
       chatOpen = false;
       document.getElementById('menuPanel').classList.remove('visible');
-      document.getElementById('chatPanel').classList.remove('visible');
+      const chatPanel = document.getElementById('chatPanel');
+      chatPanel.classList.remove('visible');
+      // Wait for animation to finish before hiding
+      setTimeout(() => {
+        if (!chatOpen) chatPanel.style.display = 'none';
+      }, 250);
       resizeWindow(DEFAULT_SIZE.width, DEFAULT_SIZE.height);
     }
 
@@ -583,6 +763,12 @@
       if (window.electronAPI && window.electronAPI.resizePetWindow) {
         window.electronAPI.resizePetWindow(w, h);
       }
+    }
+
+    // ===== Time formatting =====
+    function getTimeStr() {
+      const now = new Date();
+      return now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
     // ===== Chat =====
@@ -595,16 +781,14 @@
       document.getElementById('chatSend').disabled = true;
       input.value = '';
 
-      // Add user message
       addChatMessage('user', message);
 
-      // Add loading indicator
-      const loadingId = addChatMessage('loading', '응답 중...');
+      // Show typing indicator
+      const typingId = showTypingIndicator();
 
-      // Send via IPC
       if (window.electronAPI && window.electronAPI.sendChat) {
         window.electronAPI.sendChat(message).then((response) => {
-          removeChatMessage(loadingId);
+          removeElement(typingId);
           if (response) {
             addChatMessage('assistant', response);
           }
@@ -612,8 +796,8 @@
           document.getElementById('chatSend').disabled = false;
           document.getElementById('chatInput').focus();
         }).catch(() => {
-          removeChatMessage(loadingId);
-          addChatMessage('assistant', '오류가 발생했습니다.');
+          removeElement(typingId);
+          addChatMessage('assistant', '오류가 발생했습니다. 다시 시도해주세요.');
           chatSending = false;
           document.getElementById('chatSend').disabled = false;
         });
@@ -621,19 +805,65 @@
     }
 
     let msgCounter = 0;
+
     function addChatMessage(role, text) {
       const container = document.getElementById('chatMessages');
-      const el = document.createElement('div');
       const id = 'msg-' + (++msgCounter);
-      el.id = id;
-      el.className = 'chat-msg ' + role;
-      el.textContent = text;
-      container.appendChild(el);
+
+      const row = document.createElement('div');
+      row.id = id;
+      row.className = 'msg-row ' + role;
+
+      if (role === 'assistant') {
+        const avatar = document.createElement('div');
+        avatar.className = 'msg-avatar';
+        avatar.innerHTML = '<img src="../public/logo.png" alt="Ditto" />';
+        row.appendChild(avatar);
+      }
+
+      const content = document.createElement('div');
+      content.className = 'msg-content';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.textContent = text;
+      content.appendChild(bubble);
+
+      const time = document.createElement('div');
+      time.className = 'msg-time';
+      time.textContent = getTimeStr();
+      content.appendChild(time);
+
+      row.appendChild(content);
+      container.appendChild(row);
       container.scrollTop = container.scrollHeight;
       return id;
     }
 
-    function removeChatMessage(id) {
+    function showTypingIndicator() {
+      const container = document.getElementById('chatMessages');
+      const id = 'typing-' + (++msgCounter);
+
+      const row = document.createElement('div');
+      row.id = id;
+      row.className = 'typing-indicator';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.innerHTML = '<img src="../public/logo.png" alt="Ditto" />';
+      row.appendChild(avatar);
+
+      const dots = document.createElement('div');
+      dots.className = 'typing-dots';
+      dots.innerHTML = '<span></span><span></span><span></span>';
+      row.appendChild(dots);
+
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+      return id;
+    }
+
+    function removeElement(id) {
       const el = document.getElementById(id);
       if (el) el.remove();
     }
@@ -651,34 +881,26 @@
       const bubble = document.getElementById('speechBubble');
       bubble.textContent = message;
       bubble.classList.add('visible');
-
       if (bubbleTimer) clearTimeout(bubbleTimer);
-      bubbleTimer = setTimeout(() => {
-        dismissBubble();
-      }, 8000);
+      bubbleTimer = setTimeout(() => dismissBubble(), 8000);
     }
 
     function dismissBubble() {
       const bubble = document.getElementById('speechBubble');
       bubble.classList.remove('visible');
-      if (bubbleTimer) {
-        clearTimeout(bubbleTimer);
-        bubbleTimer = null;
-      }
+      if (bubbleTimer) { clearTimeout(bubbleTimer); bubbleTimer = null; }
     }
 
     // Listen for messages from main process
     if (window.electronAPI && window.electronAPI.onPetMessage) {
-      window.electronAPI.onPetMessage((message) => {
-        showBubble(message);
-      });
+      window.electronAPI.onPetMessage((message) => showBubble(message));
     }
 
     // ===== DND Prompt =====
     function showDndPrompt(meetingTitle) {
       const prompt = document.getElementById('dndPrompt');
       const text = document.getElementById('dndPromptText');
-      text.textContent = `📅 "${meetingTitle}" 미팅이 시작돼요! 방해금지 모드로 바꿀까요?`;
+      text.textContent = `"${meetingTitle}" 미팅이 시작돼요!\n방해금지 모드로 바꿀까요?`;
       prompt.classList.add('visible');
       dismissBubble();
       resizeWindow(EXPANDED_SIZE.width, EXPANDED_SIZE.height);
@@ -692,22 +914,17 @@
       }
       if (accepted) {
         document.getElementById('dndBadge').classList.add('active');
-        showBubble('🔕 방해금지 모드 ON');
+        showBubble('방해금지 모드 ON');
       }
     }
 
-    // Listen for DND prompt from main
     if (window.electronAPI && window.electronAPI.onDndPrompt) {
-      window.electronAPI.onDndPrompt((meetingTitle) => {
-        showDndPrompt(meetingTitle);
-      });
+      window.electronAPI.onDndPrompt((meetingTitle) => showDndPrompt(meetingTitle));
     }
-
-    // Listen for DND end
     if (window.electronAPI && window.electronAPI.onDndEnd) {
       window.electronAPI.onDndEnd(() => {
         document.getElementById('dndBadge').classList.remove('active');
-        showBubble('🔔 미팅 끝! 방해금지 해제했어요');
+        showBubble('미팅 끝! 방해금지 해제했어요');
       });
     }
   </script>

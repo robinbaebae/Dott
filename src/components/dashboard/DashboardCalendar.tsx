@@ -23,7 +23,7 @@ import type { CalendarEvent, Task } from '@/types';
 
 type CalendarView = 'month' | 'week' | 'day';
 
-export default function DashboardCalendar() {
+export default function DashboardCalendar({ compact = false }: { compact?: boolean }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
   const [connected, setConnected] = useState(false);
@@ -157,10 +157,10 @@ export default function DashboardCalendar() {
                 Calendar
               </CardTitle>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 dark:bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
                   Calendar
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 dark:bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-300">
                   My tasks
                 </span>
               </div>
@@ -213,9 +213,9 @@ export default function DashboardCalendar() {
             </Button>
           </div>
         ) : view === 'month' ? (
-          <MonthView days={days} currentDate={currentDate} eventsForDay={eventsForDay} tasksForDay={tasksForDay} />
+          <MonthView days={days} currentDate={currentDate} eventsForDay={eventsForDay} tasksForDay={tasksForDay} compact={compact} />
         ) : (
-          <TimelineView days={days} eventsForDay={eventsForDay} tasksForDay={tasksForDay} />
+          <TimelineView days={days} eventsForDay={eventsForDay} tasksForDay={tasksForDay} compact={compact} />
         )}
       </CardContent>
     </Card>
@@ -228,11 +228,13 @@ function MonthView({
   currentDate,
   eventsForDay,
   tasksForDay,
+  compact = false,
 }: {
   days: Date[];
   currentDate: Date;
   eventsForDay: (d: Date) => CalendarEvent[];
   tasksForDay: (d: Date) => Task[];
+  compact?: boolean;
 }) {
   return (
     <div>
@@ -255,7 +257,7 @@ function MonthView({
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-[60px] border-t border-border p-1 ${
+              className={`${compact ? 'min-h-[44px]' : 'min-h-[60px]'} border-t border-border p-1 ${
                 !inMonth ? 'opacity-30' : ''
               }`}
             >
@@ -269,14 +271,14 @@ function MonthView({
                 {format(day, 'd')}
               </p>
               <div className="space-y-0.5">
-                {dayEvents.slice(0, 2).map((e) => (
-                  <div key={e.id} className="text-[9px] truncate rounded px-1 bg-blue-500/10 text-blue-700">
-                    {!e.allDay && <span className="text-blue-600/70">{format(parseISO(e.start), 'HH:mm')} </span>}
+                {dayEvents.slice(0, compact ? 1 : 2).map((e) => (
+                  <div key={e.id} className="text-[9px] truncate rounded px-1 bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                    {!e.allDay && <span className="text-blue-600/70 dark:text-blue-400/80">{format(parseISO(e.start), 'HH:mm')} </span>}
                     {e.title}
                   </div>
                 ))}
-                {dayTasks.slice(0, 2).map((t) => (
-                  <div key={t.id} className="text-[9px] truncate rounded px-1 bg-green-500/10 text-green-700">
+                {dayTasks.slice(0, compact ? 1 : 2).map((t) => (
+                  <div key={t.id} className="text-[9px] truncate rounded px-1 bg-green-500/10 dark:bg-green-500/20 text-green-700 dark:text-green-300">
                     {t.title}
                   </div>
                 ))}
@@ -299,10 +301,12 @@ function TimelineView({
   days,
   eventsForDay,
   tasksForDay,
+  compact = false,
 }: {
   days: Date[];
   eventsForDay: (d: Date) => CalendarEvent[];
   tasksForDay: (d: Date) => Task[];
+  compact?: boolean;
 }) {
   return (
     <div className="space-y-0">
@@ -315,15 +319,15 @@ function TimelineView({
         return (
           <div
             key={day.toISOString()}
-            className={`flex gap-4 py-2.5 border-b border-border last:border-b-0 ${
+            className={`flex gap-3 ${compact ? 'py-1.5' : 'py-2.5'} border-b border-border last:border-b-0 ${
               today ? 'bg-primary/5 -mx-6 px-6 rounded-lg' : ''
             }`}
           >
-            <div className="w-14 shrink-0 text-center pt-0.5">
+            <div className={`${compact ? 'w-10' : 'w-14'} shrink-0 text-center pt-0.5`}>
               <p className="text-[10px] text-muted-foreground uppercase">
                 {format(day, 'EEE')}
               </p>
-              <p className={`text-lg font-semibold leading-tight ${today ? 'text-primary' : ''}`}>
+              <p className={`${compact ? 'text-base' : 'text-lg'} font-semibold leading-tight ${today ? 'text-primary' : ''}`}>
                 {format(day, 'd')}
               </p>
             </div>
@@ -339,22 +343,17 @@ function TimelineView({
                 {dayEvents.map((event) => (
                   <div key={event.id} className="relative flex items-start gap-2">
                     <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-blue-500 -translate-x-[3px]" />
-                    <div className="flex-1 rounded-md bg-blue-500/10 px-2.5 py-1.5">
+                    <div className="flex-1 rounded-md bg-blue-500/10 dark:bg-blue-500/20 px-2.5 py-1.5">
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-medium text-blue-700 truncate">
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300 truncate">
                           {event.title}
                         </p>
-                        <span className="text-[10px] text-blue-600/70 shrink-0">
+                        <span className="text-[10px] text-blue-600/70 dark:text-blue-400/80 shrink-0">
                           {event.allDay
                             ? 'All day'
                             : `${format(parseISO(event.start), 'HH:mm')}–${format(parseISO(event.end), 'HH:mm')}`}
                         </span>
                       </div>
-                      {event.attendees && event.attendees.length > 0 && (
-                        <p className="text-[10px] text-blue-600/60 mt-0.5 truncate">
-                          {event.attendees.map((a) => a.name || a.email).join(', ')}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -366,12 +365,12 @@ function TimelineView({
                   return (
                     <div key={task.id} className="relative flex items-start gap-2">
                       <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 -translate-x-[3px]" />
-                      <div className="flex-1 rounded-md bg-green-500/10 px-2.5 py-1.5">
+                      <div className="flex-1 rounded-md bg-green-500/10 dark:bg-green-500/20 px-2.5 py-1.5">
                         <div className="flex items-center gap-2">
-                          <p className="text-xs font-medium text-green-700 truncate">
+                          <p className="text-xs font-medium text-green-700 dark:text-green-300 truncate">
                             {task.title}
                           </p>
-                          <span className="text-[10px] text-green-600/70 shrink-0">
+                          <span className="text-[10px] text-green-600/70 dark:text-green-400/80 shrink-0">
                             {timeStr ?? (task.status === 'todo'
                               ? 'To do'
                               : task.status === 'in_progress'

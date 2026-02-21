@@ -85,6 +85,7 @@ function createMainWindow() {
     width: 1200,
     height: 800,
     title: 'Ditto - 마케팅 AI 어시스턴트',
+    icon: path.join(__dirname, '..', 'build', 'icon.icns'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -419,10 +420,12 @@ function formatWorkTime(minutes) {
 // System tray (extended)
 // =========================================================
 function createTray() {
-  const icon = nativeImage.createEmpty();
-  tray = new Tray(icon);
-  tray.setTitle('🐰');
-  tray.setToolTip('Ditto - 마케팅 AI 어시스턴트');
+  const trayIconPath = path.resolve(__dirname, '..', 'public', 'logo-tray.png');
+  console.log('Tray icon path:', trayIconPath, 'exists:', require('fs').existsSync(trayIconPath));
+  const trayIcon = nativeImage.createFromPath(trayIconPath).resize({ width: 16, height: 16 });
+  console.log('Tray icon empty?', trayIcon.isEmpty());
+  tray = new Tray(trayIcon.isEmpty() ? nativeImage.createEmpty() : trayIcon);
+  tray.setToolTip('Ditto');
 
   rebuildTrayMenu();
 
@@ -568,59 +571,54 @@ ipcMain.on('show-notification', (_, { title, body }) => {
 });
 
 // =========================================================
-// Pet Chat Handler (SSE stream from /api/chat)
+// Pet Chat Handler (Claude Code CLI via spawn)
 // =========================================================
-let petChatHistory = [];
+let petSessionId = null;
 
 ipcMain.handle('pet-chat', async (_event, message) => {
-  try {
-    petChatHistory.push({ role: 'user', content: message });
+  console.log('[pet-chat] Received message:', message);
+  return new Promise((resolve) => {
+    const args = [
+      '--print',
+      '--allowedTools', 'WebSearch,WebFetch',
+      '--', message,
+    ];
 
-    const response = await fetch(`${getAppUrl()}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        history: petChatHistory.slice(-10), // keep last 10 messages for context
-      }),
+    const claudePath = '/Users/sooyoungbae/.npm-global/bin/claude';
+    const env = { ...process.env };
+    delete env.CLAUDECODE;
+    delete env.CLAUDE_CODE_ENTRYPOINT;
+
+    console.log('[pet-chat] Spawning claude:', claudePath, args.join(' '));
+
+    const child = spawn(claudePath, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env,
     });
 
-    if (!response.ok) {
-      return '서버 오류가 발생했습니다.';
-    }
+    let stdout = '';
+    let stderr = '';
 
-    // Parse SSE stream
-    const text = await response.text();
-    const lines = text.split('\n');
-    let fullResponse = '';
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+      console.log('[pet-chat] stdout chunk:', data.toString().slice(0, 100));
+    });
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.log('[pet-chat] stderr chunk:', data.toString().slice(0, 100));
+    });
 
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(line.slice(6));
-          if (data.type === 'text' && data.content) {
-            fullResponse += data.content;
-          }
-        } catch {
-          // skip malformed JSON
-        }
-      }
-    }
+    child.on('error', (err) => {
+      console.error('[pet-chat] spawn error:', err.message);
+      resolve('Claude Code 연결에 실패했습니다.');
+    });
 
-    if (fullResponse) {
-      petChatHistory.push({ role: 'assistant', content: fullResponse });
-      // Keep history from growing too large
-      if (petChatHistory.length > 20) {
-        petChatHistory = petChatHistory.slice(-20);
-      }
-      sendPetMessage(fullResponse.slice(0, 100) + (fullResponse.length > 100 ? '...' : ''));
-    }
-
-    return fullResponse || '응답을 받지 못했습니다.';
-  } catch (err) {
-    console.error('Pet chat error:', err);
-    return '채팅 오류가 발생했습니다.';
-  }
+    child.on('close', (code) => {
+      console.log('[pet-chat] process closed, code:', code, 'stdout length:', stdout.length);
+      const response = stdout.trim();
+      resolve(response || '응답을 받지 못했습니다.');
+    });
+  });
 });
 
 // =========================================================
@@ -766,9 +764,41 @@ ipcMain.on('pet-resize', (_event, { width, height }) => {
 });
 
 // =========================================================
+// Pet Window Drag Handler
+// =========================================================
+let dragOffset = null;
+
+ipcMain.on('pet-start-drag', () => {
+  if (petWindow && !petWindow.isDestroyed()) {
+    const [winX, winY] = petWindow.getPosition();
+    const cursorPoint = screen.getCursorScreenPoint();
+    dragOffset = { x: cursorPoint.x - winX, y: cursorPoint.y - winY };
+  }
+});
+
+ipcMain.on('pet-drag-move', (_event, { x, y }) => {
+  if (petWindow && !petWindow.isDestroyed() && dragOffset) {
+    petWindow.setPosition(x - dragOffset.x, y - dragOffset.y);
+  }
+});
+
+// =========================================================
 // App lifecycle
 // =========================================================
 app.whenReady().then(() => {
+  // Auto-launch on system startup
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    openAsHidden: true,
+  });
+
+  // Set app icon (Dock)
+  const dockIconPath = path.join(__dirname, '..', 'public', 'dock-logo.png');
+  const dockIcon = nativeImage.createFromPath(dockIconPath);
+  if (process.platform === 'darwin' && app.dock && !dockIcon.isEmpty()) {
+    app.dock.setIcon(dockIcon);
+  }
+
   startNextServer();
   createTray();
   createPetWindow();
