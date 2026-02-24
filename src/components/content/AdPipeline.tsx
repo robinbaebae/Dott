@@ -204,7 +204,7 @@ export default function AdPipeline() {
               <button
                 key={p.id}
                 onClick={() => setActiveProject(p)}
-                className="w-full text-left p-3 rounded-lg border hover:border-[#5B4D6E] hover:bg-[#5B4D6E]/5 transition-all flex items-center justify-between"
+                className="w-full text-left p-3 rounded-lg border hover:border-[#6B5B7B] hover:bg-[#6B5B7B]/5 transition-all flex items-center justify-between"
               >
                 <div>
                   <p className="text-sm font-medium">{p.name}</p>
@@ -237,9 +237,9 @@ export default function AdPipeline() {
                 <div key={s.key} className="flex-1">
                   <div className={`h-1.5 rounded-full transition-colors ${
                     i < currentStageIndex
-                      ? 'bg-[#5B4D6E]'
+                      ? 'bg-[#6B5B7B]'
                       : i === currentStageIndex
-                        ? 'bg-[#5B4D6E]/60'
+                        ? 'bg-[#6B5B7B]/60'
                         : 'bg-muted'
                   }`} />
                   <p className={`text-[10px] mt-1 ${

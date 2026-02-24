@@ -189,7 +189,7 @@ function fmtWon(n: number): string {
 }
 
 const CHART_METRICS: { key: ChartMetric; label: string; color: string }[] = [
-  { key: 'spend', label: 'Spend', color: '#5B4D6E' },
+  { key: 'spend', label: 'Spend', color: '#6B5B7B' },
   { key: 'conversions', label: 'Conversions', color: '#10B981' },
   { key: 'roas', label: 'ROAS', color: '#6366F1' },
   { key: 'clicks', label: 'Clicks', color: '#F59E0B' },
