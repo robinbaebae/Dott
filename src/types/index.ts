@@ -297,6 +297,28 @@ export interface DailyReport {
   created_at: string;
 }
 
+// Brand Guide
+export interface BrandGuide {
+  id: string;
+  brand_name: string;
+  brand_description: string;
+  target_audience: string;
+  tone: 'formal' | 'casual' | 'friendly' | 'playful' | 'professional';
+  keywords: string[];
+  avoid_keywords: string[];
+  website_url: string;
+  additional_notes: string;
+  updated_at: string;
+}
+
+export const TONE_OPTIONS: { value: BrandGuide['tone']; label: string }[] = [
+  { value: 'professional', label: '프로페셔널' },
+  { value: 'formal', label: '포멀' },
+  { value: 'friendly', label: '친근한' },
+  { value: 'casual', label: '캐주얼' },
+  { value: 'playful', label: '발랄한' },
+];
+
 // Content Project (AI workflow)
 export type ContentProjectStatus =
   | 'idea_proposed'

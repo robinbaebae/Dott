@@ -5,6 +5,7 @@ import { getWebSearchContext } from '@/lib/web-search';
 import { getInstagramContextForChat } from '@/lib/instagram';
 import { getMetaAdsContextForChat } from '@/lib/meta-ads';
 import { getRecentAttendees } from '@/lib/google';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 import { withTimeout } from '@/lib/api-utils';
 
 interface ClassifyResult {
@@ -112,6 +113,7 @@ export async function runAgentPipeline(
 
   try {
     const contextPromises: Promise<string>[] = [
+      getBrandGuideContext(),
       getInstagramContextForChat(),
       getMetaAdsContextForChat(),
     ];

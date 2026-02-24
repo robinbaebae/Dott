@@ -2,8 +2,9 @@
 
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings, User, Palette, Bell } from 'lucide-react';
+import { User, Palette, Bell, BookOpen } from 'lucide-react';
 import ThemeToggle from '@/components/shared/ThemeToggle';
+import BrandGuideForm from '@/components/settings/BrandGuideForm';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -11,6 +12,22 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 pt-24 pb-12 space-y-6 animate-in fade-in duration-500">
       <h1 className="text-2xl tracking-tight">Settings</h1>
+
+      {/* Brand Guide */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <BookOpen className="size-4 text-accent" />
+            <CardTitle className="text-base">Brand Guide</CardTitle>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            AI가 콘텐츠 작성 시 참고하는 브랜드 정보
+          </p>
+        </CardHeader>
+        <CardContent>
+          <BrandGuideForm />
+        </CardContent>
+      </Card>
 
       {/* Account */}
       <Card>
