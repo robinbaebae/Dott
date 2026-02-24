@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,27 +12,40 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { GripVertical } from 'lucide-react';
+import { Plus, Trash2, Check, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
 import { Task } from '@/types';
 
-interface Quadrant {
-  key: string;
-  label: string;
-  sublabel: string;
-  urgent: boolean;
-  important: boolean;
-  color: string;
-  bgColor: string;
-  dot: string;
-  dropHighlight: string;
+function getPriority(task: Task): '높음' | '보통' | '낮음' {
+  if (task.urgent && task.important) return '높음';
+  if (task.urgent || task.important) return '보통';
+  return '낮음';
 }
 
-const QUADRANTS: Quadrant[] = [
-  { key: 'do-first', label: 'Do First', sublabel: 'Urgent & Important', urgent: true, important: true, color: 'text-red-700', bgColor: 'bg-red-500/5 border-red-500/20', dot: 'bg-red-500', dropHighlight: 'ring-2 ring-red-500/50 bg-red-500/10' },
-  { key: 'schedule', label: 'Schedule', sublabel: 'Important & Not Urgent', urgent: false, important: true, color: 'text-yellow-700', bgColor: 'bg-yellow-500/5 border-yellow-500/20', dot: 'bg-yellow-500', dropHighlight: 'ring-2 ring-yellow-500/50 bg-yellow-500/10' },
-  { key: 'delegate', label: 'Delegate', sublabel: 'Urgent & Not Important', urgent: true, important: false, color: 'text-orange-700', bgColor: 'bg-orange-500/5 border-orange-500/20', dot: 'bg-orange-500', dropHighlight: 'ring-2 ring-orange-500/50 bg-orange-500/10' },
-  { key: 'eliminate', label: 'Eliminate', sublabel: 'Not Urgent & Not Important', urgent: false, important: false, color: 'text-gray-600', bgColor: 'bg-gray-500/5 border-gray-500/20', dot: 'bg-gray-400', dropHighlight: 'ring-2 ring-gray-400/50 bg-gray-500/10' },
-];
+const PRIORITY_STYLE: Record<string, string> = {
+  '높음': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  '보통': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  '낮음': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  todo: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  'in_progress': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  done: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  todo: '할 일',
+  'in_progress': '진행 중',
+  done: '완료',
+};
+
+const SECTION_COLORS: Record<string, string> = {
+  todo: 'border-l-gray-400',
+  in_progress: 'border-l-blue-500',
+  done: 'border-l-green-500',
+};
+
+const SECTION_ORDER: Task['status'][] = ['todo', 'in_progress', 'done'];
 
 export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -43,21 +56,35 @@ export default function TaskBoard() {
   const [newDueTime, setNewDueTime] = useState('');
   const [newUrgent, setNewUrgent] = useState(false);
   const [newImportant, setNewImportant] = useState(false);
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
-  const dragCounters = useRef<Record<string, number>>({});
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [inlineAddSection, setInlineAddSection] = useState<string | null>(null);
+  const [inlineTitle, setInlineTitle] = useState('');
 
   const loadTasks = useCallback(async () => {
-    const res = await fetch('/api/tasks');
-    const data = await res.json();
-    setTasks(data);
+    try {
+      const res = await fetch('/api/tasks');
+      const data = await res.json();
+      setTasks(data);
+    } catch {
+      toast.error('태스크를 불러오지 못했습니다');
+    }
   }, []);
 
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
 
-  const createTask = async () => {
+  const groupedTasks = useMemo(() => {
+    const groups: Record<string, Task[]> = { todo: [], in_progress: [], done: [] };
+    for (const task of tasks) {
+      const key = task.status || 'todo';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(task);
+    }
+    return groups;
+  }, [tasks]);
+
+  const createTask = async (status?: Task['status']) => {
     if (!newTitle.trim()) return;
 
     let dueDate: string | null = null;
@@ -65,120 +92,123 @@ export default function TaskBoard() {
       dueDate = newDueTime ? `${newDueDate}T${newDueTime}:00` : newDueDate;
     }
 
-    await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: newTitle,
-        description: newDescription || null,
-        due_date: dueDate,
-        urgent: newUrgent,
-        important: newImportant,
-      }),
-    });
-    setNewTitle('');
-    setNewDescription('');
-    setNewDueDate('');
-    setNewDueTime('');
-    setNewUrgent(false);
-    setNewImportant(false);
-    setDialogOpen(false);
-    loadTasks();
+    try {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newTitle,
+          description: newDescription || null,
+          due_date: dueDate,
+          urgent: newUrgent,
+          important: newImportant,
+          status: status || 'todo',
+        }),
+      });
+      toast.success('태스크가 추가되었습니다');
+      setNewTitle('');
+      setNewDescription('');
+      setNewDueDate('');
+      setNewDueTime('');
+      setNewUrgent(false);
+      setNewImportant(false);
+      setDialogOpen(false);
+      loadTasks();
+    } catch {
+      toast.error('태스크 생성에 실패했습니다');
+    }
+  };
+
+  const createInlineTask = async (status: string) => {
+    if (!inlineTitle.trim()) {
+      setInlineAddSection(null);
+      return;
+    }
+
+    try {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: inlineTitle,
+          status,
+        }),
+      });
+      toast.success('태스크가 추가되었습니다');
+      setInlineTitle('');
+      setInlineAddSection(null);
+      loadTasks();
+    } catch {
+      toast.error('태스크 생성에 실패했습니다');
+    }
   };
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
-    await fetch('/api/tasks', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: taskId, ...updates }),
-    });
-    loadTasks();
+    try {
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, ...updates }),
+      });
+      loadTasks();
+    } catch {
+      toast.error('태스크 업데이트에 실패했습니다');
+    }
   };
 
   const deleteTask = async (taskId: string) => {
-    await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
-    loadTasks();
-  };
-
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId);
-    e.dataTransfer.effectAllowed = 'move';
-    setDraggedTaskId(taskId);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedTaskId(null);
-    setDragOverKey(null);
-    dragCounters.current = {};
-  };
-
-  const handleDragEnter = (e: React.DragEvent, quadrantKey: string) => {
-    e.preventDefault();
-    dragCounters.current[quadrantKey] = (dragCounters.current[quadrantKey] || 0) + 1;
-    setDragOverKey(quadrantKey);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragLeave = (quadrantKey: string) => {
-    dragCounters.current[quadrantKey] = (dragCounters.current[quadrantKey] || 0) - 1;
-    if (dragCounters.current[quadrantKey] <= 0) {
-      dragCounters.current[quadrantKey] = 0;
-      if (dragOverKey === quadrantKey) {
-        setDragOverKey(null);
-      }
+    try {
+      await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
+      toast.success('태스크가 삭제되었습니다');
+      loadTasks();
+    } catch {
+      toast.error('태스크 삭제에 실패했습니다');
     }
   };
 
-  const handleDrop = (e: React.DragEvent, quadrant: Quadrant) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
-    if (!taskId) return;
-
-    const task = tasks.find((t) => t.id === taskId);
-    if (task) {
-      const alreadyInQuadrant = (task.urgent ?? false) === quadrant.urgent && (task.important ?? false) === quadrant.important;
-      if (!alreadyInQuadrant) {
-        updateTask(taskId, { urgent: quadrant.urgent, important: quadrant.important });
-      }
-    }
-    setDraggedTaskId(null);
-    setDragOverKey(null);
-    dragCounters.current = {};
+  const cycleStatus = (task: Task) => {
+    const current = SECTION_ORDER.indexOf(task.status);
+    const next = SECTION_ORDER[(current + 1) % SECTION_ORDER.length];
+    updateTask(task.id, { status: next });
   };
 
-  const tasksForQuadrant = (q: Quadrant) =>
-    tasks.filter((t) => (t.urgent ?? false) === q.urgent && (t.important ?? false) === q.important);
+  const toggleSection = (section: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Task Board</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold">태스크 보드</h2>
+          <span className="text-xs text-muted-foreground">{tasks.length}개</span>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">+ New task</Button>
+            <Button size="sm" className="gap-1.5">
+              <Plus className="size-3.5" />
+              새 태스크
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add new task</DialogTitle>
+              <DialogTitle>새 태스크 추가</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 mt-2">
               <Input
-                placeholder="Task title"
+                placeholder="태스크 제목"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && createTask()}
               />
               <Textarea
-                placeholder="Description (optional)"
+                placeholder="설명 (선택사항)"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
               />
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">날짜</label>
                   <Input
                     type="date"
                     value={newDueDate}
@@ -186,7 +216,7 @@ export default function TaskBoard() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Time</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">시간</label>
                   <Input
                     type="time"
                     value={newDueTime}
@@ -203,7 +233,7 @@ export default function TaskBoard() {
                   >
                     <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${newUrgent ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
-                  <span className="text-sm">Urgent</span>
+                  <span className="text-sm">긴급</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <button
@@ -213,113 +243,228 @@ export default function TaskBoard() {
                   >
                     <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${newImportant ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
-                  <span className="text-sm">Important</span>
+                  <span className="text-sm">중요</span>
                 </label>
               </div>
-              <Button onClick={createTask} className="w-full">
-                Add
+              <Button onClick={() => createTask()} className="w-full">
+                추가
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Eisenhower 2x2 Matrix */}
-      <div className="grid grid-cols-2 gap-3">
-        {QUADRANTS.map((q) => {
-          const qTasks = tasksForQuadrant(q);
-          const isDragOver = dragOverKey === q.key && draggedTaskId !== null;
-          return (
-            <div
-              key={q.key}
-              onDragEnter={(e) => handleDragEnter(e, q.key)}
-              onDragOver={handleDragOver}
-              onDragLeave={() => handleDragLeave(q.key)}
-              onDrop={(e) => handleDrop(e, q)}
-              className={`rounded-xl border p-2.5 min-h-[160px] transition-all duration-200 ${
-                isDragOver ? q.dropHighlight : q.bgColor
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${q.dot}`} />
-                <span className={`text-sm font-medium ${q.color}`}>{q.label}</span>
-                <span className="text-[10px] text-muted-foreground">{q.sublabel}</span>
-                <span className="text-xs text-muted-foreground ml-auto">{qTasks.length}</span>
-              </div>
+      {/* Column Headers */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              <th className="w-8 px-2 py-2.5" />
+              <th className="w-8 px-1 py-2.5" />
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-[11px] tracking-wider">태스크명</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-[11px] tracking-wider w-28">마감일</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-[11px] tracking-wider w-20">우선순위</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-[11px] tracking-wider w-24">상태</th>
+              <th className="w-10 px-2 py-2.5" />
+            </tr>
+          </thead>
+          <tbody>
+            {SECTION_ORDER.map((section) => {
+              const sectionTasks = groupedTasks[section] || [];
+              const isCollapsed = collapsedSections[section];
 
-              <div className="space-y-2">
-                {qTasks.map((task) => (
-                  <Card
-                    key={task.id}
-                    draggable="true"
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onDragEnd={handleDragEnd}
-                    className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none ${
-                      draggedTaskId === task.id ? 'opacity-30 scale-95' : ''
-                    }`}
-                  >
-                    <CardHeader className="p-3 pb-1">
-                      <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-                        <GripVertical className="size-3.5 text-muted-foreground/40 shrink-0" />
-                        <span className="truncate">{task.title}</span>
-                        {task.status === 'done' && (
-                          <span className="text-[10px] text-green-600 shrink-0 ml-auto">Done</span>
-                        )}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0 pl-8">
-                      {task.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                          {task.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between">
-                        {task.due_date && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatDueDate(task.due_date)}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-2 ml-auto">
-                          {task.status !== 'done' && (
-                            <button
-                              onClick={() => updateTask(task.id, { status: 'done' })}
-                              className="text-xs text-muted-foreground hover:text-green-600 transition-colors"
-                            >
-                              Done
-                            </button>
-                          )}
-                          <button
-                            onClick={() => deleteTask(task.id)}
-                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {/* Drop zone indicator when empty and dragging */}
-                {qTasks.length === 0 && draggedTaskId && (
-                  <div className="border-2 border-dashed border-current/20 rounded-lg p-4 text-center text-xs text-muted-foreground">
-                    Drop here
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+              return (
+                <SectionGroup
+                  key={section}
+                  section={section}
+                  tasks={sectionTasks}
+                  isCollapsed={isCollapsed}
+                  onToggle={() => toggleSection(section)}
+                  onCycleStatus={cycleStatus}
+                  onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
+                  inlineAddActive={inlineAddSection === section}
+                  inlineTitle={inlineTitle}
+                  onInlineAddStart={() => { setInlineAddSection(section); setInlineTitle(''); }}
+                  onInlineTitleChange={setInlineTitle}
+                  onInlineAddSubmit={() => createInlineTask(section)}
+                  onInlineAddCancel={() => setInlineAddSection(null)}
+                />
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
+  );
+}
+
+function SectionGroup({
+  section,
+  tasks,
+  isCollapsed,
+  onToggle,
+  onCycleStatus,
+  onUpdateTask,
+  onDeleteTask,
+  inlineAddActive,
+  inlineTitle,
+  onInlineAddStart,
+  onInlineTitleChange,
+  onInlineAddSubmit,
+  onInlineAddCancel,
+}: {
+  section: string;
+  tasks: Task[];
+  isCollapsed: boolean;
+  onToggle: () => void;
+  onCycleStatus: (task: Task) => void;
+  onUpdateTask: (id: string, updates: Partial<Task>) => void;
+  onDeleteTask: (id: string) => void;
+  inlineAddActive: boolean;
+  inlineTitle: string;
+  onInlineAddStart: () => void;
+  onInlineTitleChange: (v: string) => void;
+  onInlineAddSubmit: () => void;
+  onInlineAddCancel: () => void;
+}) {
+  return (
+    <>
+      {/* Section Header Row */}
+      <tr
+        className={`border-b border-border bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors border-l-3 ${SECTION_COLORS[section]}`}
+        onClick={onToggle}
+      >
+        <td className="px-2 py-2" colSpan={7}>
+          <div className="flex items-center gap-2">
+            {isCollapsed
+              ? <ChevronRight className="size-3.5 text-muted-foreground" />
+              : <ChevronDown className="size-3.5 text-muted-foreground" />
+            }
+            <span className="text-xs font-semibold">{STATUS_LABEL[section] || section}</span>
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              {tasks.length}
+            </span>
+          </div>
+        </td>
+      </tr>
+
+      {/* Task Rows */}
+      {!isCollapsed && tasks.map((task) => {
+        const priority = getPriority(task);
+        const isDone = task.status === 'done';
+        return (
+          <tr
+            key={task.id}
+            className={`border-b border-border/50 hover:bg-muted/20 transition-colors group border-l-3 ${SECTION_COLORS[section]}`}
+          >
+            {/* Drag handle */}
+            <td className="px-2 py-2.5">
+              <GripVertical className="size-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+            </td>
+
+            {/* Checkbox */}
+            <td className="px-1 py-2.5">
+              <button
+                onClick={() => onUpdateTask(task.id, { status: isDone ? 'todo' : 'done' })}
+                className={`size-[18px] rounded-full border-2 flex items-center justify-center transition-colors ${
+                  isDone
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'border-gray-300 hover:border-accent dark:border-gray-600'
+                }`}
+              >
+                {isDone && <Check className="size-2.5" />}
+              </button>
+            </td>
+
+            {/* Task name + description */}
+            <td className="px-3 py-2.5">
+              <p className={`text-sm ${isDone ? 'line-through text-muted-foreground' : ''}`}>
+                {task.title}
+              </p>
+              {task.description && (
+                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                  {task.description}
+                </p>
+              )}
+            </td>
+
+            {/* Due date */}
+            <td className="px-3 py-2.5 text-xs text-muted-foreground">
+              {task.due_date ? formatDueDate(task.due_date) : ''}
+            </td>
+
+            {/* Priority */}
+            <td className="px-3 py-2.5">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full ${PRIORITY_STYLE[priority]}`}>
+                {priority}
+              </span>
+            </td>
+
+            {/* Status */}
+            <td className="px-3 py-2.5">
+              <button
+                onClick={() => onCycleStatus(task)}
+                className={`text-[10px] px-2 py-0.5 rounded-full cursor-pointer transition-colors ${STATUS_STYLE[task.status] || STATUS_STYLE.todo}`}
+              >
+                {STATUS_LABEL[task.status] || '할 일'}
+              </button>
+            </td>
+
+            {/* Delete */}
+            <td className="px-2 py-2.5">
+              <button
+                onClick={() => onDeleteTask(task.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-muted transition-all"
+              >
+                <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            </td>
+          </tr>
+        );
+      })}
+
+      {/* Inline Add Row */}
+      {!isCollapsed && (
+        <tr className={`border-b border-border/30 border-l-3 ${SECTION_COLORS[section]}`}>
+          <td colSpan={7} className="px-3 py-1.5">
+            {inlineAddActive ? (
+              <div className="flex items-center gap-2 pl-7">
+                <input
+                  autoFocus
+                  type="text"
+                  value={inlineTitle}
+                  onChange={(e) => onInlineTitleChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onInlineAddSubmit();
+                    if (e.key === 'Escape') onInlineAddCancel();
+                  }}
+                  onBlur={() => { if (!inlineTitle.trim()) onInlineAddCancel(); }}
+                  placeholder="태스크명 입력 후 Enter..."
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={onInlineAddStart}
+                className="flex items-center gap-1.5 pl-7 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors w-full py-0.5"
+              >
+                <Plus className="size-3" />
+                태스크 추가...
+              </button>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
 function formatDueDate(dateStr: string): string {
   if (dateStr.includes('T')) {
     const d = new Date(dateStr);
-    const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const date = d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+    const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${date} ${time}`;
   }
   return dateStr;

@@ -21,19 +21,19 @@ export default function FloatingActions() {
             : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <Link href="/chat">
+        <Link href="/">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            Ask AI
+            Dott에게 질문
           </Button>
         </Link>
-        <Link href="/insights">
+        <Link href="/research">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            Insights
+            리서치
           </Button>
         </Link>
-        <Link href="/automation">
+        <Link href="/create">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            Create content
+            콘텐츠 만들기
           </Button>
         </Link>
       </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { generateCompletion, generateCompletionWithImage } from '@/lib/claude';
 import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
+import { logActivity } from '@/lib/activity';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const [width, height] = size.split('x');
+
     const userMessage = `배너 사이즈: ${width}px x ${height}px
 카피: ${copy}
 ${reference ? `레퍼런스/참고사항: ${reference}` : ''}
@@ -50,6 +52,7 @@ ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자�
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    await logActivity('banner_generate', 'design', { size, copy: copy.slice(0, 50) });
     return NextResponse.json(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

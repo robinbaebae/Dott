@@ -40,7 +40,7 @@ CREATE TABLE trend_articles (
   title text NOT NULL,
   link text NOT NULL,
   source text,
-  category text DEFAULT 'beauty' CHECK (category IN ('beauty', 'fashion', 'ai', 'planning', 'marketing')),
+  category text DEFAULT 'marketing' CHECK (category IN ('ai', 'planning', 'marketing', 'tech')),
   pub_date timestamptz,
   created_at timestamptz DEFAULT now()
 );
@@ -141,10 +141,11 @@ CREATE TABLE insights (
   title text DEFAULT '',
   description text DEFAULT '',
   memo text DEFAULT '',
-  content_type text DEFAULT 'article' CHECK (content_type IN ('article', 'video', 'tweet', 'pdf', 'other', 'memory')),
+  content_type text DEFAULT 'article' CHECK (content_type IN ('article', 'video', 'tweet', 'pdf', 'other', 'memory', 'swipe')),
   thumbnail_url text DEFAULT '',
   source_domain text DEFAULT '',
   tags text[] DEFAULT '{}',
+  swipe_category text DEFAULT '',
   created_at timestamptz DEFAULT now()
 );
 CREATE UNIQUE INDEX insights_url_idx ON insights(url);
@@ -161,3 +162,124 @@ CREATE TABLE google_tokens (
 );
 ALTER TABLE google_tokens ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on google_tokens" ON google_tokens FOR ALL USING (true) WITH CHECK (true);
+
+-- Content Calendar
+CREATE TABLE content_calendar (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  platform text NOT NULL DEFAULT 'instagram',
+  scheduled_date date NOT NULL,
+  scheduled_time time,
+  status text DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'published')),
+  content text DEFAULT '',
+  notes text DEFAULT '',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE content_calendar ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on content_calendar" ON content_calendar FOR ALL USING (true) WITH CHECK (true);
+
+-- Email Drafts
+CREATE TABLE email_drafts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  gmail_draft_id text,
+  gmail_message_id text,
+  to_email text NOT NULL,
+  subject text NOT NULL,
+  body_html text NOT NULL,
+  status text DEFAULT 'local' CHECK (status IN ('local','drafted','sent')),
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE email_drafts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on email_drafts" ON email_drafts FOR ALL USING (true) WITH CHECK (true);
+
+-- Figma Integration
+CREATE TABLE figma_tokens (
+  id text PRIMARY KEY DEFAULT 'default',
+  personal_access_token text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE figma_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on figma_tokens" ON figma_tokens FOR ALL USING (true) WITH CHECK (true);
+
+CREATE TABLE figma_extractions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_key text NOT NULL,
+  file_name text DEFAULT '',
+  node_id text,
+  screenshot_url text,
+  design_tokens jsonb DEFAULT '{}',
+  banner_id uuid REFERENCES banners(id),
+  figma_url text,
+  status text DEFAULT 'pending',
+  extracted_at timestamptz DEFAULT now()
+);
+ALTER TABLE figma_extractions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on figma_extractions" ON figma_extractions FOR ALL USING (true) WITH CHECK (true);
+
+-- Keyword Trends (weekly snapshots)
+CREATE TABLE keyword_trends (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  keyword text NOT NULL,
+  count integer NOT NULL DEFAULT 0,
+  snapshot_date date NOT NULL DEFAULT CURRENT_DATE,
+  source text DEFAULT 'rss',
+  related_article_ids uuid[] DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+CREATE UNIQUE INDEX keyword_trends_keyword_date_source_idx
+  ON keyword_trends(keyword, snapshot_date, source);
+ALTER TABLE keyword_trends ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on keyword_trends" ON keyword_trends FOR ALL USING (true) WITH CHECK (true);
+
+-- AI Daily Summaries
+CREATE TABLE trend_summaries (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  summary_date date NOT NULL UNIQUE,
+  summary_text text NOT NULL,
+  article_ids uuid[] DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE trend_summaries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on trend_summaries" ON trend_summaries FOR ALL USING (true) WITH CHECK (true);
+
+-- Competitors
+CREATE TABLE competitors (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  website_url text,
+  meta_page_id text,
+  sns_handles jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE competitors ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on competitors" ON competitors FOR ALL USING (true) WITH CHECK (true);
+
+-- Weekly Competitor Briefings
+CREATE TABLE competitor_briefings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  week_start date NOT NULL,
+  competitor_id uuid REFERENCES competitors(id) ON DELETE CASCADE,
+  briefing_text text NOT NULL,
+  key_points text[] DEFAULT '{}',
+  stats jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE competitor_briefings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on competitor_briefings" ON competitor_briefings FOR ALL USING (true) WITH CHECK (true);
+
+-- Competitor Ad Tracking
+CREATE TABLE competitor_ads (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  competitor_id uuid REFERENCES competitors(id) ON DELETE CASCADE,
+  platform text NOT NULL DEFAULT 'meta',
+  ad_url text NOT NULL UNIQUE,
+  creative_type text DEFAULT 'image',
+  copy_text text,
+  cta_text text,
+  ai_analysis text,
+  screenshot_url text,
+  discovered_at timestamptz DEFAULT now()
+);
+ALTER TABLE competitor_ads ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on competitor_ads" ON competitor_ads FOR ALL USING (true) WITH CHECK (true);

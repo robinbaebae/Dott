@@ -57,7 +57,7 @@ export default function DashboardSearch() {
       }
     } catch (err) {
       console.error('Search error:', err);
-      setResponse('An error occurred during search.');
+      setResponse('검색 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -92,8 +92,8 @@ export default function DashboardSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="I know what you want"
-          className="w-full rounded-xl border-2 border-[#FF4D00]/40 bg-background pl-12 pr-4 py-4 text-base placeholder:text-muted-foreground focus:outline-none focus:border-[#FF4D00] transition-colors"
+          placeholder="무엇이든 물어보세요"
+          className="w-full rounded-xl border-2 border-accent/40 bg-background pl-12 pr-4 py-4 text-base placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
         />
         {isLoading && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">

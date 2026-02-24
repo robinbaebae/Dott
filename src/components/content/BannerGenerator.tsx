@@ -56,7 +56,12 @@ export default function BannerGenerator() {
       const res = await fetch('/api/banner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ copy, reference, size, referenceImage }),
+        body: JSON.stringify({
+          copy,
+          reference,
+          size,
+          referenceImage,
+        }),
       });
       if (res.ok) {
         const data = await res.json();

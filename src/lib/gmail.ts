@@ -91,6 +91,81 @@ export async function getRecentEmails(maxResults = 10): Promise<GmailMessage[]> 
   return result;
 }
 
+export async function createDraft(
+  to: string,
+  subject: string,
+  bodyHtml: string
+): Promise<{ draftId: string; messageId: string } | null> {
+  const auth = await getAuthenticatedClient();
+  if (!auth) return null;
+
+  const gmail = google.gmail({ version: 'v1', auth });
+
+  // Build RFC 2822 MIME message
+  const messageParts = [
+    `To: ${to}`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=UTF-8',
+    '',
+    bodyHtml,
+  ];
+  const rawMessage = Buffer.from(messageParts.join('\r\n'))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  const res = await gmail.users.drafts.create({
+    userId: 'me',
+    requestBody: {
+      message: { raw: rawMessage },
+    },
+  });
+
+  return {
+    draftId: res.data.id!,
+    messageId: res.data.message?.id ?? '',
+  };
+}
+
+export async function getRecentDrafts(maxResults = 5): Promise<
+  { id: string; subject: string; to: string; snippet: string; updated: string }[]
+> {
+  const auth = await getAuthenticatedClient();
+  if (!auth) return [];
+
+  const gmail = google.gmail({ version: 'v1', auth });
+
+  const listRes = await gmail.users.drafts.list({
+    userId: 'me',
+    maxResults,
+  });
+
+  const drafts = listRes.data.drafts ?? [];
+  const result: { id: string; subject: string; to: string; snippet: string; updated: string }[] = [];
+
+  for (const draft of drafts) {
+    const detail = await gmail.users.drafts.get({
+      userId: 'me',
+      id: draft.id!,
+      format: 'metadata',
+    });
+
+    const headers = (detail.data.message?.payload?.headers ?? []) as { name: string; value: string }[];
+
+    result.push({
+      id: draft.id!,
+      subject: parseHeader(headers, 'Subject'),
+      to: parseHeader(headers, 'To'),
+      snippet: detail.data.message?.snippet ?? '',
+      updated: parseHeader(headers, 'Date'),
+    });
+  }
+
+  return result;
+}
+
 export async function isGmailConnected(): Promise<boolean> {
   const auth = await getAuthenticatedClient();
   if (!auth) return false;

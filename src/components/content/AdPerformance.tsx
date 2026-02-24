@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, RefreshCw, Link2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -189,7 +189,7 @@ function fmtWon(n: number): string {
 }
 
 const CHART_METRICS: { key: ChartMetric; label: string; color: string }[] = [
-  { key: 'spend', label: 'Spend', color: '#FF4D00' },
+  { key: 'spend', label: 'Spend', color: '#5B4D6E' },
   { key: 'conversions', label: 'Conversions', color: '#10B981' },
   { key: 'roas', label: 'ROAS', color: '#6366F1' },
   { key: 'clicks', label: 'Clicks', color: '#F59E0B' },
@@ -203,8 +203,8 @@ const PERIOD_OPTIONS: { key: Period; label: string }[] = [
 
 // ─── Sub Components ──────────────────────────────────────
 
-function WeeklySummary({ platform }: { platform: Platform }) {
-  const data = generateDailyData(platform).slice(-7);
+function WeeklySummary({ platform, timeData }: { platform: Platform; timeData?: TimeData[] }) {
+  const data = timeData ? timeData.slice(-7) : generateDailyData(platform).slice(-7);
   const totalSpend = data.reduce((s, d) => s + d.spend, 0);
   const totalConv = data.reduce((s, d) => s + d.conversions, 0);
   const totalClicks = data.reduce((s, d) => s + d.clicks, 0);
@@ -269,18 +269,20 @@ function SummaryCards({ campaigns }: { campaigns: Campaign[] }) {
 function PerformanceCharts({
   platform,
   period,
+  timeData,
 }: {
   platform: Platform;
   period: Period;
+  timeData?: TimeData[];
 }) {
   const [metric, setMetric] = useState<ChartMetric>('spend');
 
-  const data =
-    period === 'daily'
+  const data = timeData ??
+    (period === 'daily'
       ? generateDailyData(platform)
       : period === 'weekly'
         ? generateWeeklyData(platform)
-        : generateMonthlyData(platform);
+        : generateMonthlyData(platform));
 
   const activeMetric = CHART_METRICS.find((m) => m.key === metric)!;
 
@@ -315,12 +317,12 @@ function PerformanceCharts({
         <ResponsiveContainer width="100%" height={260}>
           {metric === 'roas' ? (
             <LineChart data={data} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,77,0,0.08)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(91,77,110,0.08)" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
-                formatter={(v: number) => [formatValue(v), activeMetric.label]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(255,77,0,0.2)' }}
+                formatter={(v: number | undefined) => [formatValue(v ?? 0), activeMetric.label]}
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(91,77,110,0.2)' }}
               />
               <Line
                 type="monotone"
@@ -333,12 +335,12 @@ function PerformanceCharts({
             </LineChart>
           ) : metric === 'conversions' || metric === 'clicks' ? (
             <BarChart data={data} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,77,0,0.08)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(91,77,110,0.08)" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
-                formatter={(v: number) => [formatValue(v), activeMetric.label]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(255,77,0,0.2)' }}
+                formatter={(v: number | undefined) => [formatValue(v ?? 0), activeMetric.label]}
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(91,77,110,0.2)' }}
               />
               <Bar dataKey={metric} fill={activeMetric.color} radius={[4, 4, 0, 0]} opacity={0.85} />
             </BarChart>
@@ -350,12 +352,12 @@ function PerformanceCharts({
                   <stop offset="95%" stopColor={activeMetric.color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,77,0,0.08)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(91,77,110,0.08)" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
-                formatter={(v: number) => [formatValue(v), activeMetric.label]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(255,77,0,0.2)' }}
+                formatter={(v: number | undefined) => [formatValue(v ?? 0), activeMetric.label]}
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(91,77,110,0.2)' }}
               />
               <Area
                 type="monotone"
@@ -618,8 +620,88 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
 export default function AdPerformance() {
   const [platform, setPlatform] = useState<Platform>('google');
   const [period, setPeriod] = useState<Period>('daily');
+  const [metaConnected, setMetaConnected] = useState(false);
+  const [metaCampaigns, setMetaCampaigns] = useState<Campaign[]>([]);
+  const [metaTimeData, setMetaTimeData] = useState<Record<Period, TimeData[]>>({
+    daily: [],
+    weekly: [],
+    monthly: [],
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const campaigns = platform === 'google' ? GOOGLE_CAMPAIGNS : META_CAMPAIGNS;
+  const fetchMetaData = useCallback(async (refresh = false) => {
+    try {
+      const [campaignsRes, dailyRes, weeklyRes, monthlyRes] = await Promise.all([
+        fetch(`/api/meta-ads/campaigns${refresh ? '?refresh=true' : ''}`),
+        fetch(`/api/meta-ads/insights?period=daily${refresh ? '&refresh=true' : ''}`),
+        fetch(`/api/meta-ads/insights?period=weekly${refresh ? '&refresh=true' : ''}`),
+        fetch(`/api/meta-ads/insights?period=monthly${refresh ? '&refresh=true' : ''}`),
+      ]);
+
+      const [campaignsData, dailyData, weeklyData, monthlyData] = await Promise.all([
+        campaignsRes.json(),
+        dailyRes.json(),
+        weeklyRes.json(),
+        monthlyRes.json(),
+      ]);
+
+      if (campaignsData.campaigns) setMetaCampaigns(campaignsData.campaigns);
+      setMetaTimeData({
+        daily: dailyData.data ?? [],
+        weekly: weeklyData.data ?? [],
+        monthly: monthlyData.data ?? [],
+      });
+    } catch (error) {
+      console.error('Failed to fetch Meta ads data:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkStatus() {
+      try {
+        const res = await fetch('/api/meta-ads/status');
+        const data = await res.json();
+        if (cancelled) return;
+
+        setMetaConnected(data.connected);
+        if (data.connected) {
+          setIsLoading(true);
+          await fetchMetaData();
+          if (!cancelled) setIsLoading(false);
+        }
+      } catch {
+        // ignore — status check failed
+      }
+    }
+
+    checkStatus();
+    return () => { cancelled = true; };
+  }, [fetchMetaData]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchMetaData(true);
+    setRefreshing(false);
+  };
+
+  const isMetaLive = platform === 'meta' && metaConnected;
+  const campaigns = platform === 'google'
+    ? GOOGLE_CAMPAIGNS
+    : metaConnected && metaCampaigns.length > 0
+      ? metaCampaigns
+      : META_CAMPAIGNS;
+
+  const currentTimeData = isMetaLive && metaTimeData[period].length > 0
+    ? metaTimeData[period]
+    : undefined;
+
+  const badgeLabel = platform === 'meta' && metaConnected ? 'Live' : 'Mock';
+  const badgeStyle = platform === 'meta' && metaConnected
+    ? 'text-green-600 bg-green-500/10'
+    : 'text-muted-foreground bg-muted';
 
   return (
     <Card>
@@ -627,9 +709,20 @@ export default function AdPerformance() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">Ad Performance</CardTitle>
-            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Mock Data</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded ${badgeStyle}`}>{badgeLabel}</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Refresh button (Meta connected only) */}
+            {isMetaLive && (
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+                title="Refresh Meta data"
+              >
+                <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
             {/* Period selector */}
             <div className="flex gap-1">
               {PERIOD_OPTIONS.map((p) => (
@@ -673,9 +766,36 @@ export default function AdPerformance() {
         </div>
       </CardHeader>
       <CardContent>
-        <WeeklySummary platform={platform} />
+        {/* Connect Meta Ads prompt */}
+        {platform === 'meta' && !metaConnected && (
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 mb-4 text-center">
+            <Link2 className="size-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm font-medium mb-1">Connect Meta Ads</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Link your Meta ad account to see real campaign performance data.
+            </p>
+            <a
+              href="/api/instagram/auth"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+            >
+              Connect Meta Ads
+            </a>
+            <p className="text-[10px] text-muted-foreground mt-3">
+              Showing mock data below. Connect to replace with live data.
+            </p>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {platform === 'meta' && metaConnected && isLoading && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4 mb-4 text-center text-sm text-muted-foreground">
+            Loading Meta Ads data...
+          </div>
+        )}
+
+        <WeeklySummary platform={platform} timeData={currentTimeData} />
         <SummaryCards campaigns={campaigns} />
-        <PerformanceCharts platform={platform} period={period} />
+        <PerformanceCharts platform={platform} period={period} timeData={currentTimeData} />
         <CampaignTable campaigns={campaigns} />
       </CardContent>
     </Card>

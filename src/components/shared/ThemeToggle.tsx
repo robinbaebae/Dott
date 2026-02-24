@@ -7,7 +7,7 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('ditto-theme');
+    const saved = localStorage.getItem('dott-theme');
     if (saved === 'dark') {
       setDark(true);
       document.documentElement.classList.add('dark');
@@ -19,20 +19,20 @@ export default function ThemeToggle() {
     setDark(next);
     if (next) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('ditto-theme', 'dark');
+      localStorage.setItem('dott-theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('ditto-theme', 'light');
+      localStorage.setItem('dott-theme', 'light');
     }
   };
 
   return (
     <button
       onClick={toggle}
-      className="p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
-      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
+      title={dark ? '라이트 모드로 전환' : '다크 모드로 전환'}
     >
-      {dark ? <Sun className="size-4 text-gray-300" /> : <Moon className="size-4 text-gray-300" />}
+      {dark ? <Sun className="size-4 text-muted-foreground" /> : <Moon className="size-4 text-muted-foreground" />}
     </button>
   );
 }

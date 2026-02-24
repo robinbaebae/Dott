@@ -16,7 +16,7 @@ interface UtmHistoryEntry {
   date: string;
 }
 
-const STORAGE_KEY = 'ditto_utm_history';
+const STORAGE_KEY = 'dott_utm_history';
 
 export default function UtmGenerator() {
   const [baseUrl, setBaseUrl] = useState('');

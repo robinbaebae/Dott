@@ -25,6 +25,10 @@ let workTimeInterval = null;
 // Notification dedup: Set of "taskId-type" strings
 const notifiedTasks = new Set();
 
+// Trend notification tracking
+let lastKnownArticleCount = -1;
+let trendCheckInterval = null;
+
 // Work time tracking
 let workStartTime = null;
 let totalWorkSeconds = 0;
@@ -82,10 +86,10 @@ function createMainWindow() {
   }
 
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    title: 'Ditto - 마케팅 AI 어시스턴트',
-    icon: path.join(__dirname, '..', 'build', 'icon.icns'),
+    width: 1000,
+    height: 700,
+    title: 'Dott',
+    icon: path.join(__dirname, '..', 'public', 'logo-dott.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -138,7 +142,7 @@ function createPetWindow() {
   petWindow = new BrowserWindow({
     width: 250,
     height: 160,
-    x: screenWidth - 270,
+    x: Math.round(screenWidth / 2 - 125),
     y: screenHeight - 180,
     frame: false,
     transparent: true,
@@ -185,7 +189,7 @@ async function checkTaskNotifications() {
         const key = `${taskId}-1h`;
         if (!notifiedTasks.has(key)) {
           notifiedTasks.add(key);
-          showNotification('🐰 Ditto 알림', `"${task.title}" 마감이 1시간 남았습니다`);
+          showNotification('🐰 Dott 알림', `"${task.title}" 마감이 1시간 남았습니다`);
           sendPetMessage(`⏰ "${task.title}" 1시간 남음!`);
         }
       }
@@ -195,7 +199,7 @@ async function checkTaskNotifications() {
         const key = `${taskId}-30m`;
         if (!notifiedTasks.has(key)) {
           notifiedTasks.add(key);
-          showNotification('🐰 Ditto 알림', `"${task.title}" 마감이 30분 남았습니다`);
+          showNotification('🐰 Dott 알림', `"${task.title}" 마감이 30분 남았습니다`);
           sendPetMessage(`⏰ "${task.title}" 30분 남음!`);
         }
       }
@@ -205,7 +209,7 @@ async function checkTaskNotifications() {
         const key = `${taskId}-due`;
         if (!notifiedTasks.has(key)) {
           notifiedTasks.add(key);
-          showNotification('🐰 Ditto 알림', `"${task.title}" 마감 시간입니다!`);
+          showNotification('🐰 Dott 알림', `"${task.title}" 마감 시간입니다!`);
           sendPetMessage(`🔔 "${task.title}" 지금이 마감!`);
         }
       }
@@ -217,7 +221,7 @@ async function checkTaskNotifications() {
           if (!notifiedTasks.has(key)) {
             notifiedTasks.add(key);
             showNotification(
-              '🐰 Ditto 리마인드',
+              '🐰 Dott 리마인드',
               `"${task.title}" 마감이 ${offset}분 지났습니다!`
             );
             sendPetMessage(`⚠️ "${task.title}" ${offset}분 초과!`);
@@ -246,7 +250,7 @@ async function checkTaskNotifications() {
 async function sendDailyBriefing() {
   try {
     const appUrl = getAppUrl();
-    const lines = ['📋 오늘의 브리핑'];
+    const lines = ['📋 데일리 리포트가 준비 됐어요!'];
 
     // Tasks
     try {
@@ -332,7 +336,7 @@ async function sendDailyBriefing() {
     const briefingText = lines.join('\n');
 
     // Show notification
-    showNotification('🐰 Ditto 데일리 브리핑', briefingText);
+    showNotification('🐰 Dott 데일리 브리핑', briefingText);
 
     // Show pet bubble (short summary)
     sendPetMessage(lines.slice(0, 3).join(' | '));
@@ -341,15 +345,40 @@ async function sendDailyBriefing() {
   }
 }
 
-// Check if it's 9 AM and trigger daily briefing
+// Check if it's 10 AM and trigger daily briefing
 function checkDailyBriefingTime() {
   const now = new Date();
-  if (now.getHours() === 9 && now.getMinutes() < 5) {
+  if (now.getHours() === 10 && now.getMinutes() < 5) {
     const todayKey = `briefing-${now.toDateString()}`;
     if (!notifiedTasks.has(todayKey)) {
       notifiedTasks.add(todayKey);
       sendDailyBriefing();
     }
+  }
+  // 5PM daily report
+  if (now.getHours() === 17 && now.getMinutes() < 5) {
+    const todayKey = `daily-report-${now.toDateString()}`;
+    if (!notifiedTasks.has(todayKey)) {
+      notifiedTasks.add(todayKey);
+      generateDailyReport();
+    }
+  }
+}
+
+// =========================================================
+// 5PM Daily Report (SOT)
+// =========================================================
+async function generateDailyReport() {
+  try {
+    const res = await fetch(`${getAppUrl()}/api/daily-report`, {
+      method: 'POST',
+    });
+    if (res.ok) {
+      showNotification('Dott 데일리 리포트', '오늘의 데일리 리포트가 준비됐어요!');
+      sendPetMessage('오늘의 데일리 리포트가 준비됐어요! 📊');
+    }
+  } catch {
+    // skip
   }
 }
 
@@ -402,7 +431,7 @@ function checkWorkTimeEncouragement() {
   for (const milestone of milestones) {
     if (minutes >= milestone.min && lastEncouragementMinutes < milestone.min) {
       lastEncouragementMinutes = milestone.min;
-      showNotification('🐰 Ditto 응원', milestone.msg);
+      showNotification('🐰 Dott 응원', milestone.msg);
       sendPetMessage(milestone.msg);
       break;
     }
@@ -417,21 +446,86 @@ function formatWorkTime(minutes) {
 }
 
 // =========================================================
+// Hourly Status Notification
+// =========================================================
+async function sendHourlyNotification() {
+  try {
+    const appUrl = getAppUrl();
+    const now = new Date();
+    const hour = now.getHours();
+
+    // Only send during work hours (8 AM - 10 PM)
+    if (hour < 8 || hour >= 22) return;
+
+    const lines = [];
+
+    // Tasks summary
+    try {
+      const res = await fetch(`${appUrl}/api/tasks`);
+      if (res.ok) {
+        const tasks = await res.json();
+        const pending = tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress');
+        const overdue = tasks.filter((t) => {
+          if (t.status === 'done' || !t.due_date) return false;
+          return new Date(t.due_date) < now;
+        });
+        const todayDue = tasks.filter((t) => {
+          if (t.status === 'done' || !t.due_date) return false;
+          const d = new Date(t.due_date);
+          return d.toDateString() === now.toDateString();
+        });
+
+        if (todayDue.length > 0) {
+          lines.push(`오늘 마감: ${todayDue.length}개`);
+        }
+        if (overdue.length > 0) {
+          lines.push(`지연된 작업: ${overdue.length}개`);
+        }
+        if (pending.length > 0) {
+          lines.push(`진행중: ${pending.length}개`);
+        }
+      }
+    } catch { /* skip */ }
+
+    // Work time
+    const workMin = getCurrentWorkMinutes();
+    if (workMin > 0) {
+      lines.push(`작업 시간: ${formatWorkTime(workMin)}`);
+    }
+
+    if (lines.length === 0) {
+      lines.push('현재 진행중인 작업이 없습니다.');
+    }
+
+    const body = lines.join(' | ');
+    showNotification('Dott 상태 알림', body);
+    sendPetMessage(body);
+  } catch {
+    // skip
+  }
+}
+
+// =========================================================
 // System tray (extended)
 // =========================================================
 function createTray() {
-  const trayIconPath = path.resolve(__dirname, '..', 'public', 'logo-tray.png');
+  const trayIconPath = path.resolve(__dirname, '..', 'public', 'logo-dott.png');
   console.log('Tray icon path:', trayIconPath, 'exists:', require('fs').existsSync(trayIconPath));
   const trayIcon = nativeImage.createFromPath(trayIconPath).resize({ width: 16, height: 16 });
   console.log('Tray icon empty?', trayIcon.isEmpty());
   tray = new Tray(trayIcon.isEmpty() ? nativeImage.createEmpty() : trayIcon);
-  tray.setToolTip('Ditto');
+  tray.setToolTip('Dott');
 
   rebuildTrayMenu();
 
   tray.on('click', () => {
     createMainWindow();
   });
+
+  // Hourly status notification
+  setInterval(sendHourlyNotification, 60 * 60 * 1000);
+  // First one after 5 minutes (wait for server)
+  setTimeout(sendHourlyNotification, 5 * 60 * 1000);
 }
 
 function rebuildTrayMenu() {
@@ -439,7 +533,7 @@ function rebuildTrayMenu() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '🐰 Ditto 열기',
+      label: 'Dott 열기',
       click: () => createMainWindow(),
     },
     {
@@ -535,6 +629,11 @@ function startAllIntervals() {
 
   // Meeting DND check: every 30 sec
   meetingCheckInterval = setInterval(checkMeetingStatus, 30 * 1000);
+
+  // Trend article check: every 15 min
+  trendCheckInterval = setInterval(checkNewTrends, 15 * 60 * 1000);
+  // First check after 30 sec (wait for server)
+  setTimeout(checkNewTrends, 30 * 1000);
 }
 
 function stopAllIntervals() {
@@ -555,6 +654,10 @@ function stopAllIntervals() {
     clearInterval(meetingCheckInterval);
     meetingCheckInterval = null;
   }
+  if (trendCheckInterval) {
+    clearInterval(trendCheckInterval);
+    trendCheckInterval = null;
+  }
 }
 
 // =========================================================
@@ -570,55 +673,277 @@ ipcMain.on('show-notification', (_, { title, body }) => {
   showNotification(title, body);
 });
 
+ipcMain.on('content-step-notification', (_, { step, message }) => {
+  sendPetMessage(message);
+  showNotification('Dott 콘텐츠', message);
+});
+
+// =========================================================
+// Token Usage Data Handler
+// =========================================================
+ipcMain.handle('pet-token-usage', async () => {
+  try {
+    const res = await fetch(`${getAppUrl()}/api/tokens/usage`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      todayTotal: data.today?.total || 0,
+      monthTotal: data.month?.total || 0,
+      todayIn: data.today?.tokens_in || 0,
+      todayOut: data.today?.tokens_out || 0,
+      monthIn: data.month?.tokens_in || 0,
+      monthOut: data.month?.tokens_out || 0,
+    };
+  } catch {
+    return null;
+  }
+});
+
+// =========================================================
+// Next Meeting Handler
+// =========================================================
+ipcMain.handle('pet-next-meeting', async () => {
+  try {
+    const now = new Date();
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const appUrl = getAppUrl();
+
+    const res = await fetch(
+      `${appUrl}/api/calendar?timeMin=${now.toISOString()}&timeMax=${endOfDay.toISOString()}`
+    );
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!data.connected || !Array.isArray(data.events) || data.events.length === 0) return null;
+
+    // Find the next upcoming meeting (not yet started)
+    const upcoming = data.events
+      .filter((evt) => {
+        const start = new Date(evt.start?.dateTime || evt.start?.date);
+        return start > now;
+      })
+      .sort((a, b) => {
+        const aStart = new Date(a.start?.dateTime || a.start?.date);
+        const bStart = new Date(b.start?.dateTime || b.start?.date);
+        return aStart - bStart;
+      });
+
+    if (upcoming.length === 0) return null;
+
+    const next = upcoming[0];
+    const startTime = new Date(next.start?.dateTime || next.start?.date);
+    const hours = startTime.getHours().toString().padStart(2, '0');
+    const minutes = startTime.getMinutes().toString().padStart(2, '0');
+
+    return {
+      summary: next.summary || '미팅',
+      time: `${hours}:${minutes}`,
+    };
+  } catch {
+    return null;
+  }
+});
+
+// =========================================================
+// Calendar Events Handler (today's events)
+// =========================================================
+ipcMain.handle('pet-calendar-events', async () => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const appUrl = getAppUrl();
+
+    const res = await fetch(
+      `${appUrl}/api/calendar?timeMin=${todayStart.toISOString()}&timeMax=${todayEnd.toISOString()}`
+    );
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!data.connected) return { connected: false, events: [] };
+    return { connected: true, events: data.events || [] };
+  } catch {
+    return null;
+  }
+});
+
+// =========================================================
+// Create Calendar Event Handler
+// =========================================================
+ipcMain.handle('pet-create-event', async (_event, data) => {
+  try {
+    const appUrl = getAppUrl();
+    const res = await fetch(`${appUrl}/api/calendar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
+
+// =========================================================
+// Email Handler (recent unread emails)
+// =========================================================
+ipcMain.handle('pet-emails', async () => {
+  try {
+    const appUrl = getAppUrl();
+    const res = await fetch(`${appUrl}/api/gmail`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
+
+// =========================================================
+// Compose Email Handler (AI draft generation)
+// =========================================================
+ipcMain.handle('pet-compose-email', async (_event, data) => {
+  try {
+    const appUrl = getAppUrl();
+    const res = await fetch(`${appUrl}/api/gmail/compose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generate', ...data }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
+
 // =========================================================
 // Pet Chat Handler (Claude Code CLI via spawn)
 // =========================================================
 let petSessionId = null;
 
-ipcMain.handle('pet-chat', async (_event, message) => {
+ipcMain.handle('pet-chat', async (_event, { message, history }) => {
   console.log('[pet-chat] Received message:', message);
-  return new Promise((resolve) => {
-    const args = [
-      '--print',
-      '--allowedTools', 'WebSearch,WebFetch',
-      '--', message,
-    ];
+  try {
+    const res = await fetch(`${getAppUrl()}/api/knowbar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history: history || [] }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const agentInfo = data.agentIcon && data.agentName
+        ? `${data.agentIcon} ${data.agentName}: `
+        : '';
+      return agentInfo + (data.response || '응답을 받지 못했습니다.');
+    }
+    return '응답을 받지 못했습니다.';
+  } catch (err) {
+    console.error('[pet-chat] error:', err.message);
+    return 'Dott 연결에 실패했습니다.';
+  }
+});
 
+// =========================================================
+// Figma Capture Handler (MCP via Claude CLI)
+// =========================================================
+ipcMain.handle('figma-capture', async (_event, { bannerUrl, fileKey, outputMode }) => {
+  console.log('[figma-capture] Starting:', { bannerUrl, fileKey, outputMode });
+
+  try {
+    // Step 1: Create hidden BrowserWindow to load the banner
+    const captureWindow = new BrowserWindow({
+      width: 1200,
+      height: 1200,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    await captureWindow.loadURL(bannerUrl);
+    // Wait for content to render
+    await new Promise((r) => setTimeout(r, 2000));
+
+    // Step 2: Call Claude CLI with MCP tool to get capture script
     const claudePath = '/Users/sooyoungbae/.npm-global/bin/claude';
     const env = { ...process.env };
     delete env.CLAUDECODE;
     delete env.CLAUDE_CODE_ENTRYPOINT;
 
-    console.log('[pet-chat] Spawning claude:', claudePath, args.join(' '));
+    const mcpPrompt = `Use the generate_figma_design tool from the Figma MCP server to create a design in Figma file with key "${fileKey}". The design should be based on the HTML content loaded at ${bannerUrl}. Return the capture script that needs to be executed in the browser.`;
 
-    const child = spawn(claudePath, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env,
+    const captureResult = await new Promise((resolve) => {
+      const child = spawn(claudePath, [
+        '--print',
+        '--allowedTools', 'mcp__figma__generate_figma_design',
+        '--', mcpPrompt,
+      ], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env,
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => { stdout += data.toString(); });
+      child.stderr.on('data', (data) => { stderr += data.toString(); });
+
+      child.on('error', (err) => {
+        console.error('[figma-capture] CLI error:', err.message);
+        resolve({ error: err.message });
+      });
+
+      child.on('close', (code) => {
+        console.log('[figma-capture] CLI closed, code:', code);
+        if (code !== 0 && !stdout.trim()) {
+          resolve({ error: `CLI exited with code ${code}: ${stderr}` });
+        } else {
+          resolve({ output: stdout.trim() });
+        }
+      });
     });
 
-    let stdout = '';
-    let stderr = '';
+    // Step 3: Try to extract and execute capture script
+    if (captureResult.output) {
+      // Look for JavaScript capture script in the output
+      const scriptMatch = captureResult.output.match(/```(?:javascript|js)\n([\s\S]*?)```/);
+      if (scriptMatch) {
+        const captureScript = scriptMatch[1];
+        try {
+          await captureWindow.webContents.executeJavaScript(captureScript);
+          console.log('[figma-capture] Capture script executed');
 
-    child.stdout.on('data', (data) => {
-      stdout += data.toString();
-      console.log('[pet-chat] stdout chunk:', data.toString().slice(0, 100));
-    });
-    child.stderr.on('data', (data) => {
-      stderr += data.toString();
-      console.log('[pet-chat] stderr chunk:', data.toString().slice(0, 100));
-    });
+          // Wait for capture to complete
+          await new Promise((r) => setTimeout(r, 3000));
+        } catch (scriptErr) {
+          console.error('[figma-capture] Script execution failed:', scriptErr.message);
+        }
+      }
 
-    child.on('error', (err) => {
-      console.error('[pet-chat] spawn error:', err.message);
-      resolve('Claude Code 연결에 실패했습니다.');
-    });
+      // Check if output contains a Figma URL
+      const figmaUrlMatch = captureResult.output.match(/https:\/\/www\.figma\.com\/(?:file|design)\/[^\s"']+/);
+      if (figmaUrlMatch) {
+        captureWindow.close();
+        return { figmaUrl: figmaUrlMatch[0] };
+      }
+    }
 
-    child.on('close', (code) => {
-      console.log('[pet-chat] process closed, code:', code, 'stdout length:', stdout.length);
-      const response = stdout.trim();
-      resolve(response || '응답을 받지 못했습니다.');
-    });
-  });
+    // Step 4: Fallback — take a screenshot and return it
+    const screenshot = await captureWindow.webContents.capturePage();
+    const screenshotDataUrl = `data:image/png;base64,${screenshot.toPNG().toString('base64')}`;
+    captureWindow.close();
+
+    return {
+      error: captureResult.error || 'Figma push completed but no URL returned',
+      screenshotUrl: screenshotDataUrl,
+    };
+  } catch (err) {
+    console.error('[figma-capture] Error:', err.message);
+    return { error: err.message };
+  }
 });
 
 // =========================================================
@@ -659,6 +984,47 @@ ipcMain.on('pet-action', async (_event, action) => {
       break;
   }
 });
+
+// =========================================================
+// 6. New Trend Article Notification
+// =========================================================
+async function checkNewTrends() {
+  try {
+    const appUrl = getAppUrl();
+    const ago = new Date();
+    ago.setDate(ago.getDate() - 1);
+
+    const res = await fetch(
+      `${appUrl}/api/trends?since=${ago.toISOString()}`
+    );
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const count = Array.isArray(data) ? data.length : (data.count || 0);
+
+    // First run: just record the count
+    if (lastKnownArticleCount === -1) {
+      lastKnownArticleCount = count;
+      return;
+    }
+
+    // New articles detected
+    if (count > lastKnownArticleCount) {
+      const newCount = count - lastKnownArticleCount;
+      lastKnownArticleCount = count;
+
+      showNotification(
+        'Dott 트렌드 알림',
+        `새로운 업계 소식 ${newCount}건이 도착했습니다!`
+      );
+      sendPetMessage(`새 트렌드 ${newCount}건 도착! Trends 탭을 확인해보세요`);
+    } else {
+      lastKnownArticleCount = count;
+    }
+  } catch {
+    // Server might not be ready
+  }
+}
 
 // =========================================================
 // Meeting DND (Do Not Disturb) Mode
@@ -793,7 +1159,7 @@ app.whenReady().then(() => {
   });
 
   // Set app icon (Dock)
-  const dockIconPath = path.join(__dirname, '..', 'public', 'dock-logo.png');
+  const dockIconPath = path.join(__dirname, '..', 'public', 'logo-dott.png');
   const dockIcon = nativeImage.createFromPath(dockIconPath);
   if (process.platform === 'darwin' && app.dock && !dockIcon.isEmpty()) {
     app.dock.setIcon(dockIcon);

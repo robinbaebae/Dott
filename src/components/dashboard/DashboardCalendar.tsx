@@ -16,6 +16,7 @@ import {
   parseISO,
   eachDayOfInterval,
 } from 'date-fns';
+import { ko } from 'date-fns/locale';
 import { CalendarDays, ChevronLeft, ChevronRight, Unplug } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -129,11 +130,11 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
   };
 
   const headerLabel = () => {
-    if (view === 'month') return format(currentDate, 'MMMM yyyy');
-    if (view === 'day') return format(currentDate, 'EEEE, MMM d, yyyy');
+    if (view === 'month') return format(currentDate, 'yyyy년 M월', { locale: ko });
+    if (view === 'day') return format(currentDate, 'yyyy년 M월 d일 EEEE', { locale: ko });
     const ws = startOfWeek(currentDate, { weekStartsOn: 1 });
     const we = endOfWeek(currentDate, { weekStartsOn: 1 });
-    return `${format(ws, 'MMM d, yyyy')} — ${format(we, 'MMM d')}`;
+    return `${format(ws, 'yyyy년 M월 d일', { locale: ko })} — ${format(we, 'M월 d일', { locale: ko })}`;
   };
 
   const days = view === 'month'
@@ -154,14 +155,14 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
             <div className="flex items-center gap-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <CalendarDays className="size-4" />
-                Calendar
+                캘린더
               </CardTitle>
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 dark:bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
-                  Calendar
+                  캘린더
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 dark:bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-300">
-                  My tasks
+                  내 태스크
                 </span>
               </div>
             </div>
@@ -180,12 +181,12 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
                       : 'hover:bg-muted text-muted-foreground'
                   }`}
                 >
-                  {v === 'month' ? 'M' : v === 'week' ? 'W' : 'D'}
+                  {v === 'month' ? '월' : v === 'week' ? '주' : '일'}
                 </button>
               ))}
             </div>
             {connected && (
-              <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="Disconnect">
+              <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="연결 해제">
                 <Unplug className="size-3" />
               </Button>
             )}
@@ -193,7 +194,7 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
               <ChevronLeft className="size-3" />
             </Button>
             <Button variant="ghost" size="xs" onClick={goToday}>
-              Today
+              오늘
             </Button>
             <Button variant="ghost" size="icon-xs" onClick={goNext}>
               <ChevronRight className="size-3" />
@@ -206,10 +207,10 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CalendarDays className="size-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground mb-4">
-              Connect Google Calendar to view your schedule
+              Google 캘린더를 연결하여 일정을 확인하세요
             </p>
             <Button asChild>
-              <a href="/api/google/auth">Connect Google Calendar</a>
+              <a href="/api/google/auth">Google 캘린더 연결</a>
             </Button>
           </div>
         ) : view === 'month' ? (
@@ -240,7 +241,7 @@ function MonthView({
     <div>
       {/* Day of week header */}
       <div className="grid grid-cols-7 mb-1">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+        {['월', '화', '수', '목', '금', '토', '일'].map((d) => (
           <div key={d} className="text-center text-[10px] text-muted-foreground uppercase py-1">
             {d}
           </div>
@@ -325,7 +326,7 @@ function TimelineView({
           >
             <div className={`${compact ? 'w-10' : 'w-14'} shrink-0 text-center pt-0.5`}>
               <p className="text-[10px] text-muted-foreground uppercase">
-                {format(day, 'EEE')}
+                {format(day, 'EEE', { locale: ko })}
               </p>
               <p className={`${compact ? 'text-base' : 'text-lg'} font-semibold leading-tight ${today ? 'text-primary' : ''}`}>
                 {format(day, 'd')}
@@ -337,7 +338,7 @@ function TimelineView({
                 <div className="absolute left-0 top-1 bottom-1 w-px bg-border" />
               )}
               {!hasItems && (
-                <p className="text-xs text-muted-foreground py-1 pl-4">No events</p>
+                <p className="text-xs text-muted-foreground py-1 pl-4">일정 없음</p>
               )}
               <div className="space-y-1.5 pl-4">
                 {dayEvents.map((event) => (
@@ -350,7 +351,7 @@ function TimelineView({
                         </p>
                         <span className="text-[10px] text-blue-600/70 dark:text-blue-400/80 shrink-0">
                           {event.allDay
-                            ? 'All day'
+                            ? '종일'
                             : `${format(parseISO(event.start), 'HH:mm')}–${format(parseISO(event.end), 'HH:mm')}`}
                         </span>
                       </div>
@@ -372,12 +373,12 @@ function TimelineView({
                           </p>
                           <span className="text-[10px] text-green-600/70 dark:text-green-400/80 shrink-0">
                             {timeStr ?? (task.status === 'todo'
-                              ? 'To do'
+                              ? '할 일'
                               : task.status === 'in_progress'
-                              ? 'In progress'
+                              ? '진행 중'
                               : task.status === 'on_hold'
-                              ? 'On hold'
-                              : 'Done')}
+                              ? '보류'
+                              : '완료')}
                           </span>
                         </div>
                       </div>

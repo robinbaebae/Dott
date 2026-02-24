@@ -11,7 +11,7 @@ export default function LoginPage() {
         <CardContent className="pt-8 pb-8">
           <div className="text-center space-y-6">
             <div>
-              <img src="/logo.png" alt="Ditto" className="w-16 h-16 rounded-lg mx-auto mb-4" />
+              <img src="/logo-dott.png" alt="Dott" className="w-16 h-16 rounded-lg mx-auto mb-4" />
               <p className="text-sm text-muted-foreground mt-1">
                 marketing AI assistant
               </p>

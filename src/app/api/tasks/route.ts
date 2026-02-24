@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { logActivity } from '@/lib/activity';
 
 // GET - 전체 업무 조회
 export async function GET() {
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logActivity('task_create', null, { title: body.title });
   return NextResponse.json(data, { status: 201 });
 }
 
@@ -45,6 +47,9 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (updates.status === 'done') {
+    await logActivity('task_complete', null, { id, title: data?.title });
+  }
   return NextResponse.json(data);
 }
 

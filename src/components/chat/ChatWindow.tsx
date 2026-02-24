@@ -80,8 +80,8 @@ export default function ChatWindow() {
         {messages.length === 0 && !currentSessionId ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-3">
-              <img src="/logo.png" alt="Ditto" className="w-12 h-12 rounded-lg mx-auto" />
-              <h2 className="text-lg">Ask Ditto anything</h2>
+              <img src="/logo-dott.png" alt="Dott" className="w-12 h-12 rounded-lg mx-auto" />
+              <h2 className="text-lg">Ask Dott anything</h2>
               <p className="text-sm text-muted-foreground max-w-sm">
                 Marketing content, ad copy, brand strategy, and more.
               </p>

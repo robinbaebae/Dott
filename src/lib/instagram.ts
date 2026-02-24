@@ -18,6 +18,7 @@ export function getInstagramAuthUrl(): string {
     'instagram_manage_insights',
     'pages_show_list',
     'pages_read_engagement',
+    'ads_read',
   ].join(',');
 
   return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code`;
@@ -71,11 +72,26 @@ export async function handleInstagramCallback(code: string) {
     igUserId = meData.id ?? '';
   }
 
-  // 4. Store in Supabase
+  // 4. Discover ad account
+  let adAccountId = '';
+  try {
+    const adRes = await fetch(
+      `${GRAPH_API_BASE}/me/adaccounts?fields=id,name,account_status&access_token=${longLivedToken}`,
+    );
+    const adData = await adRes.json();
+    if (adData.data && adData.data.length > 0) {
+      adAccountId = adData.data[0].id; // format: "act_XXXXX"
+    }
+  } catch {
+    // ads_read permission may not be granted yet — ignore
+  }
+
+  // 5. Store in Supabase
   const { error } = await supabase.from('instagram_tokens').upsert({
     id: 'default',
     access_token: longLivedToken,
     user_id: igUserId,
+    ad_account_id: adAccountId || null,
     token_type: 'long_lived',
     expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
     updated_at: new Date().toISOString(),
@@ -106,6 +122,15 @@ async function getTokenAndUserId() {
     .single();
   if (!data) return null;
   return { accessToken: data.access_token, userId: data.user_id };
+}
+
+export async function getAdAccountId(): Promise<string | null> {
+  const { data } = await supabase
+    .from('instagram_tokens')
+    .select('ad_account_id')
+    .eq('id', 'default')
+    .single();
+  return data?.ad_account_id ?? null;
 }
 
 export async function fetchInstagramPosts() {

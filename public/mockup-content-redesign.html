@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dott Content - Design Mockup (Publer-inspired)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ===== DARK MODE ===== */
+  [data-theme="dark"] {
+    --bg: #0F0F0F;
+    --surface: #1A1A1A;
+    --surface2: #222222;
+    --surface3: #2A2A2A;
+    --border: #333;
+    --border-light: #444;
+    --text: #F0F0F0;
+    --text-muted: #888;
+    --text-dim: #666;
+    --primary: #4A7FD4;
+    --primary-light: #5A8FE4;
+    --primary-bg: rgba(74,127,212,0.08);
+    --primary-border: rgba(74,127,212,0.2);
+    --accent: #CCDFFF;
+    --ig-pink: #E1306C;
+    --threads-gray: #999;
+    --blog-green: #34C759;
+    --success: #30D158;
+    --shadow: none;
+  }
+
+  /* ===== LIGHT MODE ===== */
+  [data-theme="light"] {
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #F0F1F3;
+    --surface3: #E8E9EB;
+    --border: #E0E0E0;
+    --border-light: #D0D0D0;
+    --text: #1A1A1A;
+    --text-muted: #666;
+    --text-dim: #999;
+    --primary: #4A7FD4;
+    --primary-light: #3A6FC4;
+    --primary-bg: rgba(74,127,212,0.06);
+    --primary-border: rgba(74,127,212,0.18);
+    --accent: #CCDFFF;
+    --ig-pink: #E1306C;
+    --threads-gray: #666;
+    --blog-green: #28A745;
+    --success: #28A745;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  :root {
+    --bg: #0F0F0F;
+    --surface: #1A1A1A;
+    --surface2: #222222;
+    --surface3: #2A2A2A;
+    --border: #333;
+    --border-light: #444;
+    --text: #F0F0F0;
+    --text-muted: #888;
+    --text-dim: #666;
+    --primary: #4A7FD4;
+    --primary-light: #5A8FE4;
+    --primary-bg: rgba(74,127,212,0.08);
+    --primary-border: rgba(74,127,212,0.2);
+    --accent: #CCDFFF;
+    --ig-pink: #E1306C;
+    --threads-gray: #999;
+    --blog-green: #34C759;
+    --success: #30D158;
+    --warning: #FFD60A;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-nav { flex: 1; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active {
+    color: var(--primary-light);
+    background: var(--primary-bg);
+    border-left-color: var(--primary);
+    font-weight: 500;
+  }
+
+  .nav-icon { width: 18px; text-align: center; font-size: 14px; }
+  .nav-section { padding: 16px 20px 6px; font-size: 10px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ===== Main ===== */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    background: var(--surface);
+  }
+
+  .tab {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--primary-light); border-bottom-color: var(--primary); }
+
+  .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    margin-left: 6px;
+  }
+
+  /* Content area */
+  .content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  /* ===== VIEW 1: Compose ===== */
+  .compose-view { display: flex; gap: 24px; height: calc(100vh - 110px); }
+
+  /* Left: Platform selector */
+  .platform-panel {
+    width: 200px;
+    flex-shrink: 0;
+  }
+
+  .platform-panel h3 { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+  .platform-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 4px;
+  }
+
+  .platform-option:hover { background: var(--surface2); }
+  .platform-option.selected { background: var(--primary-bg); border: 1px solid var(--primary-border); }
+
+  .platform-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .platform-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .platform-check.checked { background: var(--primary); border-color: var(--primary); color: white; }
+
+  .platform-name { font-size: 13px; }
+
+  /* AI Assist box */
+  .ai-assist-box {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(74,127,212,0.08), rgba(74,127,212,0.03));
+    border: 1px solid var(--primary-border);
+  }
+
+  .ai-assist-box h4 { font-size: 12px; font-weight: 600; color: var(--primary-light); margin-bottom: 6px; }
+  .ai-assist-box p { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+  .ai-assist-btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* Center: Editor */
+  .editor-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .toolbar-left { display: flex; gap: 4px; }
+
+  .toolbar-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .toolbar-btn:hover { background: var(--surface3); color: var(--text); }
+
+  .editor-textarea {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 16px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.7;
+    resize: none;
+    font-family: inherit;
+    outline: none;
+    min-height: 200px;
+  }
+
+  .editor-textarea::placeholder { color: var(--text-dim); }
+
+  .editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .char-count { font-size: 11px; color: var(--text-dim); }
+
+  .media-actions { display: flex; gap: 6px; }
+
+  .media-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+
+  .media-btn:hover { border-color: var(--primary-border); color: var(--text); }
+
+  /* Hashtag bar */
+  .hashtag-bar {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hashtag {
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--primary-bg);
+    border: 1px solid var(--primary-border);
+    color: var(--primary-light);
+    font-size: 11px;
+  }
+
+  /* Schedule bar */
+  .schedule-bar {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .schedule-input {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+  }
+
+  .publish-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.15s;
+  }
+
+  .publish-btn:hover { background: var(--primary-light); }
+
+  /* Right: Preview */
+  .preview-panel {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  .preview-panel h3 { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .preview-card {
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preview-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .preview-username { font-size: 12px; font-weight: 600; }
+
+  .preview-image {
+    width: 100%;
+    height: 160px;
+    background: linear-gradient(135deg, var(--surface2), var(--surface3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  .preview-body { padding: 10px 12px; }
+  .preview-body p { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+  .preview-actions {
+    display: flex;
+    gap: 16px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .preview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* ===== VIEW 2: Calendar ===== */
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .calendar-header h2 { font-size: 18px; font-weight: 600; }
+
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .calendar-nav button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .calendar-nav span { font-size: 14px; font-weight: 600; }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .cal-day-header {
+    padding: 10px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-day {
+    min-height: 110px;
+    padding: 8px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .cal-day:hover { background: var(--surface2); }
+  .cal-day:nth-child(7n) { border-right: none; }
+  .cal-day.other-month { opacity: 0.3; }
+  .cal-day.today { background: var(--primary-bg); }
+
+  .cal-date {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .cal-day.today .cal-date { color: var(--primary-light); font-weight: 700; }
+
+  .cal-post {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-bottom: 3px;
+    cursor: grab;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .cal-post.ig { background: rgba(225,48,108,0.15); color: #E1306C; }
+  .cal-post.threads { background: rgba(153,153,153,0.15); color: #bbb; }
+  .cal-post.blog { background: rgba(52,199,89,0.15); color: #34C759; }
+
+  .cal-post-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .cal-post.ig .cal-post-dot { background: #E1306C; }
+  .cal-post.threads .cal-post-dot { background: #999; }
+  .cal-post.blog .cal-post-dot { background: #34C759; }
+
+  .cal-add {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface3);
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cal-day:hover .cal-add { display: flex; }
+
+  .cal-holiday {
+    font-size: 9px;
+    color: var(--warning);
+    margin-top: 2px;
+  }
+
+  /* ===== VIEW 3: Media Library ===== */
+  .media-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .media-filters {
+    display: flex;
+    gap: 8px;
+  }
+
+  .media-filter {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .media-filter.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+  .media-search {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    width: 220px;
+    font-family: inherit;
+  }
+
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  .media-item {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .media-item:hover { border-color: var(--primary-border); transform: scale(1.02); }
+
+  .media-item-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .media-item-icon { font-size: 28px; opacity: 0.5; }
+  .media-item-label { font-size: 10px; color: var(--text-dim); }
+
+  .media-item-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  .media-item-badge.banner { background: rgba(74,127,212,0.2); color: var(--primary-light); }
+  .media-item-badge.image { background: rgba(52,199,89,0.2); color: var(--blog-green); }
+
+  /* ===== Section dividers ===== */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .view-label {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--primary-bg);
+    border: 1px solid var(--primary-border);
+    color: var(--primary-light);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* Page label */
+  .page-label {
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-label strong { color: var(--primary-light); }
+
+  /* ===== Ad Pipeline ===== */
+  .pipeline-stepper { display: flex; gap: 0; margin-bottom: 24px; }
+
+  .pipeline-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  .pipeline-step::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+  }
+
+  .pipeline-step:last-child::after { display: none; }
+
+  .pipeline-step.done::after { background: var(--primary); }
+
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+
+  .pipeline-step.done .step-circle { background: var(--primary); border-color: var(--primary); color: white; }
+  .pipeline-step.active .step-circle { border-color: var(--primary); color: var(--primary-light); box-shadow: 0 0 0 4px var(--primary-bg); }
+
+  .step-label { font-size: 10px; color: var(--text-dim); margin-top: 8px; text-align: center; }
+  .pipeline-step.active .step-label { color: var(--primary-light); font-weight: 600; }
+  .pipeline-step.done .step-label { color: var(--text-muted); }
+
+  .pipeline-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 20px;
+  }
+
+  .pipeline-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .pipeline-card .desc { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+  .creative-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+
+  .creative-item {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface2);
+  }
+
+  .creative-thumb {
+    height: 70px;
+    background: var(--surface3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .creative-info { padding: 8px; }
+  .creative-info p { font-size: 10px; color: var(--text-muted); line-clamp: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .creative-info .size-badge { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  .copy-match {
+    border-top: 1px solid var(--border);
+    padding: 6px 8px;
+    background: var(--primary-bg);
+  }
+
+  .copy-match p { font-size: 9px; color: var(--primary-light); font-weight: 500; line-clamp: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+
+  .stat-card {
+    text-align: center;
+    padding: 14px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .stat-change { font-size: 10px; margin-top: 4px; }
+  .stat-change.up { color: var(--success); }
+  .stat-change.down { color: #FF453A; }
+
+  .report-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  .pipeline-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .pipeline-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .pipeline-btn.primary { background: var(--primary); color: white; }
+  .pipeline-btn.secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); }
+
+  /* Pipeline project list */
+  .pipeline-projects { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+
+  .pipeline-project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pipeline-project-item:hover { border-color: var(--primary-border); }
+  .pipeline-project-item.active { border-color: var(--primary); background: var(--primary-bg); }
+
+  .project-meta { display: flex; align-items: center; gap: 8px; }
+  .project-name { font-size: 13px; font-weight: 500; }
+  .project-date { font-size: 10px; color: var(--text-dim); }
+
+  .stage-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--primary-bg);
+    color: var(--primary-light);
+    border: 1px solid var(--primary-border);
+  }
+
+  .stage-badge.completed { background: rgba(48,209,88,0.1); color: var(--success); border-color: rgba(48,209,88,0.2); }
+
+  /* ===== History ===== */
+  .history-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .history-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .history-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table tr:hover td { background: var(--surface2); }
+
+  .status-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .status-pill.scheduled { background: rgba(74,127,212,0.1); color: var(--primary-light); }
+  .status-pill.published { background: rgba(48,209,88,0.1); color: var(--success); }
+  .status-pill.draft { background: rgba(153,153,153,0.1); color: var(--text-muted); }
+  .status-pill.confirmed { background: rgba(255,214,10,0.1); color: var(--warning); }
+
+  .platform-pills { display: flex; gap: 4px; }
+
+  .platform-pill {
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .platform-pill.ig { background: rgba(225,48,108,0.1); color: var(--ig-pink); }
+  .platform-pill.th { background: rgba(153,153,153,0.1); color: var(--text-muted); }
+  .platform-pill.bl { background: rgba(52,199,89,0.1); color: var(--blog-green); }
+
+  .history-actions { display: flex; gap: 6px; }
+
+  .history-action-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .history-action-btn:hover { border-color: var(--primary-border); color: var(--primary-light); }
+  .history-action-btn.danger:hover { border-color: #FF453A; color: #FF453A; }
+
+  /* History stats row */
+  .history-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .history-stat {
+    padding: 14px 20px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    flex: 1;
+  }
+
+  .history-stat-value { font-size: 24px; font-weight: 700; }
+  .history-stat-label { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Light mode card shadows */
+  [data-theme="light"] .preview-card,
+  [data-theme="light"] .media-item,
+  [data-theme="light"] .cal-day { box-shadow: var(--shadow); }
+  [data-theme="light"] .sidebar { box-shadow: 1px 0 4px rgba(0,0,0,0.04); }
+  [data-theme="light"] .editor-toolbar,
+  [data-theme="light"] .editor-textarea,
+  [data-theme="light"] .editor-footer { box-shadow: var(--shadow); }
+  [data-theme="light"] .platform-option.selected { background: rgba(74,127,212,0.08); }
+  [data-theme="light"] .cal-post.ig { background: rgba(225,48,108,0.1); }
+  [data-theme="light"] .cal-post.threads { background: rgba(100,100,100,0.1); }
+  [data-theme="light"] .cal-post.blog { background: rgba(40,167,69,0.1); }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .theme-toggle:hover { border-color: var(--primary); }
+  .theme-toggle-icon { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- Theme Toggle -->
+<button class="theme-toggle" onclick="toggleTheme()">
+  <span class="theme-toggle-icon" id="themeIcon">sun</span>
+  <span id="themeLabel">Light Mode</span>
+</button>
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    document.getElementById('themeIcon').textContent = next === 'dark' ? 'sun' : 'moon';
+    document.getElementById('themeLabel').textContent = next === 'dark' ? 'Light Mode' : 'Dark Mode';
+  }
+</script>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">Dott.</div>
+  <nav class="sidebar-nav">
+    <div class="nav-item"><span class="nav-icon">~</span> Dashboard</div>
+    <div class="nav-item active"><span class="nav-icon">+</span> Content</div>
+    <div class="nav-item"><span class="nav-icon">#</span> Trends</div>
+    <div class="nav-item"><span class="nav-icon">@</span> Research</div>
+    <div class="nav-item"><span class="nav-icon">!</span> Tasks</div>
+    <div class="nav-section">Tools</div>
+    <div class="nav-item"><span class="nav-icon">*</span> Settings</div>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+
+  <div class="page-label">
+    DESIGN MOCKUP &mdash; <strong>Publer-Inspired Dott Content Page</strong> &mdash; 5개 뷰 (Compose / Calendar / Media Library / Ad Pipeline / History)
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab active" data-tab="compose" onclick="switchTab('compose')">Compose</div>
+    <div class="tab" data-tab="calendar" onclick="switchTab('calendar')">Calendar <span class="tab-badge">5</span></div>
+    <div class="tab" data-tab="media" onclick="switchTab('media')">Media Library</div>
+    <div class="tab" data-tab="pipeline" onclick="switchTab('pipeline')">Ad Pipeline</div>
+    <div class="tab" data-tab="history" onclick="switchTab('history')">History</div>
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+      document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
+      document.getElementById('view-' + tabId).style.display = 'block';
+    }
+  </script>
+
+  <div class="content-area">
+
+    <!-- ======================================= -->
+    <!-- VIEW 1: COMPOSE (3-column layout) -->
+    <!-- ======================================= -->
+    <div id="view-compose" class="view-section">
+    <div class="section-title">
+      <span class="view-label">VIEW 1</span>
+      Compose &mdash; 3-Column Layout (Publer Style)
+    </div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">
+      좌: 플랫폼 선택 + AI Assist / 중: 에디터 + 미디어 + 스케줄 / 우: 실시간 플랫폼 미리보기
+    </p>
+
+    <div class="compose-view">
+      <!-- Left: Platform Selection -->
+      <div class="platform-panel">
+        <h3>Platforms</h3>
+        <div class="platform-option selected">
+          <span class="platform-check checked">v</span>
+          <span class="platform-dot" style="background:#E1306C"></span>
+          <span class="platform-name">Instagram</span>
+        </div>
+        <div class="platform-option selected">
+          <span class="platform-check checked">v</span>
+          <span class="platform-dot" style="background:#999"></span>
+          <span class="platform-name">Threads</span>
+        </div>
+        <div class="platform-option selected">
+          <span class="platform-check checked">v</span>
+          <span class="platform-dot" style="background:#34C759"></span>
+          <span class="platform-name">Blog</span>
+        </div>
+        <div class="platform-option">
+          <span class="platform-check"></span>
+          <span class="platform-dot" style="background:#1DA1F2"></span>
+          <span class="platform-name" style="color:var(--text-dim)">Twitter/X</span>
+        </div>
+        <div class="platform-option">
+          <span class="platform-check"></span>
+          <span class="platform-dot" style="background:#0A66C2"></span>
+          <span class="platform-name" style="color:var(--text-dim)">LinkedIn</span>
+        </div>
+
+        <!-- AI Assist -->
+        <div class="ai-assist-box">
+          <h4>AI Assist</h4>
+          <p>주제를 입력하면 AI가 플랫폼별 맞춤 콘텐츠를 제안합니다.</p>
+          <button class="ai-assist-btn">AI 아이디어 생성</button>
+        </div>
+      </div>
+
+      <!-- Center: Editor -->
+      <div class="editor-panel">
+        <div class="editor-toolbar">
+          <div class="toolbar-left">
+            <button class="toolbar-btn"><b>B</b></button>
+            <button class="toolbar-btn"><i>I</i></button>
+            <button class="toolbar-btn">@</button>
+            <button class="toolbar-btn">#</button>
+            <button class="toolbar-btn">:)</button>
+          </div>
+          <div style="font-size:11px; color:var(--text-dim)">Instagram</div>
+        </div>
+        <textarea class="editor-textarea" placeholder="무엇에 대해 이야기할까요?
+
+AI Assist를 사용하면 주제만 입력해도 플랫폼에 맞는 콘텐츠를 자동으로 생성합니다.">노코드 마케팅 팝업의 미래
+
+2024년 마케팅 트렌드를 보면, 더 이상 개발자 없이도 전환율 높은 팝업을 만들 수 있는 시대가 왔습니다.
+
+코드앤버터를 사용하면:
+- 드래그앤드롭으로 1분 만에 팝업 생성
+- A/B 테스트로 최적의 디자인 자동 선택
+- 방문자 행동 기반 타겟팅으로 전환율 3배 향상
+
+지금 바로 시작해보세요.</textarea>
+        <div class="editor-footer">
+          <span class="char-count">247 / 2,200</span>
+          <div class="media-actions">
+            <button class="media-btn">+ Image</button>
+            <button class="media-btn">+ Banner</button>
+            <button class="media-btn">+ Canva</button>
+            <button class="media-btn">GIF</button>
+          </div>
+        </div>
+
+        <!-- Hashtags -->
+        <div class="hashtag-bar">
+          <span class="hashtag">#노코드</span>
+          <span class="hashtag">#마케팅팝업</span>
+          <span class="hashtag">#전환율최적화</span>
+          <span class="hashtag">#코드앤버터</span>
+          <span class="hashtag">#그로스해킹</span>
+          <span class="hashtag">#마케팅자동화</span>
+          <span class="hashtag">#SaaS</span>
+        </div>
+
+        <!-- Schedule -->
+        <div class="schedule-bar">
+          <input type="date" class="schedule-input" value="2026-02-25">
+          <input type="time" class="schedule-input" value="10:00">
+          <span style="font-size:11px; color:var(--success);">Best time: 10:00 AM</span>
+          <button class="publish-btn">Schedule Post</button>
+        </div>
+      </div>
+
+      <!-- Right: Live Preview -->
+      <div class="preview-panel">
+        <h3>Live Preview</h3>
+
+        <!-- Instagram Preview -->
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-avatar" style="background:rgba(225,48,108,0.15); color:#E1306C;">IG</div>
+            <div>
+              <div class="preview-username">codenbutter</div>
+              <div style="font-size:10px; color:var(--text-dim)">Instagram</div>
+            </div>
+          </div>
+          <div class="preview-image">
+            <div style="text-align:center">
+              <div style="font-size:24px; margin-bottom:4px;">Banner</div>
+              <div>1080 x 1080</div>
+            </div>
+          </div>
+          <div class="preview-body">
+            <p>노코드 마케팅 팝업의 미래 - 2024년 마케팅 트렌드를 보면, 더 이상 개발자 없이도 전환율 높은 팝업을...</p>
+            <p style="color:var(--primary-light); margin-top:4px; font-size:10px;">#노코드 #마케팅팝업 #전환율최적화</p>
+          </div>
+          <div class="preview-actions">
+            <span>heart</span> <span>comment</span> <span>share</span> <span style="margin-left:auto;">save</span>
+          </div>
+        </div>
+
+        <!-- Threads Preview -->
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-avatar" style="background:rgba(153,153,153,0.15); color:#999;">T</div>
+            <div>
+              <div class="preview-username">codenbutter</div>
+              <div style="font-size:10px; color:var(--text-dim)">Threads</div>
+            </div>
+          </div>
+          <div class="preview-body">
+            <p>노코드 마케팅 팝업의 미래<br><br>드래그앤드롭으로 1분 만에 팝업 생성. A/B 테스트로 최적의 디자인 자동 선택. 지금 바로 시작해보세요.</p>
+          </div>
+          <div class="preview-actions">
+            <span>heart</span> <span>reply</span> <span>repost</span> <span>share</span>
+          </div>
+        </div>
+
+        <!-- Blog Preview -->
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-avatar" style="background:rgba(52,199,89,0.15); color:#34C759;">B</div>
+            <div>
+              <div class="preview-username">Blog Post</div>
+              <div style="font-size:10px; color:var(--text-dim)">codenbutter.com</div>
+            </div>
+          </div>
+          <div class="preview-body">
+            <p style="font-weight:600; font-size:13px; margin-bottom:6px; color:var(--text);">노코드 마케팅 팝업의 미래</p>
+            <p>2024년 마케팅 트렌드를 보면, 더 이상 개발자 없이도 전환율 높은 팝업을 만들 수 있는 시대가 왔습니다...</p>
+            <p style="margin-top:6px; font-size:10px; color:var(--text-dim);">Meta description: 노코드 마케팅 팝업 도구로 전환율을 3배 향상시키세요.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /view-compose -->
+
+    <!-- ======================================= -->
+    <!-- VIEW 2: CALENDAR (Monthly Grid) -->
+    <!-- ======================================= -->
+    <div id="view-calendar" class="view-section" style="display:none;">
+    <div class="section-title">
+      <span class="view-label">VIEW 2</span>
+      Calendar &mdash; Monthly Grid with Post Thumbnails
+    </div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">
+      드래그앤드롭으로 포스트 이동, 셀 클릭으로 바로 생성, 공휴일 표시
+    </p>
+
+    <div class="calendar-header">
+      <h2>February 2026</h2>
+      <div class="calendar-nav">
+        <button>&lt;</button>
+        <span>Today</span>
+        <button>&gt;</button>
+      </div>
+    </div>
+
+    <div class="calendar-grid">
+      <div class="cal-day-header">Sun</div>
+      <div class="cal-day-header">Mon</div>
+      <div class="cal-day-header">Tue</div>
+      <div class="cal-day-header">Wed</div>
+      <div class="cal-day-header">Thu</div>
+      <div class="cal-day-header">Fri</div>
+      <div class="cal-day-header">Sat</div>
+
+      <!-- Week 1 -->
+      <div class="cal-day other-month"><div class="cal-date">25</div></div>
+      <div class="cal-day other-month"><div class="cal-date">26</div></div>
+      <div class="cal-day other-month"><div class="cal-date">27</div></div>
+      <div class="cal-day other-month"><div class="cal-date">28</div></div>
+      <div class="cal-day other-month"><div class="cal-date">29</div></div>
+      <div class="cal-day other-month"><div class="cal-date">30</div></div>
+      <div class="cal-day other-month"><div class="cal-date">31</div></div>
+
+      <!-- Week 2 -->
+      <div class="cal-day"><div class="cal-date">1</div></div>
+      <div class="cal-day"><div class="cal-date">2</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>노코드 마케팅</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">3</div></div>
+      <div class="cal-day"><div class="cal-date">4</div>
+        <div class="cal-post threads"><span class="cal-post-dot"></span>AI 트렌드</div>
+        <div class="cal-post blog"><span class="cal-post-dot"></span>블로그 포스트</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">5</div></div>
+      <div class="cal-day"><div class="cal-date">6</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>전환율 팁</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">7</div></div>
+
+      <!-- Week 3 -->
+      <div class="cal-day"><div class="cal-date">8</div></div>
+      <div class="cal-day"><div class="cal-date">9</div></div>
+      <div class="cal-day"><div class="cal-date">10</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>팝업 디자인</div>
+        <div class="cal-post threads"><span class="cal-post-dot"></span>SaaS 트렌드</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">11</div></div>
+      <div class="cal-day"><div class="cal-date">12</div>
+        <div class="cal-post blog"><span class="cal-post-dot"></span>케이스 스터디</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">13</div></div>
+      <div class="cal-day"><div class="cal-date">14</div>
+        <div class="cal-holiday">Valentine's Day</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>발렌타인 이벤트</div>
+      </div>
+
+      <!-- Week 4 -->
+      <div class="cal-day"><div class="cal-date">15</div></div>
+      <div class="cal-day"><div class="cal-date">16</div>
+        <div class="cal-post threads"><span class="cal-post-dot"></span>마케팅 인사이트</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">17</div></div>
+      <div class="cal-day"><div class="cal-date">18</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>A/B 테스트 결과</div>
+        <div class="cal-post blog"><span class="cal-post-dot"></span>성과 리포트</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">19</div></div>
+      <div class="cal-day"><div class="cal-date">20</div></div>
+      <div class="cal-day"><div class="cal-date">21</div></div>
+
+      <!-- Week 5 -->
+      <div class="cal-day"><div class="cal-date">22</div></div>
+      <div class="cal-day today"><div class="cal-date">23</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>오늘의 포스트</div>
+        <button class="cal-add" style="display:flex;">+</button>
+      </div>
+      <div class="cal-day"><div class="cal-date">24</div>
+        <div class="cal-post threads"><span class="cal-post-dot"></span>그로스해킹 팁</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">25</div>
+        <div class="cal-post ig"><span class="cal-post-dot"></span>신규 기능 소개</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">26</div></div>
+      <div class="cal-day"><div class="cal-date">27</div>
+        <div class="cal-post blog"><span class="cal-post-dot"></span>주간 뉴스레터</div>
+      </div>
+      <div class="cal-day"><div class="cal-date">28</div></div>
+    </div>
+
+    </div><!-- /view-calendar -->
+
+    <!-- ======================================= -->
+    <!-- VIEW 3: MEDIA LIBRARY -->
+    <!-- ======================================= -->
+    <div id="view-media" class="view-section" style="display:none;">
+    <div class="section-title">
+      <span class="view-label">VIEW 3</span>
+      Media Library &mdash; Asset Management
+    </div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">
+      배너, 이미지, 디자인 에셋을 한 곳에서 관리. 라벨/필터/검색 지원.
+    </p>
+
+    <div class="media-header">
+      <div class="media-filters">
+        <button class="media-filter active">All</button>
+        <button class="media-filter">Banners</button>
+        <button class="media-filter">Images</button>
+        <button class="media-filter">Videos</button>
+        <button class="media-filter">Favorites</button>
+      </div>
+      <input type="text" class="media-search" placeholder="Search media...">
+    </div>
+
+    <div class="media-grid">
+      <div class="media-item">
+        <span class="media-item-badge banner">BANNER</span>
+        <div class="media-item-inner">
+          <div class="media-item-icon" style="color:var(--primary);">[ ]</div>
+          <div class="media-item-label">봄맞이 팝업 배너</div>
+          <div style="font-size:9px; color:var(--text-dim);">1080x1080</div>
+        </div>
+      </div>
+      <div class="media-item">
+        <span class="media-item-badge banner">BANNER</span>
+        <div class="media-item-inner">
+          <div class="media-item-icon" style="color:var(--primary);">[ ]</div>
+          <div class="media-item-label">전환율 광고 배너</div>
+          <div style="font-size:9px; color:var(--text-dim);">1200x628</div>
+        </div>
+      </div>
+      <div class="media-item">
+        <span class="media-item-badge image">IMAGE</span>
+        <div class="media-item-inner" style="background: linear-gradient(135deg, #2a1a3a, #1a2a4a);">
+          <div class="media-item-icon">photo</div>
+          <div class="media-item-label">제품 스크린샷</div>
+        </div>
+      </div>
+      <div class="media-item">
+        <span class="media-item-badge image">IMAGE</span>
+        <div class="media-item-inner" style="background: linear-gradient(135deg, #1a3a2a, #2a3a1a);">
+          <div class="media-item-icon">photo</div>
+          <div class="media-item-label">팀 사진</div>
+        </div>
+      </div>
+      <div class="media-item">
+        <span class="media-item-badge banner">BANNER</span>
+        <div class="media-item-inner">
+          <div class="media-item-icon" style="color:var(--primary);">[ ]</div>
+          <div class="media-item-label">스토리 배너</div>
+          <div style="font-size:9px; color:var(--text-dim);">1080x1920</div>
+        </div>
+      </div>
+      <div class="media-item">
+        <div class="media-item-inner" style="background: linear-gradient(135deg, #3a2a1a, #4a3a1a);">
+          <div class="media-item-icon">photo</div>
+          <div class="media-item-label">인포그래픽</div>
+        </div>
+      </div>
+      <div class="media-item">
+        <span class="media-item-badge banner">BANNER</span>
+        <div class="media-item-inner">
+          <div class="media-item-icon" style="color:var(--primary);">[ ]</div>
+          <div class="media-item-label">뉴스레터 헤더</div>
+          <div style="font-size:9px; color:var(--text-dim);">728x90</div>
+        </div>
+      </div>
+      <div class="media-item" style="border-style:dashed;">
+        <div class="media-item-inner">
+          <div style="font-size:20px; color:var(--text-dim);">+</div>
+          <div class="media-item-label">Upload</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /view-media -->
+
+    <!-- ======================================= -->
+    <!-- VIEW 4: AD PIPELINE -->
+    <!-- ======================================= -->
+    <div id="view-pipeline" class="view-section" style="display:none;">
+    <div class="section-title">
+      <span class="view-label">VIEW 4</span>
+      Ad Pipeline &mdash; 5-Stage Creative Workflow
+    </div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">
+      소재 생성 &rarr; 카피 매칭 &rarr; 캠페인 집행 &rarr; 성과 수집 &rarr; AI 리포트. 프로젝트 단위 관리.
+    </p>
+
+    <!-- Project list -->
+    <div class="pipeline-projects">
+      <div class="pipeline-project-item active">
+        <div>
+          <div class="project-name">3월 봄맞이 캠페인</div>
+          <div class="project-date">2026-02-20</div>
+        </div>
+        <span class="stage-badge">Stage 3</span>
+      </div>
+      <div class="pipeline-project-item">
+        <div>
+          <div class="project-name">신규 기능 런칭 광고</div>
+          <div class="project-date">2026-02-15</div>
+        </div>
+        <span class="stage-badge completed">Completed</span>
+      </div>
+      <div class="pipeline-project-item">
+        <div>
+          <div class="project-name">리타게팅 A/B 테스트</div>
+          <div class="project-date">2026-02-10</div>
+        </div>
+        <span class="stage-badge">Stage 1</span>
+      </div>
+    </div>
+
+    <!-- Stepper -->
+    <div class="pipeline-stepper">
+      <div class="pipeline-step done">
+        <div class="step-circle">v</div>
+        <div class="step-label">소재 생성</div>
+      </div>
+      <div class="pipeline-step done">
+        <div class="step-circle">v</div>
+        <div class="step-label">카피 매칭</div>
+      </div>
+      <div class="pipeline-step active">
+        <div class="step-circle">3</div>
+        <div class="step-label">캠페인 집행</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-circle">4</div>
+        <div class="step-label">성과 수집</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-circle">5</div>
+        <div class="step-label">AI 리포트</div>
+      </div>
+    </div>
+
+    <!-- Stage 3 detail card -->
+    <div class="pipeline-card">
+      <h3>Stage 3: 메타 캠페인 자동 집행</h3>
+      <p class="desc">생성된 소재와 카피를 조합하여 메타 광고 캠페인을 자동으로 설정합니다.</p>
+
+      <!-- Generated creatives grid -->
+      <div style="font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:8px;">생성된 소재 (6개)</div>
+      <div class="creative-grid">
+        <div class="creative-item">
+          <div class="creative-thumb">1080x1080</div>
+          <div class="creative-info">
+            <p>노코드로 팝업을 만들어보세요</p>
+            <div class="size-badge">Square</div>
+          </div>
+          <div class="copy-match"><p>Headline: 1분만에 완성하는 마케팅</p></div>
+        </div>
+        <div class="creative-item">
+          <div class="creative-thumb">1200x628</div>
+          <div class="creative-info">
+            <p>노코드로 팝업을 만들어보세요</p>
+            <div class="size-badge">Landscape</div>
+          </div>
+          <div class="copy-match"><p>Headline: 개발자 없이 전환율 UP</p></div>
+        </div>
+        <div class="creative-item">
+          <div class="creative-thumb">1080x1920</div>
+          <div class="creative-info">
+            <p>전환율을 높이는 배너</p>
+            <div class="size-badge">Story</div>
+          </div>
+          <div class="copy-match"><p>Headline: A/B 테스트로 최적화</p></div>
+        </div>
+        <div class="creative-item">
+          <div class="creative-thumb">1080x1080</div>
+          <div class="creative-info">
+            <p>전환율을 높이는 배너</p>
+            <div class="size-badge">Square</div>
+          </div>
+          <div class="copy-match"><p>Headline: 코드앤버터 시작하기</p></div>
+        </div>
+      </div>
+
+      <!-- Campaign config -->
+      <div style="display:flex; gap:12px; margin-bottom:12px;">
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Campaign Name</div>
+          <input type="text" class="schedule-input" value="3월 봄맞이 캠페인" style="width:100%;">
+        </div>
+        <div style="width:140px;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Daily Budget</div>
+          <input type="text" class="schedule-input" value="15,000 won" style="width:100%;">
+        </div>
+        <div style="width:140px;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Duration</div>
+          <input type="text" class="schedule-input" value="14 days" style="width:100%;">
+        </div>
+      </div>
+
+      <div class="pipeline-actions">
+        <button class="pipeline-btn secondary">Back to Stage 2</button>
+        <button class="pipeline-btn primary">Launch Campaign</button>
+      </div>
+    </div>
+
+    <!-- Completed pipeline example: Stats + Report -->
+    <div style="margin-top:24px; padding-top:24px; border-top:1px solid var(--border);">
+      <div style="font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:12px;">COMPLETED PIPELINE EXAMPLE &mdash; Stage 5 AI Report</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">124K</div>
+          <div class="stat-label">Impressions</div>
+          <div class="stat-change up">+23%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">3,842</div>
+          <div class="stat-label">Clicks</div>
+          <div class="stat-change up">+15%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">3.1%</div>
+          <div class="stat-label">CTR</div>
+          <div class="stat-change up">+0.4%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">287</div>
+          <div class="stat-label">Conversions</div>
+          <div class="stat-change down">-5%</div>
+        </div>
+      </div>
+
+      <div class="report-preview">
+        <strong>AI Performance Report</strong><br><br>
+        <strong>1. Overall Performance</strong><br>
+        Campaign delivered 124K impressions over 14 days with a CTR of 3.1% — above the industry benchmark of 2.4%. Total spend was 210,000 won with a CPC of 55 won.<br><br>
+        <strong>2. Top Performing Creatives</strong><br>
+        - Square (1080x1080) "노코드로 팝업을 만들어보세요" delivered the highest CTR at 3.8%<br>
+        - Story format (1080x1920) had the lowest CPC at 42 won<br><br>
+        <strong>3. Recommendations</strong><br>
+        - Scale Square format creative budget by 30%<br>
+        - Test new copy variations for Landscape format (underperforming at 2.1% CTR)<br>
+        - Consider retargeting audience for higher conversion rate
+      </div>
+    </div>
+
+    </div><!-- /view-pipeline -->
+
+    <!-- ======================================= -->
+    <!-- VIEW 5: HISTORY -->
+    <!-- ======================================= -->
+    <div id="view-history" class="view-section" style="display:none;">
+    <div class="section-title">
+      <span class="view-label">VIEW 5</span>
+      History &mdash; Content &amp; Ad Project Archive
+    </div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">
+      모든 콘텐츠 프로젝트와 광고 파이프라인 히스토리를 통합 관리.
+    </p>
+
+    <!-- Summary stats -->
+    <div class="history-stats">
+      <div class="history-stat">
+        <div class="history-stat-value">24</div>
+        <div class="history-stat-label">Total Projects</div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-value" style="color:var(--success)">18</div>
+        <div class="history-stat-label">Published</div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-value" style="color:var(--primary-light)">4</div>
+        <div class="history-stat-label">Scheduled</div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-value" style="color:var(--text-dim)">2</div>
+        <div class="history-stat-label">Drafts</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div class="media-filters">
+        <button class="media-filter active">All</button>
+        <button class="media-filter">Content</button>
+        <button class="media-filter">Ad Pipeline</button>
+      </div>
+      <input type="text" class="media-search" placeholder="Search projects...">
+    </div>
+
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Type</th>
+          <th>Platforms</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div style="font-weight:500;">인플루언서 마케팅 활용법</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">AI generated &bull; 3 platforms</div>
+          </td>
+          <td><span class="platform-pill bl" style="background:var(--primary-bg); color:var(--primary-light)">Content</span></td>
+          <td>
+            <div class="platform-pills">
+              <span class="platform-pill ig">IG</span>
+              <span class="platform-pill th">TH</span>
+              <span class="platform-pill bl">Blog</span>
+            </div>
+          </td>
+          <td><span class="status-pill published">Published</span></td>
+          <td style="font-size:12px; color:var(--text-muted);">2026-02-22</td>
+          <td>
+            <div class="history-actions">
+              <button class="history-action-btn">View</button>
+              <button class="history-action-btn">Reuse</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:500;">3월 봄맞이 캠페인</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">6 creatives &bull; Stage 3</div>
+          </td>
+          <td><span class="platform-pill ig" style="background:rgba(255,214,10,0.1); color:var(--warning)">Ad Pipeline</span></td>
+          <td>
+            <div class="platform-pills">
+              <span class="platform-pill ig">Meta</span>
+            </div>
+          </td>
+          <td><span class="status-pill scheduled">In Progress</span></td>
+          <td style="font-size:12px; color:var(--text-muted);">2026-02-20</td>
+          <td>
+            <div class="history-actions">
+              <button class="history-action-btn">Open</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:500;">노코드 팝업 가이드</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">AI generated &bull; 2 platforms</div>
+          </td>
+          <td><span class="platform-pill bl" style="background:var(--primary-bg); color:var(--primary-light)">Content</span></td>
+          <td>
+            <div class="platform-pills">
+              <span class="platform-pill ig">IG</span>
+              <span class="platform-pill bl">Blog</span>
+            </div>
+          </td>
+          <td><span class="status-pill scheduled">Scheduled</span></td>
+          <td style="font-size:12px; color:var(--text-muted);">2026-02-18</td>
+          <td>
+            <div class="history-actions">
+              <button class="history-action-btn">View</button>
+              <button class="history-action-btn">Edit</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:500;">신규 기능 런칭 광고</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">4 creatives &bull; CTR 3.1%</div>
+          </td>
+          <td><span class="platform-pill ig" style="background:rgba(255,214,10,0.1); color:var(--warning)">Ad Pipeline</span></td>
+          <td>
+            <div class="platform-pills">
+              <span class="platform-pill ig">Meta</span>
+            </div>
+          </td>
+          <td><span class="status-pill published">Completed</span></td>
+          <td style="font-size:12px; color:var(--text-muted);">2026-02-15</td>
+          <td>
+            <div class="history-actions">
+              <button class="history-action-btn">Report</button>
+              <button class="history-action-btn">Reuse</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:500;">AI 마케팅 트렌드 분석</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Draft &bull; 3 platforms</div>
+          </td>
+          <td><span class="platform-pill bl" style="background:var(--primary-bg); color:var(--primary-light)">Content</span></td>
+          <td>
+            <div class="platform-pills">
+              <span class="platform-pill ig">IG</span>
+              <span class="platform-pill th">TH</span>
+              <span class="platform-pill bl">Blog</span>
+            </div>
+          </td>
+          <td><span class="status-pill draft">Draft</span></td>
+          <td style="font-size:12px; color:var(--text-muted);">2026-02-12</td>
+          <td>
+            <div class="history-actions">
+              <button class="history-action-btn">Edit</button>
+              <button class="history-action-btn danger">Del</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:500;">전환율 최적화 실전 가이드</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">AI generated &bull; 2 platforms</div>
+          </td>
+          <td><span class="platform-pill bl" style="background:var(--primary-bg); color:var(--primary-light)">Content</span></td>
+          <td>
+            <div class="platform-pills">
+              <span class="platform-pill ig">IG</span>
+              <span class="platform-pill bl">Blog</span>
+            </div>
+          </td>
+          <td><span class="status-pill published">Published</span></td>
+          <td style="font-size:12px; color:var(--text-muted);">2026-02-08</td>
+          <td>
+            <div class="history-actions">
+              <button class="history-action-btn">View</button>
+              <button class="history-action-btn">Reuse</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    </div><!-- /view-history -->
+
+  </div>
+</div>
+
+</body>
+</html>

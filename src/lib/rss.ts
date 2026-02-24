@@ -4,19 +4,19 @@ import { TrendArticle } from '@/types';
 
 const parser = new Parser({
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; DittoBot/1.0)',
+    'User-Agent': 'Mozilla/5.0 (compatible; DottBot/1.0)',
     'Accept': 'application/rss+xml, application/xml, text/xml',
   },
   timeout: 10000,
 });
 
-const FEED_QUERIES: { query: string; category: 'beauty' | 'fashion' | 'ai' | 'planning' | 'marketing' }[] = [
+const FEED_QUERIES: { query: string; category: 'ai' | 'planning' | 'marketing' | 'tech' }[] = [
   { query: '디지털 마케팅 트렌드', category: 'marketing' },
+  { query: '마케팅 전략 그로스해킹', category: 'marketing' },
   { query: '서비스 기획 IT 기획', category: 'planning' },
   { query: 'AI 인공지능 트렌드', category: 'ai' },
-  { query: 'IT 테크 기술 트렌드', category: 'ai' },
-  { query: '패션 트렌드', category: 'fashion' },
-  { query: '뷰티 트렌드', category: 'beauty' },
+  { query: 'IT 테크 SaaS 트렌드', category: 'tech' },
+  { query: '퍼포먼스 마케팅 광고', category: 'marketing' },
 ];
 
 const FEEDS = FEED_QUERIES.map(({ query, category }) => ({
@@ -71,15 +71,19 @@ export async function fetchAndStoreArticles(): Promise<{ inserted: number; total
   return { inserted, total };
 }
 
-export async function getArticles(category?: string): Promise<TrendArticle[]> {
+export async function getArticles(category?: string, since?: string): Promise<TrendArticle[]> {
   let query = supabase
     .from('trend_articles')
     .select('*')
     .order('pub_date', { ascending: false })
     .limit(50);
 
-  if (category && ['beauty', 'fashion', 'ai', 'planning', 'marketing'].includes(category)) {
+  if (category && ['ai', 'planning', 'marketing', 'tech'].includes(category)) {
     query = query.eq('category', category);
+  }
+
+  if (since) {
+    query = query.gte('created_at', since);
   }
 
   const { data, error } = await query;

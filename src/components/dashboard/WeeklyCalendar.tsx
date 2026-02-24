@@ -10,6 +10,7 @@ import {
   isToday,
   parseISO,
 } from 'date-fns';
+import { ko } from 'date-fns/locale';
 import { CalendarDays, ChevronLeft, ChevronRight, Unplug } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,7 +102,7 @@ export default function WeeklyCalendar() {
     setEvents([]);
   };
 
-  const dateRange = `${format(weekStart, 'MMM d, yyyy')} — ${format(weekEnd, 'MMM d')}`;
+  const dateRange = `${format(weekStart, 'yyyy년 M월 d일', { locale: ko })} — ${format(weekEnd, 'M월 d일', { locale: ko })}`;
 
   return (
     <Card>
@@ -111,14 +112,14 @@ export default function WeeklyCalendar() {
             <div className="flex items-center gap-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <CalendarDays className="size-4" />
-                Weekly Calendar
+                주간 캘린더
               </CardTitle>
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-                  Calendar
+                  캘린더
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">
-                  My tasks
+                  내 태스크
                 </span>
               </div>
             </div>
@@ -126,7 +127,7 @@ export default function WeeklyCalendar() {
           </div>
           <div className="flex items-center gap-1">
             {connected && (
-              <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="Disconnect">
+              <Button variant="ghost" size="icon-xs" onClick={handleDisconnect} title="연결 해제">
                 <Unplug className="size-3" />
               </Button>
             )}
@@ -134,7 +135,7 @@ export default function WeeklyCalendar() {
               <ChevronLeft className="size-3" />
             </Button>
             <Button variant="ghost" size="xs" onClick={goToday}>
-              Today
+              오늘
             </Button>
             <Button variant="ghost" size="icon-xs" onClick={goNext}>
               <ChevronRight className="size-3" />
@@ -147,10 +148,10 @@ export default function WeeklyCalendar() {
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CalendarDays className="size-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground mb-4">
-              Connect Google Calendar to view your schedule
+              Google 캘린더를 연결하여 일정을 확인하세요
             </p>
             <Button asChild>
-              <a href="/api/google/auth">Connect Google Calendar</a>
+              <a href="/api/google/auth">Google 캘린더 연결</a>
             </Button>
           </div>
         ) : (
@@ -171,7 +172,7 @@ export default function WeeklyCalendar() {
                   {/* Date column */}
                   <div className="w-14 shrink-0 text-center pt-0.5">
                     <p className="text-[10px] text-muted-foreground uppercase">
-                      {format(day, 'EEE')}
+                      {format(day, 'EEE', { locale: ko })}
                     </p>
                     <p
                       className={`text-lg font-semibold leading-tight ${
@@ -189,7 +190,7 @@ export default function WeeklyCalendar() {
                     )}
 
                     {!hasItems && (
-                      <p className="text-xs text-muted-foreground py-1 pl-4">No events</p>
+                      <p className="text-xs text-muted-foreground py-1 pl-4">일정 없음</p>
                     )}
 
                     <div className="space-y-1.5 pl-4">
@@ -207,7 +208,7 @@ export default function WeeklyCalendar() {
                               </p>
                               <span className="text-[10px] text-blue-600/70 shrink-0">
                                 {event.allDay
-                                  ? 'All day'
+                                  ? '종일'
                                   : format(parseISO(event.start), 'HH:mm')}
                               </span>
                             </div>
@@ -229,10 +230,10 @@ export default function WeeklyCalendar() {
                               </p>
                               <span className="text-[10px] text-green-600/70 shrink-0">
                                 {task.status === 'todo'
-                                  ? 'To do'
+                                  ? '할 일'
                                   : task.status === 'in_progress'
-                                  ? 'In progress'
-                                  : 'Done'}
+                                  ? '진행 중'
+                                  : '완료'}
                               </span>
                             </div>
                           </div>

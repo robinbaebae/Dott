@@ -24,7 +24,7 @@ async function fetchMetadata(url: string) {
 
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DittoBot/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DottBot/1.0)' },
       signal: AbortSignal.timeout(8000),
     });
     const html = await res.text();
@@ -64,29 +64,33 @@ export async function GET(req: NextRequest) {
 
 // POST — save a URL as an insight
 export async function POST(req: NextRequest) {
-  const { url } = await req.json();
+  const body = await req.json();
+  const { url, content_type, swipe_category } = body;
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'url required' }, { status: 400 });
   }
 
-  const contentType = classifyUrl(url);
+  const contentType = content_type === 'swipe' ? 'swipe' : classifyUrl(url);
   const sourceDomain = extractDomain(url);
   const { title, description, thumbnailUrl } = await fetchMetadata(url);
 
+  const insertData: Record<string, unknown> = {
+    url,
+    title: title || sourceDomain || url,
+    description,
+    memo: '',
+    content_type: contentType,
+    thumbnail_url: thumbnailUrl,
+    source_domain: sourceDomain,
+  };
+
+  if (contentType === 'swipe' && swipe_category) {
+    insertData.swipe_category = swipe_category;
+  }
+
   const { data, error } = await supabase
     .from('insights')
-    .upsert(
-      {
-        url,
-        title: title || sourceDomain || url,
-        description,
-        memo: '',
-        content_type: contentType,
-        thumbnail_url: thumbnailUrl,
-        source_domain: sourceDomain,
-      },
-      { onConflict: 'url' },
-    )
+    .upsert(insertData, { onConflict: 'url' })
     .select()
     .single();
 

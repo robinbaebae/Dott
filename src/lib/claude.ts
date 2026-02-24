@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 
 const CLAUDE_PATH = '/Users/sooyoungbae/.npm-global/bin/claude';
 
-function getCleanEnv(): Record<string, string> {
+function getCleanEnv() {
   return {
     HOME: process.env.HOME || '',
     PATH: process.env.PATH || '',
@@ -10,7 +10,7 @@ function getCleanEnv(): Record<string, string> {
     SHELL: process.env.SHELL || '/bin/zsh',
     TMPDIR: process.env.TMPDIR || '/tmp',
     LANG: process.env.LANG || 'en_US.UTF-8',
-  };
+  } as unknown as NodeJS.ProcessEnv;
 }
 
 function runClaude(prompt: string): Promise<string> {

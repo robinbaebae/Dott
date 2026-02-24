@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAndStoreArticles, getArticles } from '@/lib/rss';
+import { logActivity } from '@/lib/activity';
 
 // GET - 트렌드 아티클 목록 조회
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category') ?? undefined;
-    const articles = await getArticles(category);
+    const since = searchParams.get('since') ?? undefined;
+    const articles = await getArticles(category, since);
     return NextResponse.json(articles);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -18,6 +20,7 @@ export async function GET(req: NextRequest) {
 export async function POST() {
   try {
     const result = await fetchAndStoreArticles();
+    await logActivity('trend_refresh', 'research', { inserted: result.inserted });
     return NextResponse.json({
       success: true,
       message: `${result.inserted}건 수집 완료 (총 ${result.total}건 확인)`,

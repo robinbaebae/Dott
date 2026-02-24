@@ -1,99 +1,108 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { spawn } from 'child_process';
 
-const CLAUDE_PATH = '/Users/sooyoungbae/.npm-global/bin/claude';
+// GET: 세션 목록 또는 특정 세션 메시지 조회
+export async function GET(req: NextRequest) {
+  const sessionId = req.nextUrl.searchParams.get('sessionId');
 
-export async function POST(req: NextRequest) {
-  const { sessionId, message, history } = await req.json();
+  // 특정 세션의 메시지 조회
+  if (sessionId) {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
 
-  // 세션이 없으면 새로 생성
-  let currentSessionId = sessionId;
-  if (!currentSessionId) {
-    const { data } = await supabase
-      .from('chat_sessions')
-      .insert({ title: message.slice(0, 30) + (message.length > 30 ? '...' : '') })
-      .select('id')
-      .single();
-    currentSessionId = data?.id;
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ messages: data ?? [] });
   }
 
-  // 사용자 메시지 저장
-  await supabase.from('chat_messages').insert({
+  // 세션 목록 조회 (최근 30개)
+  const { data, error } = await supabase
+    .from('chat_sessions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ sessions: data ?? [] });
+}
+
+// POST: 메시지 저장 (세션 자동 생성)
+export async function POST(req: NextRequest) {
+  const { sessionId, role, content, metadata } = await req.json();
+
+  if (!content || !role) {
+    return NextResponse.json({ error: 'content and role required' }, { status: 400 });
+  }
+
+  let currentSessionId = sessionId;
+
+  // 세션이 없으면 새로 생성
+  if (!currentSessionId) {
+    const title = content.slice(0, 40) + (content.length > 40 ? '...' : '');
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .insert({ title })
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+    }
+    currentSessionId = data.id;
+  }
+
+  // 메시지 저장
+  const { error } = await supabase.from('chat_messages').insert({
     session_id: currentSessionId,
-    role: 'user',
-    content: message,
+    role,
+    content,
   });
 
-  // Claude Code CLI 호출 (--print로 stdout 스트리밍)
-  const args = ['--print', message];
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
-  // 최소한의 env만 전달 (Claude Code 세션 env 간섭 방지)
-  const env: Record<string, string> = {
-    HOME: process.env.HOME || '',
-    PATH: process.env.PATH || '',
-    USER: process.env.USER || '',
-    SHELL: process.env.SHELL || '/bin/zsh',
-    TMPDIR: process.env.TMPDIR || '/tmp',
-    LANG: process.env.LANG || 'en_US.UTF-8',
-  };
+  return NextResponse.json({ sessionId: currentSessionId });
+}
 
-  const encoder = new TextEncoder();
-  let fullResponse = '';
+// DELETE: 세션 삭제
+export async function DELETE(req: NextRequest) {
+  const sessionId = req.nextUrl.searchParams.get('sessionId');
+  if (!sessionId) {
+    return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+  }
 
-  const readableStream = new ReadableStream({
-    start(controller) {
-      // 먼저 세션 ID 전송
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: 'session_id', sessionId: currentSessionId })}\n\n`)
-      );
+  const { error } = await supabase
+    .from('chat_sessions')
+    .delete()
+    .eq('id', sessionId);
 
-      const proc = spawn(CLAUDE_PATH, args, {
-        env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
 
-      proc.stdout.on('data', (chunk: Buffer) => {
-        const text = chunk.toString();
-        fullResponse += text;
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`)
-        );
-      });
+// PATCH: 세션 제목 업데이트
+export async function PATCH(req: NextRequest) {
+  const { sessionId, title } = await req.json();
+  if (!sessionId || !title) {
+    return NextResponse.json({ error: 'sessionId and title required' }, { status: 400 });
+  }
 
-      proc.stderr.on('data', (chunk: Buffer) => {
-        console.error('Claude CLI stderr:', chunk.toString());
-      });
+  const { error } = await supabase
+    .from('chat_sessions')
+    .update({ title })
+    .eq('id', sessionId);
 
-      proc.on('close', async () => {
-        // 어시스턴트 메시지 저장
-        if (fullResponse.trim()) {
-          await supabase.from('chat_messages').insert({
-            session_id: currentSessionId,
-            role: 'assistant',
-            content: fullResponse.trim(),
-          });
-        }
-
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-        controller.close();
-      });
-
-      proc.on('error', (err) => {
-        console.error('Claude CLI error:', err);
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'error', content: 'Claude Code 연결에 실패했습니다.' })}\n\n`)
-        );
-        controller.close();
-      });
-    },
-  });
-
-  return new Response(readableStream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
-  });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
 }

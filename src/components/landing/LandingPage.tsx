@@ -15,7 +15,6 @@ export default function LandingPage() {
     if (isHi && !triggered) {
       setTriggered(true);
       setAnimating(true);
-      // After animation, redirect to sign in
       setTimeout(() => {
         signIn('google', { callbackUrl: '/' });
       }, 1200);
@@ -24,13 +23,13 @@ export default function LandingPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-background overflow-hidden">
-      {/* Orange gradient circle animation */}
+      {/* Blue gradient circle animation */}
       {animating && (
         <div
           ref={circleRef}
           className="absolute rounded-full landing-circle-expand"
           style={{
-            background: 'radial-gradient(circle, #FF8A00 0%, #FF4D00 50%, #FF4D00 100%)',
+            background: 'radial-gradient(circle, #E0D5DE 0%, #8B82A0 40%, #5B4D6E 100%)',
           }}
         />
       )}
@@ -38,14 +37,19 @@ export default function LandingPage() {
       {/* Content */}
       <div className={`relative z-10 flex flex-col items-center transition-colors duration-500 ${animating ? 'text-white' : ''}`}>
         {/* Logo */}
-        <img src="/logo.png" alt="Ditto" className="w-20 h-20 rounded-full mb-10" />
+        <div className="mb-10 flex items-center gap-3">
+          <img src="/logo-dott.png" alt="Dott" className="w-16 h-16 rounded-2xl" />
+        </div>
 
         {/* Title */}
         <h1 className={`text-6xl sm:text-8xl tracking-tight leading-[1.1] text-center transition-colors duration-500 ${animating ? 'text-white' : 'text-foreground'}`}>
-          Me too,
-          <br />
-          Same here
+          Ask D<span className="text-primary">*</span>tt
         </h1>
+
+        {/* Subtitle */}
+        <p className={`mt-4 text-lg tracking-wide transition-colors duration-500 ${animating ? 'text-white/70' : 'text-muted-foreground'}`}>
+          Your marketing AI team
+        </p>
 
         {/* Underline-only input */}
         <input
@@ -55,7 +59,7 @@ export default function LandingPage() {
           className={`mt-14 w-72 sm:w-96 bg-transparent border-b text-center text-lg outline-none placeholder-transparent transition-colors duration-500 ${
             animating
               ? 'border-white/40 text-white'
-              : 'border-foreground/20 text-foreground focus:border-foreground/40'
+              : 'border-foreground/20 text-foreground focus:border-primary/60'
           }`}
           autoFocus
         />
