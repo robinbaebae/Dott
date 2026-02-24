@@ -9,6 +9,7 @@ import ThemeToggle from '@/components/shared/ThemeToggle';
 const navItems = [
   { href: '/', label: 'Dashboard', symbol: '~' },
   { href: '/content', label: 'Content', symbol: '+' },
+  { href: '/assets', label: 'Assets', symbol: '&' },
   { href: '/trends', label: 'Trends', symbol: '#' },
   { href: '/research', label: 'Research', symbol: '@' },
   { href: '/tasks', label: 'Tasks', symbol: '!' },
