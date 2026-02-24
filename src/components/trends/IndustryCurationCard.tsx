@@ -49,16 +49,17 @@ export default function IndustryCurationCard() {
   const [showArticles, setShowArticles] = useState(false);
   const [filter, setFilter] = useState<TrendCategory | 'all'>('all');
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/trends/summary');
-      if (res.ok) setSummary(await res.json());
+      const res = await fetch('/api/trends/summary', { signal });
+      if (res.ok && !signal?.aborted) setSummary(await res.json());
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('Failed to fetch summary:', err);
     }
   };
 
-  const fetchArticles = async () => {
+  const fetchArticles = async (currentFilter: TrendCategory | 'all', signal?: AbortSignal) => {
     const ago = new Date();
     ago.setDate(ago.getDate() - 7);
 
@@ -69,10 +70,10 @@ export default function IndustryCurationCard() {
       .order('pub_date', { ascending: false })
       .limit(30);
 
-    if (filter !== 'all') query = query.eq('category', filter);
+    if (currentFilter !== 'all') query = query.eq('category', currentFilter);
 
     const { data } = await query;
-    setArticles(data ?? []);
+    if (!signal?.aborted) setArticles(data ?? []);
   };
 
   const generateSummary = async () => {
@@ -93,17 +94,17 @@ export default function IndustryCurationCard() {
   };
 
   useEffect(() => {
-    fetchSummary();
-    fetchArticles();
+    const controller = new AbortController();
+    fetchSummary(controller.signal);
+    fetchArticles(filter, controller.signal);
     const interval = setInterval(() => {
-      fetchSummary();
-      fetchArticles();
+      fetchSummary(controller.signal);
+      fetchArticles(filter, controller.signal);
     }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    fetchArticles();
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [filter]);
 
   const today = new Date().toLocaleDateString('ko-KR', {

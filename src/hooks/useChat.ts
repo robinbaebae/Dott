@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage } from '@/types';
 import { supabase } from '@/lib/supabase';
 
@@ -46,9 +46,24 @@ export function useChat() {
     await loadSessions();
   }, [currentSessionId, loadSessions]);
 
+  // AbortController ref for streaming cancellation
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Cancel any in-flight stream on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   // 메시지 전송
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading) return;
+
+    // Abort previous stream if any
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setIsLoading(true);
 
@@ -82,6 +97,7 @@ export function useChat() {
           message: content,
           history,
         }),
+        signal: controller.signal,
       });
 
       const reader = response.body?.getReader();
@@ -91,7 +107,7 @@ export function useChat() {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || controller.signal.aborted) break;
 
         const text = decoder.decode(value);
         const lines = text.split('\n\n').filter(Boolean);
@@ -117,6 +133,7 @@ export function useChat() {
         }
       }
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error('Chat error:', error);
       setMessages((prev) => {
         const updated = [...prev];
@@ -127,7 +144,7 @@ export function useChat() {
         return updated;
       });
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
   }, [currentSessionId, isLoading, messages, loadSessions]);
 

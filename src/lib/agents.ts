@@ -2,6 +2,9 @@ import { supabase } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { ORCHESTRATOR_CLASSIFY_PROMPT, AGENT_PROMPTS } from '@/lib/agent-prompts';
 import { getWebSearchContext } from '@/lib/web-search';
+import { getInstagramContextForChat } from '@/lib/instagram';
+import { getMetaAdsContextForChat } from '@/lib/meta-ads';
+import { getRecentAttendees } from '@/lib/google';
 import { withTimeout } from '@/lib/api-utils';
 
 interface ClassifyResult {
@@ -13,7 +16,7 @@ interface ClassifyResult {
   searchQuery: string;
 }
 
-interface AgentExecutionResult {
+export interface AgentExecutionResult {
   response: string;
   agentId: string;
   agentName: string;
@@ -21,6 +24,13 @@ interface AgentExecutionResult {
   skill: string;
   taskId?: string;
   webSearchUsed?: boolean;
+}
+
+export interface PipelineOptions {
+  /** Conversation history (last N messages) */
+  history?: { role: string; content: string }[];
+  /** Extra instructions appended to the message (e.g. detection tags) */
+  extraInstructions?: string;
 }
 
 // Agent metadata
@@ -71,30 +81,92 @@ export async function classifyTask(message: string): Promise<ClassifyResult> {
 }
 
 /**
- * Full pipeline: classify → (web search) → execute agent
+ * Full pipeline: classify → gather context → execute agent
+ *
+ * Context gathered automatically:
+ * - Web search (if classifier says needsWebSearch)
+ * - Instagram analytics
+ * - Meta Ads analytics
+ * - Recent meeting attendees (if meeting-related conversation)
+ * - Conversation history (from options)
  */
 export async function runAgentPipeline(
-  message: string
+  message: string,
+  options: PipelineOptions = {}
 ): Promise<AgentExecutionResult> {
-  // 1. Classify
-  const classification = await classifyTask(message);
+  const { history = [], extraInstructions = '' } = options;
 
-  // 2. Web search if needed
-  let webContext = '';
-  if (classification.needsWebSearch && classification.searchQuery) {
-    webContext = await getWebSearchContext(classification.searchQuery);
+  // 1. Classify (on raw message)
+  let classification: ClassifyResult;
+  try {
+    classification = await classifyTask(message);
+  } catch {
+    classification = {
+      agentId: 'marketing', skill: '', reasoning: 'fallback',
+      isAsync: false, needsWebSearch: false, searchQuery: '',
+    };
   }
 
-  // 3. Execute
-  const enrichedMessage = webContext
-    ? `${message}\n\n${webContext}`
-    : message;
+  // 2. Gather context in parallel
+  const contextParts: string[] = [];
 
+  try {
+    const contextPromises: Promise<string>[] = [
+      getInstagramContextForChat(),
+      getMetaAdsContextForChat(),
+    ];
+    if (classification.needsWebSearch && classification.searchQuery) {
+      contextPromises.push(getWebSearchContext(classification.searchQuery));
+    }
+    const results = await Promise.all(contextPromises);
+    contextParts.push(...results.filter(Boolean));
+  } catch {
+    // context fetch failed — continue without it
+  }
+
+  // 3. Build history context
+  let historyContext = '';
+  if (history.length > 0) {
+    historyContext = '\n\n--- Conversation History ---\n' +
+      history.map((m) =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+      ).join('\n') + '\n---\n\n';
+  }
+
+  // 4. Detect meeting context → inject recent attendees
+  const allText = historyContext + message;
+  const isMeetingContext = /미팅|회의|일정|예약|스케줄|meeting|schedule|캘린더|calendar/i.test(allText);
+  if (isMeetingContext) {
+    try {
+      const recentAttendees = await getRecentAttendees();
+      if (recentAttendees.length > 0) {
+        const list = recentAttendees.slice(0, 50).map(a =>
+          `- ${a.name || '(이름 없음)'} <${a.email}> (최근 ${a.count}회 미팅)`
+        ).join('\n');
+        contextParts.push(
+          `--- 최근 미팅 참석자 목록 ---\n${list}\n---\n` +
+          `위 목록에서 사용자가 언급한 이름과 일치하는 사람을 찾으세요.\n` +
+          `동명이인이 있으면 이메일 주소와 미팅 횟수를 보여주고 어느 분인지 확인하세요.\n` +
+          `목록에 없는 사람이면 "이전에 미팅한 기록이 없는데, 이메일 주소를 알려주시겠어요?" 라고 확인하세요.`
+        );
+      }
+    } catch {
+      // attendee fetch failed — continue without it
+    }
+  }
+
+  // 5. Assemble enriched message
+  const contextString = contextParts.length > 0
+    ? `\n\n--- Context ---\n${contextParts.join('\n\n')}`
+    : '';
+  const enrichedMessage = historyContext + message + contextString + extraInstructions;
+
+  // 6. Execute via agent
   return executeAgentTask(
     classification.agentId,
     enrichedMessage,
     classification.skill,
-    webContext.length > 0
+    !!(classification.needsWebSearch && classification.searchQuery)
   );
 }
 

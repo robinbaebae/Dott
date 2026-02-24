@@ -12,40 +12,50 @@ export default function CompetitorAdTrackingCard() {
   const [ads, setAds] = useState<CompetitorAd[]>([]);
   const [expandedAd, setExpandedAd] = useState<string | null>(null);
 
-  const fetchCompetitors = async () => {
+  const fetchCompetitors = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/competitors');
-      if (res.ok) {
+      const res = await fetch('/api/competitors', { signal });
+      if (res.ok && !signal?.aborted) {
         const data = await res.json();
         setCompetitors(data);
         if (data.length > 0 && !selected) setSelected(data[0].id);
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('Failed to fetch competitors:', err);
     }
   };
 
-  const fetchAds = async (id: string) => {
+  const fetchAds = async (id: string, signal?: AbortSignal) => {
     try {
-      const res = await fetch(`/api/competitors/${id}/ads`);
-      if (res.ok) setAds(await res.json());
+      const res = await fetch(`/api/competitors/${id}/ads`, { signal });
+      if (res.ok && !signal?.aborted) setAds(await res.json());
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('Failed to fetch ads:', err);
     }
   };
 
   useEffect(() => {
-    fetchCompetitors();
-    const interval = setInterval(fetchCompetitors, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchCompetitors(controller.signal);
+    const interval = setInterval(() => fetchCompetitors(controller.signal), 5 * 60 * 1000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
     if (selected) {
+      const controller = new AbortController();
       setAds([]);
-      fetchAds(selected);
-      const interval = setInterval(() => fetchAds(selected), 5 * 60 * 1000);
-      return () => clearInterval(interval);
+      fetchAds(selected, controller.signal);
+      const interval = setInterval(() => fetchAds(selected, controller.signal), 5 * 60 * 1000);
+      return () => {
+        controller.abort();
+        clearInterval(interval);
+      };
     }
   }, [selected]);
 

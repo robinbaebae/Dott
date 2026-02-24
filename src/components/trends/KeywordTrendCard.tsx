@@ -15,9 +15,9 @@ export default function KeywordTrendCard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [articles, setArticles] = useState<TrendArticle[]>([]);
 
-  const fetchTrends = async () => {
-    const res = await fetch('/api/trends/keyword-trends').catch(() => null);
-    if (res?.ok) setKeywords(await res.json());
+  const fetchTrends = async (signal?: AbortSignal) => {
+    const res = await fetch('/api/trends/keyword-trends', { signal }).catch(() => null);
+    if (res?.ok && !signal?.aborted) setKeywords(await res.json());
   };
 
   const refresh = async () => {
@@ -44,9 +44,13 @@ export default function KeywordTrendCard() {
   };
 
   useEffect(() => {
-    fetchTrends();
-    const interval = setInterval(fetchTrends, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchTrends(controller.signal);
+    const interval = setInterval(() => fetchTrends(controller.signal), 5 * 60 * 1000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, []);
 
   return (
