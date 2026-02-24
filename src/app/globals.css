@@ -123,16 +123,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-weight: 200;
-    letter-spacing: 0.02em;
+    font-weight: 400;
+    letter-spacing: 0.01em;
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-weight: 200;
-  }
-}
-
-.font-bold, .font-semibold, .font-medium, .font-extrabold, .font-black {
-  font-weight: 300 !important;
 }
 
 /* KnowBar blinking cursor */
@@ -285,4 +278,24 @@
   .content-container {
     @apply max-w-6xl mx-auto px-6;
   }
+}
+
+/* Dashboard gradient background — light mode */
+.dashboard-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(180, 160, 200, 0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 50% at 80% 40%, rgba(210, 170, 150, 0.35) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(200, 175, 190, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 70% 20%, rgba(160, 140, 180, 0.2) 0%, transparent 55%),
+    linear-gradient(160deg, #E8E0ED 0%, #EADDD5 35%, #E0D0D8 65%, #E5DDE8 100%);
+}
+
+/* Dashboard gradient background — dark mode: darker & muted */
+.dark .dashboard-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(90, 70, 110, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 50% at 80% 40%, rgba(110, 80, 70, 0.25) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(100, 75, 90, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 70% 20%, rgba(70, 55, 90, 0.15) 0%, transparent 55%),
+    linear-gradient(160deg, #1E1D1E 0%, #231F22 35%, #211D20 65%, #1E1D1E 100%);
 }
