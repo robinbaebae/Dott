@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 
 export interface GmailMessage {
   id: string;
@@ -11,11 +11,11 @@ export interface GmailMessage {
   isUnread: boolean;
 }
 
-async function getAuthenticatedClient() {
-  const { data, error } = await supabase
+async function getAuthenticatedClient(userEmail: string) {
+  const { data, error } = await supabaseAdmin
     .from('google_tokens')
     .select('*')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
 
   if (error || !data) return null;
@@ -38,10 +38,10 @@ async function getAuthenticatedClient() {
     if (tokens.access_token) update.access_token = tokens.access_token;
     if (tokens.expiry_date) update.expiry_date = tokens.expiry_date;
 
-    await supabase
+    await supabaseAdmin
       .from('google_tokens')
       .update(update)
-      .eq('id', 'default');
+      .eq('id', userEmail);
   });
 
   return client;
@@ -51,8 +51,8 @@ function parseHeader(headers: { name: string; value: string }[], name: string): 
   return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? '';
 }
 
-export async function getRecentEmails(maxResults = 10): Promise<GmailMessage[]> {
-  const auth = await getAuthenticatedClient();
+export async function getRecentEmails(maxResults = 10, userEmail: string): Promise<GmailMessage[]> {
+  const auth = await getAuthenticatedClient(userEmail);
   if (!auth) return [];
 
   const gmail = google.gmail({ version: 'v1', auth });
@@ -94,9 +94,10 @@ export async function getRecentEmails(maxResults = 10): Promise<GmailMessage[]> 
 export async function createDraft(
   to: string,
   subject: string,
-  bodyHtml: string
+  bodyHtml: string,
+  userEmail: string
 ): Promise<{ draftId: string; messageId: string } | null> {
-  const auth = await getAuthenticatedClient();
+  const auth = await getAuthenticatedClient(userEmail);
   if (!auth) return null;
 
   const gmail = google.gmail({ version: 'v1', auth });
@@ -129,10 +130,10 @@ export async function createDraft(
   };
 }
 
-export async function getRecentDrafts(maxResults = 5): Promise<
+export async function getRecentDrafts(maxResults = 5, userEmail: string): Promise<
   { id: string; subject: string; to: string; snippet: string; updated: string }[]
 > {
-  const auth = await getAuthenticatedClient();
+  const auth = await getAuthenticatedClient(userEmail);
   if (!auth) return [];
 
   const gmail = google.gmail({ version: 'v1', auth });
@@ -166,8 +167,8 @@ export async function getRecentDrafts(maxResults = 5): Promise<
   return result;
 }
 
-export async function isGmailConnected(): Promise<boolean> {
-  const auth = await getAuthenticatedClient();
+export async function isGmailConnected(userEmail: string): Promise<boolean> {
+  const auth = await getAuthenticatedClient(userEmail);
   if (!auth) return false;
 
   try {

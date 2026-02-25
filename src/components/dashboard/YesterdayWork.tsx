@@ -14,14 +14,14 @@ interface DailyReport {
   };
 }
 
-const ACTION_LABELS: Record<string, { label: string; icon: string }> = {
-  chat: { label: '대화', icon: '💬' },
-  task_created: { label: '태스크 생성', icon: '📝' },
-  task_completed: { label: '태스크 완료', icon: '✅' },
-  insight_saved: { label: '인사이트', icon: '💡' },
-  content_generated: { label: '콘텐츠', icon: '✍️' },
-  competitor_added: { label: '경쟁사', icon: '🔍' },
-  banner_created: { label: '배너', icon: '🎨' },
+const ACTION_LABELS: Record<string, { label: string; icon: string; color: string }> = {
+  chat: { label: '대화', icon: '💬', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
+  task_created: { label: '태스크 생성', icon: '📝', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  task_completed: { label: '태스크 완료', icon: '✅', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  insight_saved: { label: '인사이트', icon: '💡', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  content_generated: { label: '콘텐츠', icon: '✍️', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300' },
+  competitor_added: { label: '경쟁사', icon: '🔍', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+  banner_created: { label: '배너', icon: '🎨', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
 };
 
 function getYesterdayDate(): string {
@@ -127,7 +127,7 @@ export default function YesterdayWork() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ClipboardList className="size-4 text-accent" />
+            <ClipboardList className="size-4 text-orange-500 dark:text-orange-400" />
             <CardTitle className="text-sm">어제 작업한 것들</CardTitle>
           </div>
           <span className="text-xs text-muted-foreground">{dateLabel}</span>
@@ -143,11 +143,11 @@ export default function YesterdayWork() {
               return (
                 <div
                   key={action}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 text-xs"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs ${meta?.color || 'bg-muted/50'}`}
                 >
                   <span>{meta?.icon || '📌'}</span>
-                  <span className="text-muted-foreground">{meta?.label || action}</span>
-                  <span className="font-medium">{count}</span>
+                  <span>{meta?.label || action}</span>
+                  <span className="font-semibold">{count}</span>
                 </div>
               );
             })}

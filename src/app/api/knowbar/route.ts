@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { runAgentPipeline } from '@/lib/agents';
 import { logActivity } from '@/lib/activity';
 import { generateCompletion } from '@/lib/claude';
-import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
+import { BANNER_GENERATION_PROMPT, BANNER_EDIT_PROMPT } from '@/lib/prompts';
+import { requireAuth } from '@/lib/auth-guard';
 
 // Detection instructions injected so all agents can use structured response tags
 const DETECTION_INSTRUCTIONS = `
@@ -39,14 +40,50 @@ If the user wants to compose an email, respond with this at the very beginning:
 <email>{"to":"recipient email if known","topic":"what the email is about","tone":"professional"}</email>
 Then follow with a short, friendly confirmation.
 
+BLOG POST DETECTION:
+If the user wants to write a blog post, article, or long-form content, respond with this at the very beginning:
+<blog>{"title":"블로그 제목","content":"마크다운 본문 (최소 500자, 소제목/리스트 포함)","meta_description":"SEO 설명 1줄","header_copy":"헤더이미지에 들어갈 짧은 카피 (10자 이내)"}</blog>
+Then follow with a short confirmation like "블로그 초안이랑 헤더이미지 만들었어요! 수정할 부분 말씀해주세요."
+
+BANNER/HEADER IMAGE SHOW DETECTION:
+If the user wants to SEE or RE-DISPLAY a previously generated banner or header image (e.g. "이미지 보여줘", "헤더 다시 보여줘", "배너 보여줘"):
+<banner_show>{}</banner_show>
+Then follow with a short confirmation like "이전에 만든 헤더 이미지를 다시 불러왔어요!"
+The system will automatically find and display the most recent banner.
+
+BANNER/HEADER IMAGE EDIT DETECTION:
+If the user wants to MODIFY a previously generated banner or header image (color change, text change, layout change, etc.):
+<banner_edit>{"instruction":"사용자의 수정 요청 원문 그대로"}</banner_edit>
+Then follow with a short confirmation. The system will automatically find the most recent banner to edit.
+
+TASK STATUS UPDATE:
+If the user wants to mark a task as done, complete, or change its status (e.g. "그 태스크 완료해줘", "XX 끝났어"):
+<task_update>{"title":"task title to search for","status":"done"}</task_update>
+Then follow with a short confirmation like "완료 처리했어요!"
+
+MEMO CREATION:
+If the user says "메모해줘", "기록해줘", "적어둬" with specific content to save:
+<memo>{"title":"short memo title","content":"full memo content"}</memo>
+Then confirm like "메모 저장했어요!"
+
+CONTENT SCHEDULE:
+If the user wants to schedule a social media post (e.g. "내일 인스타 포스팅 예약해줘"):
+<schedule>{"title":"content title","platform":"instagram","date":"YYYY-MM-DD"}</schedule>
+Then confirm like "콘텐츠 예약했어요!"
+
 LANGUAGE: Always reply in the SAME language the user writes in. Korean → Korean. English → English.
 --- END INSTRUCTIONS ---
 `;
 
 export async function POST(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const body = await req.json();
   const message = body.message;
   const history: { role: string; content: string }[] = body.history || [];
+  const lastBannerId: string | undefined = body.lastBannerId;
+  console.log('[knowbar] message:', message, '| lastBannerId:', lastBannerId);
   if (!message || typeof message !== 'string') {
     return NextResponse.json({ error: 'message required' }, { status: 400 });
   }
@@ -56,9 +93,11 @@ export async function POST(req: NextRequest) {
     const result = await runAgentPipeline(message, {
       history,
       extraInstructions: DETECTION_INSTRUCTIONS,
+      userEmail,
     });
 
     const responseText = result.response;
+    console.log('[knowbar] raw response (first 300):', responseText.slice(0, 300));
 
     // Step 3: Check for task creation
     const taskMatch = responseText.match(/<task>\s*(\{[^}]+\})\s*<\/task>/);
@@ -70,11 +109,12 @@ export async function POST(req: NextRequest) {
         const taskData = JSON.parse(taskMatch[1]);
         taskTitle = taskData.title;
         if (taskTitle) {
-          await supabase.from('tasks').insert({
+          await supabaseAdmin.from('tasks').insert({
             title: taskTitle,
             status: 'todo',
             urgent: taskData.urgent ?? false,
             important: taskData.important ?? false,
+            user_id: userEmail,
           });
           taskCreated = true;
         }
@@ -91,7 +131,7 @@ export async function POST(req: NextRequest) {
       try {
         const memoryData = JSON.parse(memoryMatch[1]);
         if (memoryData.content) {
-          await supabase.from('insights').insert({
+          await supabaseAdmin.from('insights').insert({
             url: '',
             title: memoryData.content.slice(0, 100),
             description: memoryData.content,
@@ -99,6 +139,7 @@ export async function POST(req: NextRequest) {
             content_type: 'memory',
             thumbnail_url: '',
             source_domain: 'dott',
+            user_id: userEmail,
           });
           memoryCreated = true;
         }
@@ -123,9 +164,9 @@ export async function POST(req: NextRequest) {
             .replace(/\n?```$/i, '')
             .trim();
 
-          const { data: banner } = await supabase
+          const { data: banner } = await supabaseAdmin
             .from('banners')
-            .insert({ copy, reference, size, html: cleanHtml })
+            .insert({ copy, reference, size, html: cleanHtml, user_id: userEmail })
             .select()
             .single();
 
@@ -135,6 +176,130 @@ export async function POST(req: NextRequest) {
         }
       } catch {
         // banner parse/generation error — continue without it
+      }
+    }
+
+    // Step 5b: Check for blog post creation
+    const blogMatch = responseText.match(/<blog>\s*(\{[\s\S]*?\})\s*<\/blog>/);
+    let blogTitle: string | undefined;
+    let blogContent: string | undefined;
+    let blogMetaDesc: string | undefined;
+    let bannerHtml: string | undefined;
+
+    if (blogMatch) {
+      try {
+        const blogData = JSON.parse(blogMatch[1]);
+        blogTitle = blogData.title;
+        blogContent = blogData.content;
+        blogMetaDesc = blogData.meta_description;
+        const headerCopy = blogData.header_copy || blogData.title;
+
+        if (headerCopy) {
+          const userPrompt = `카피: ${headerCopy}\n사이즈: 1200x630\n참고사항: 블로그 헤더이미지, 세련되고 모던한 디자인, 코드앤버터 브랜드 #5B4D6E 퍼플 계열`;
+          const htmlResult = await generateCompletion(BANNER_GENERATION_PROMPT, userPrompt);
+          const cleanHtml = htmlResult
+            .replace(/^```html?\n?/i, '')
+            .replace(/\n?```$/i, '')
+            .trim();
+
+          const { data: banner } = await supabaseAdmin
+            .from('banners')
+            .insert({ copy: headerCopy, reference: 'blog-header', size: '1200x630', html: cleanHtml, user_id: userEmail })
+            .select()
+            .single();
+
+          if (banner) {
+            bannerId = banner.id;
+            bannerHtml = cleanHtml;
+          }
+        }
+      } catch {
+        // blog parse error — continue
+      }
+    }
+
+    // Step 5c: Check for banner edit request
+    const bannerEditMatch = responseText.match(/<banner_edit>\s*(\{[\s\S]*?\})\s*<\/banner_edit>/);
+
+    if (bannerEditMatch) {
+      try {
+        const editData = JSON.parse(bannerEditMatch[1]);
+        const targetBannerId = editData.bannerId || lastBannerId;
+
+        if (targetBannerId && editData.instruction) {
+          const { data: existing } = await supabaseAdmin
+            .from('banners')
+            .select('html, copy, size')
+            .eq('id', targetBannerId)
+            .single();
+
+          if (existing?.html) {
+            const editPrompt = `기존 HTML:\n${existing.html}\n\n수정 요청: ${editData.instruction}`;
+            const editedHtml = await generateCompletion(BANNER_EDIT_PROMPT, editPrompt);
+            const cleanEdited = editedHtml
+              .replace(/^```html?\n?/i, '')
+              .replace(/\n?```$/i, '')
+              .trim();
+
+            await supabaseAdmin
+              .from('banners')
+              .update({ html: cleanEdited })
+              .eq('id', targetBannerId);
+
+            bannerId = targetBannerId;
+            bannerHtml = cleanEdited;
+          }
+        }
+      } catch {
+        // banner edit error — continue
+      }
+    }
+
+    // Step 5d: Check for banner show (re-display existing banner)
+    // Works via <banner_show> tag, keyword fallback, or fetches latest banner from DB
+    const bannerShowMatch = responseText.match(/<banner_show>\s*(\{[\s\S]*?\})\s*<\/banner_show>/);
+    const mentionsBanner = /배너|헤더|이미지|불러|보여|banner|header|image/i.test(responseText);
+
+    console.log('[knowbar] banner check — bannerId:', bannerId, '| lastBannerId:', lastBannerId, '| bannerShowMatch:', !!bannerShowMatch, '| mentionsBanner:', mentionsBanner);
+
+    if (!bannerId && (bannerShowMatch || (lastBannerId && mentionsBanner))) {
+      try {
+        // Priority: explicit tag bannerId > lastBannerId from history > latest from DB
+        let targetId = lastBannerId;
+        if (bannerShowMatch) {
+          const showData = JSON.parse(bannerShowMatch[1]);
+          targetId = showData.bannerId || lastBannerId;
+        }
+
+        // If still no targetId, fetch the most recent banner from DB
+        if (!targetId) {
+          const { data: latest } = await supabaseAdmin
+            .from('banners')
+            .select('id')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          targetId = latest?.id;
+        }
+
+        console.log('[knowbar] fetching banner:', targetId);
+
+        if (targetId) {
+          const { data: existing, error: bannerErr } = await supabaseAdmin
+            .from('banners')
+            .select('id, html')
+            .eq('id', targetId)
+            .single();
+
+          console.log('[knowbar] banner fetch result — found:', !!existing?.html, '| error:', bannerErr?.message);
+
+          if (existing?.html) {
+            bannerId = existing.id;
+            bannerHtml = existing.html;
+          }
+        }
+      } catch (e) {
+        console.error('[knowbar] banner show error:', e);
       }
     }
 
@@ -196,12 +361,94 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Step 8: Check for task status update
+    const taskUpdateMatch = responseText.match(/<task_update>\s*(\{[\s\S]*?\})\s*<\/task_update>/);
+    let taskUpdated = false;
+    let taskUpdateTitle = '';
+
+    if (taskUpdateMatch) {
+      try {
+        const updateData = JSON.parse(taskUpdateMatch[1]);
+        if (updateData.title) {
+          taskUpdateTitle = updateData.title;
+          const newStatus = updateData.status || 'done';
+          // Find task by title (fuzzy match)
+          const { data: matchedTasks } = await supabaseAdmin
+            .from('tasks')
+            .select('id, title')
+            .eq('user_id', userEmail)
+            .neq('status', 'done')
+            .ilike('title', `%${updateData.title}%`)
+            .limit(1);
+          if (matchedTasks && matchedTasks.length > 0) {
+            await supabaseAdmin.from('tasks').update({ status: newStatus }).eq('id', matchedTasks[0].id);
+            taskUpdated = true;
+            taskUpdateTitle = matchedTasks[0].title;
+          }
+        }
+      } catch { /* parse error */ }
+    }
+
+    // Step 9: Check for memo creation → save to memos table
+    const memoMatch = responseText.match(/<memo>\s*(\{[\s\S]*?\})\s*<\/memo>/);
+    let memoCreated = false;
+    let memoTitle = '';
+
+    if (memoMatch) {
+      try {
+        const memoData = JSON.parse(memoMatch[1]);
+        if (memoData.title || memoData.content) {
+          memoTitle = memoData.title || memoData.content?.slice(0, 50) || '';
+          const content = memoData.content || memoTitle;
+          // Parse #tags from content
+          const tagMatches = content.match(/#([^\s#]+)/g);
+          const tags = tagMatches ? [...new Set(tagMatches.map((m: string) => m.slice(1)))] : [];
+          await supabaseAdmin.from('memos').insert({
+            user_id: userEmail,
+            title: memoTitle,
+            content,
+            tags,
+            pinned: false,
+          });
+          memoCreated = true;
+        }
+      } catch { /* parse error */ }
+    }
+
+    // Step 10: Check for content schedule
+    const scheduleMatch = responseText.match(/<schedule>\s*(\{[\s\S]*?\})\s*<\/schedule>/);
+    let scheduleCreated = false;
+    let scheduleTitle = '';
+
+    if (scheduleMatch) {
+      try {
+        const scheduleData = JSON.parse(scheduleMatch[1]);
+        if (scheduleData.title) {
+          scheduleTitle = scheduleData.title;
+          await supabaseAdmin.from('content_calendar').insert({
+            title: scheduleData.title,
+            platform: scheduleData.platform || 'instagram',
+            scheduled_date: scheduleData.date || new Date().toISOString().split('T')[0],
+            status: 'scheduled',
+            user_id: userEmail,
+          });
+          scheduleCreated = true;
+        }
+      } catch { /* parse error */ }
+    }
+
     const cleanResponse = responseText
       .replace(/<task>\s*\{[^}]+\}\s*<\/task>\s*/g, '')
       .replace(/<memory>\s*\{[^}]+\}\s*<\/memory>\s*/g, '')
       .replace(/<banner>\s*\{[\s\S]*?\}\s*<\/banner>\s*/g, '')
+      .replace(/<blog>\s*\{[\s\S]*?\}\s*<\/blog>\s*/g, '')
+      .replace(/<banner_edit>\s*\{[\s\S]*?\}\s*<\/banner_edit>\s*/g, '')
+      .replace(/<banner_show>\s*\{[\s\S]*?\}\s*<\/banner_show>\s*/g, '')
       .replace(/<calendar>\s*\{[\s\S]*?\}\s*<\/calendar>\s*/g, '')
       .replace(/<email>\s*\{[^}]+\}\s*<\/email>\s*/g, '')
+      .replace(/<task_update>\s*\{[\s\S]*?\}\s*<\/task_update>\s*/g, '')
+      .replace(/<memo>\s*\{[\s\S]*?\}\s*<\/memo>\s*/g, '')
+      .replace(/<schedule>\s*\{[\s\S]*?\}\s*<\/schedule>\s*/g, '')
       .trim();
 
     const webSearchUsed = !!result.webSearchUsed;
@@ -210,9 +457,10 @@ export async function POST(req: NextRequest) {
     const tokensIn = Math.ceil(message.length / 4);
     const tokensOut = Math.ceil(cleanResponse.length / 4);
     try {
-      await supabase.from('token_usage').insert({
+      await supabaseAdmin.from('token_usage').insert({
         tokens_in: tokensIn,
         tokens_out: tokensOut,
+        user_id: userEmail,
       });
     } catch { /* skip */ }
 
@@ -226,6 +474,8 @@ export async function POST(req: NextRequest) {
       bannerId,
     });
 
+    console.log('[knowbar] FINAL — bannerId:', bannerId, '| bannerHtml length:', bannerHtml?.length ?? 0, '| blogTitle:', blogTitle);
+
     return NextResponse.json({
       response: cleanResponse,
       agentId: result.agentId,
@@ -236,9 +486,22 @@ export async function POST(req: NextRequest) {
       taskTitle,
       memoryCreated,
       bannerId,
+      bannerHtml,
+      blogTitle,
+      blogContent,
+      blogMetaDesc,
+      calendarEventCreated: calendarCreated,
+      emailDraft: emailDrafted,
+      taskUpdated,
+      taskUpdateTitle,
+      memoCreated,
+      memoTitle,
+      scheduleCreated,
+      scheduleTitle,
     });
   } catch (error) {
-    console.error('KnowBar error:', error);
-    return NextResponse.json({ error: 'Failed to generate response' }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('KnowBar error:', errMsg, error);
+    return NextResponse.json({ error: `Failed: ${errMsg}` }, { status: 500 });
   }
 }

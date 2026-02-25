@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { isFigmaConnected, validateToken } from '@/lib/figma';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
   try {
-    const connected = await isFigmaConnected();
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const connected = await isFigmaConnected(userEmail);
     return NextResponse.json({ connected });
   } catch {
     return NextResponse.json({ connected: false });
@@ -13,6 +17,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { token } = await req.json();
     if (!token) {
       return NextResponse.json({ error: 'token is required' }, { status: 400 });
@@ -23,8 +30,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid Figma token' }, { status: 401 });
     }
 
-    const { error } = await supabase.from('figma_tokens').upsert({
-      id: 'default',
+    const { error } = await supabaseAdmin.from('figma_tokens').upsert({
+      id: userEmail,
       personal_access_token: token,
       updated_at: new Date().toISOString(),
     });
@@ -42,10 +49,13 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   try {
-    const { error } = await supabase
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const { error } = await supabaseAdmin
       .from('figma_tokens')
       .delete()
-      .eq('id', 'default');
+      .eq('id', userEmail);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

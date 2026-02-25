@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getAgents, getAgentStatus } from '@/lib/agents';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
     const [agents, activeTasks] = await Promise.all([
       getAgents(),
-      getAgentStatus(),
+      getAgentStatus(userEmail),
     ]);
 
     return NextResponse.json({ agents, activeTasks });

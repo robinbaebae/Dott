@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { ORCHESTRATOR_CLASSIFY_PROMPT, AGENT_PROMPTS } from '@/lib/agent-prompts';
 import { getWebSearchContext } from '@/lib/web-search';
@@ -6,6 +6,7 @@ import { getInstagramContextForChat } from '@/lib/instagram';
 import { getMetaAdsContextForChat } from '@/lib/meta-ads';
 import { getRecentAttendees } from '@/lib/google';
 import { getBrandGuideContext } from '@/lib/brand-guide';
+import { getMemosContextForChat } from '@/lib/memos-context';
 import { withTimeout } from '@/lib/api-utils';
 
 interface ClassifyResult {
@@ -32,6 +33,8 @@ export interface PipelineOptions {
   history?: { role: string; content: string }[];
   /** Extra instructions appended to the message (e.g. detection tags) */
   extraInstructions?: string;
+  /** User email for multi-user context fetching */
+  userEmail?: string;
 }
 
 // Agent metadata
@@ -95,7 +98,7 @@ export async function runAgentPipeline(
   message: string,
   options: PipelineOptions = {}
 ): Promise<AgentExecutionResult> {
-  const { history = [], extraInstructions = '' } = options;
+  const { history = [], extraInstructions = '', userEmail = '' } = options;
 
   // 1. Classify (on raw message)
   let classification: ClassifyResult;
@@ -111,11 +114,17 @@ export async function runAgentPipeline(
   // 2. Gather context in parallel
   const contextParts: string[] = [];
 
+  // Detect if user wants to reference memos
+  const wantsMemoContext = /메모|노트|기록|아이디어|기획|브레인스토밍|참고해|memo|note|idea/i.test(message);
+  // Extract search keywords for memo search (take the core topic from the message)
+  const memoSearchQuery = wantsMemoContext ? message.replace(/메모|노트|기록|참고해서|참고해줘|기반으로|활용해서|해줘|해봐|해보자/g, '').trim().slice(0, 50) || undefined : undefined;
+
   try {
     const contextPromises: Promise<string>[] = [
-      getBrandGuideContext(),
-      getInstagramContextForChat(),
-      getMetaAdsContextForChat(),
+      getBrandGuideContext(userEmail),
+      getInstagramContextForChat(userEmail),
+      getMetaAdsContextForChat(userEmail),
+      getMemosContextForChat(userEmail, memoSearchQuery),
     ];
     if (classification.needsWebSearch && classification.searchQuery) {
       contextPromises.push(getWebSearchContext(classification.searchQuery));
@@ -140,7 +149,7 @@ export async function runAgentPipeline(
   const isMeetingContext = /미팅|회의|일정|예약|스케줄|meeting|schedule|캘린더|calendar/i.test(allText);
   if (isMeetingContext) {
     try {
-      const recentAttendees = await getRecentAttendees();
+      const recentAttendees = await getRecentAttendees(userEmail);
       if (recentAttendees.length > 0) {
         const list = recentAttendees.slice(0, 50).map(a =>
           `- ${a.name || '(이름 없음)'} <${a.email}> (최근 ${a.count}회 미팅)`
@@ -185,7 +194,7 @@ export async function executeAgentTask(
   const systemPrompt = AGENT_PROMPTS[agentId] || AGENT_PROMPTS.marketing;
 
   // Create task record
-  const { data: taskRecord } = await supabase
+  const { data: taskRecord } = await supabaseAdmin
     .from('agent_tasks')
     .insert({
       agent_id: agentId,
@@ -207,7 +216,7 @@ export async function executeAgentTask(
 
     // Update task as completed
     if (taskRecord?.id) {
-      await supabase
+      await supabaseAdmin
         .from('agent_tasks')
         .update({
           output_text: response,
@@ -228,7 +237,7 @@ export async function executeAgentTask(
     };
   } catch (err) {
     if (taskRecord?.id) {
-      await supabase
+      await supabaseAdmin
         .from('agent_tasks')
         .update({
           status: 'failed',
@@ -245,27 +254,33 @@ export async function executeAgentTask(
 /**
  * Get agent status (active tasks)
  */
-export async function getAgentStatus() {
-  const { data } = await supabase
+export async function getAgentStatus(userId?: string) {
+  let query = supabaseAdmin
     .from('agent_tasks')
     .select('*')
     .eq('status', 'running')
     .order('created_at', { ascending: false });
 
+  if (userId) query = query.eq('user_id', userId);
+
+  const { data } = await query;
   return data || [];
 }
 
 /**
  * Get agent task history
  */
-export async function getAgentHistory(agentId: string, limit = 20) {
-  const { data } = await supabase
+export async function getAgentHistory(agentId: string, limit = 20, userId?: string) {
+  let query = supabaseAdmin
     .from('agent_tasks')
     .select('*')
     .eq('agent_id', agentId)
     .order('created_at', { ascending: false })
     .limit(limit);
 
+  if (userId) query = query.eq('user_id', userId);
+
+  const { data } = await query;
   return data || [];
 }
 
@@ -273,7 +288,7 @@ export async function getAgentHistory(agentId: string, limit = 20) {
  * Get all agents
  */
 export async function getAgents() {
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('agents')
     .select('*')
     .order('created_at');

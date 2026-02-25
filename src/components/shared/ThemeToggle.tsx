@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
+// Notify Electron (pet window) about theme changes
+function syncThemeToElectron(theme: string) {
+  const w = window as any;
+  if (w.electronAPI?.setTheme) {
+    w.electronAPI.setTheme(theme);
+  }
+}
+
 export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
@@ -12,6 +20,8 @@ export default function ThemeToggle() {
       setDark(true);
       document.documentElement.classList.add('dark');
     }
+    // Sync initial theme to pet window
+    syncThemeToElectron(saved === 'dark' ? 'dark' : 'light');
   }, []);
 
   const toggle = () => {
@@ -20,9 +30,11 @@ export default function ThemeToggle() {
     if (next) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('dott-theme', 'dark');
+      syncThemeToElectron('dark');
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('dott-theme', 'light');
+      syncThemeToElectron('light');
     }
   };
 

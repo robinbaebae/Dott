@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { AD_PERFORMANCE_REPORT_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
 
 // POST — Stage 5: AI performance analysis report
 export async function POST(
@@ -11,12 +12,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
 
-    const { data: project, error: fetchErr } = await supabase
+    const { data: project, error: fetchErr } = await supabaseAdmin
       .from('ad_creative_projects')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userEmail)
       .single();
 
     if (fetchErr || !project) {
@@ -52,7 +57,7 @@ ${adCopies.map((c: { headline: string; primary_text: string }, i: number) => `${
       '성과 리포트 생성 시간 초과'
     );
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('ad_creative_projects')
       .update({
         ai_report: report,
@@ -60,6 +65,7 @@ ${adCopies.map((c: { headline: string; primary_text: string }, i: number) => `${
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('user_id', userEmail)
       .select()
       .single();
 

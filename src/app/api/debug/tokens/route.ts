@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   // Check if google_tokens table exists and has data
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('google_tokens')
     .select('id, expiry_date, updated_at')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
 
   return NextResponse.json({

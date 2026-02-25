@@ -17,3 +17,22 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
     return (_supabase as unknown as Record<string | symbol, unknown>)[prop];
   },
 });
+
+// Server-only admin client (uses service_role key, bypasses RLS)
+let _supabaseAdmin: SupabaseClient | null = null;
+
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!_supabaseAdmin) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!url || !key) {
+        throw new Error(
+          'Missing SUPABASE_SERVICE_ROLE_KEY. Add it to .env.local for server-side admin access.'
+        );
+      }
+      _supabaseAdmin = createClient(url, key);
+    }
+    return (_supabaseAdmin as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});

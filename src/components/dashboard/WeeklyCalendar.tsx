@@ -115,10 +115,10 @@ export default function WeeklyCalendar() {
                 주간 캘린더
               </CardTitle>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
                   캘린더
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2 py-0.5 text-[10px] font-medium text-pink-700 dark:text-pink-300">
                   내 태스크
                 </span>
               </div>
@@ -200,13 +200,13 @@ export default function WeeklyCalendar() {
                           key={event.id}
                           className="relative flex items-start gap-2"
                         >
-                          <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-blue-500 -translate-x-[3px]" />
-                          <div className="flex-1 rounded-md bg-blue-500/10 px-2.5 py-1.5">
+                          <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-violet-500 -translate-x-[3px]" />
+                          <div className="flex-1 rounded-md bg-violet-500/10 px-2.5 py-1.5">
                             <div className="flex items-center gap-2">
-                              <p className="text-xs font-medium text-blue-700 truncate">
+                              <p className="text-xs font-medium text-violet-700 truncate">
                                 {event.title}
                               </p>
-                              <span className="text-[10px] text-blue-600/70 shrink-0">
+                              <span className="text-[10px] text-violet-600/70 shrink-0">
                                 {event.allDay
                                   ? '종일'
                                   : format(parseISO(event.start), 'HH:mm')}
@@ -222,13 +222,13 @@ export default function WeeklyCalendar() {
                           key={task.id}
                           className="relative flex items-start gap-2"
                         >
-                          <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 -translate-x-[3px]" />
-                          <div className="flex-1 rounded-md bg-green-500/10 px-2.5 py-1.5">
+                          <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-pink-500 -translate-x-[3px]" />
+                          <div className="flex-1 rounded-md bg-pink-500/10 px-2.5 py-1.5">
                             <div className="flex items-center gap-2">
-                              <p className="text-xs font-medium text-green-700 truncate">
+                              <p className="text-xs font-medium text-pink-700 truncate">
                                 {task.title}
                               </p>
-                              <span className="text-[10px] text-green-600/70 shrink-0">
+                              <span className="text-[10px] text-pink-600/70 shrink-0">
                                 {task.status === 'todo'
                                   ? '할 일'
                                   : task.status === 'in_progress'

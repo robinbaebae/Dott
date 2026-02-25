@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchMetaInsights, getCachedInsights } from '@/lib/meta-ads';
+import { requireAuth } from '@/lib/auth-guard';
 
 interface TimeDataResponse {
   label: string;
@@ -13,6 +14,9 @@ interface TimeDataResponse {
 
 export async function GET(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const period = req.nextUrl.searchParams.get('period') ?? 'daily';
     const refresh = req.nextUrl.searchParams.get('refresh') === 'true';
 
@@ -35,10 +39,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (refresh) {
-      await fetchMetaInsights(datePreset);
+      await fetchMetaInsights(datePreset, userEmail);
     }
 
-    const insights = await getCachedInsights(days);
+    const insights = await getCachedInsights(days, userEmail);
 
     let timeData: TimeDataResponse[];
 

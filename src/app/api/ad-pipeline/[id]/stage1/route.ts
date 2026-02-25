@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
 
 // POST — Stage 1: Bulk creative generation from template
 export async function POST(
@@ -11,6 +12,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
     const body = await req.json();
     const { copies, sizes, reference } = body;
@@ -35,9 +39,9 @@ export async function POST(
 
           const cleanHtml = html.replace(/^```html\n?/m, '').replace(/\n?```$/m, '').trim();
 
-          const { data: banner } = await supabase
+          const { data: banner } = await supabaseAdmin
             .from('banners')
-            .insert({ copy: copy.slice(0, 100), reference: reference || '', size, html: cleanHtml })
+            .insert({ copy: copy.slice(0, 100), reference: reference || '', size, html: cleanHtml, user_id: userEmail })
             .select()
             .single();
 
@@ -50,10 +54,11 @@ export async function POST(
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('ad_creative_projects')
       .update({ creatives, status: 'stage_2', updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('user_id', userEmail)
       .select()
       .single();
 

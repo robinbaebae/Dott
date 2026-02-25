@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { CONTENT_DRAFT_PROMPT, BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 
 // POST — generate drafts + banner for selected idea
 export async function POST(
@@ -10,13 +12,17 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
 
     // Fetch project
-    const { data: project, error: fetchErr } = await supabase
+    const { data: project, error: fetchErr } = await supabaseAdmin
       .from('content_projects')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userEmail)
       .single();
 
     if (fetchErr || !project) {
@@ -31,6 +37,9 @@ export async function POST(
 
     const platforms = project.platforms || ['instagram', 'threads', 'blog'];
 
+    // Fetch brand guide for context
+    const brandContext = await getBrandGuideContext(userEmail as string);
+
     // Generate platform-specific drafts
     const userMessage = `선택된 아이디어:
 제목: ${idea.title}
@@ -38,7 +47,7 @@ export async function POST(
 예상 반응: ${idea.hook}
 
 대상 플랫폼: ${platforms.join(', ')}
-브랜드: 코드앤버터 (노코드 팝업/배너 SaaS)
+${brandContext || ''}
 
 이 아이디어를 각 플랫폼에 맞게 콘텐츠를 작성해주세요.`;
 
@@ -64,8 +73,8 @@ export async function POST(
     const bannerRef = parsed.banner_suggestion?.reference || '';
 
     try {
-      const bannerPrompt = `${BANNER_GENERATION_PROMPT}\n\n---\nUser: 카피: "${bannerCopy}"\n참고: ${bannerRef}\n사이즈: 1080x1080\n브랜드: 코드앤버터, 주요색상 #5B4D6E 퍼플 계열`;
-      const bannerResult = await generateCompletion(BANNER_GENERATION_PROMPT, `카피: "${bannerCopy}"\n참고: ${bannerRef}\n사이즈: 1080x1080\n브랜드: 코드앤버터, 주요색상 #5B4D6E 퍼플 계열`);
+      const bannerUserMsg = `카피: "${bannerCopy}"\n참고: ${bannerRef}\n사이즈: 1080x1080\n${brandContext || '주요색상 #5B4D6E 퍼플 계열'}`;
+      const bannerResult = await generateCompletion(BANNER_GENERATION_PROMPT, bannerUserMsg);
 
       bannerHtml = bannerResult
         .replace(/^```html\n?/m, '')
@@ -73,9 +82,9 @@ export async function POST(
         .trim();
 
       // Save banner to DB
-      const { data: banner } = await supabase
+      const { data: banner } = await supabaseAdmin
         .from('banners')
-        .insert({ copy: bannerCopy.slice(0, 100), reference: bannerRef, size: '1080x1080', html: bannerHtml })
+        .insert({ copy: bannerCopy.slice(0, 100), reference: bannerRef, size: '1080x1080', html: bannerHtml, user_id: userEmail })
         .select()
         .single();
 
@@ -85,7 +94,7 @@ export async function POST(
     }
 
     // Update project with drafts
-    const { data: updated, error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await supabaseAdmin
       .from('content_projects')
       .update({
         status: 'review',
@@ -96,6 +105,7 @@ export async function POST(
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('user_id', userEmail)
       .select()
       .single();
 

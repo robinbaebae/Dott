@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { createDraft } from '@/lib/gmail';
 import { EMAIL_COMPOSE_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const brandContext = await getBrandGuideContext(userEmail);
+
     const { action, to, topic, details, tone, subject, bodyHtml } = await req.json();
 
     if (action === 'generate') {
@@ -15,7 +22,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'to and topic are required' }, { status: 400 });
       }
 
-      const userMessage = `받는 사람: ${to}
+      const userMessage = `${brandContext ? brandContext + '\n\n' : ''}받는 사람: ${to}
 목적/주제: ${topic}
 ${details ? `상세 내용: ${details}` : ''}
 톤: ${tone || 'professional'}
@@ -38,13 +45,14 @@ ${details ? `상세 내용: ${details}` : ''}
       }
 
       // Save locally
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('email_drafts')
         .insert({
           to_email: to,
           subject: parsed.subject,
           body_html: parsed.body,
           status: 'local',
+          user_id: userEmail,
         })
         .select()
         .single();
@@ -62,7 +70,7 @@ ${details ? `상세 내용: ${details}` : ''}
         return NextResponse.json({ error: 'to, subject, and bodyHtml are required' }, { status: 400 });
       }
 
-      const result = await createDraft(to, subject, bodyHtml);
+      const result = await createDraft(to, subject, bodyHtml, userEmail);
       if (!result) {
         return NextResponse.json({ error: 'Gmail not connected' }, { status: 401 });
       }
@@ -70,7 +78,7 @@ ${details ? `상세 내용: ${details}` : ''}
       // Update local record if we have an id
       const { draftId, messageId } = result;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('email_drafts')
         .upsert({
           to_email: to,
@@ -79,6 +87,7 @@ ${details ? `상세 내용: ${details}` : ''}
           gmail_draft_id: draftId,
           gmail_message_id: messageId,
           status: 'drafted',
+          user_id: userEmail,
         })
         .select()
         .single();

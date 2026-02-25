@@ -1,29 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCompletion } from '@/lib/claude';
+import { requireAuth } from '@/lib/auth-guard';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 
-const AD_COPYWRITER_PROMPT = `You are an expert advertising copywriter. Given an ad copy or product description, generate 3-5 creative variations.
+function buildPrompt(opts: { tone?: string; maxLength?: number; useEmoji?: boolean; count?: number; referenceCopy?: string }) {
+  const { tone, maxLength, useEmoji, count = 5, referenceCopy } = opts;
+
+  let prompt = `You are an expert advertising copywriter. Given an ad copy or product description, generate ${count} creative variations.
 
 Return ONLY a valid JSON array. Each element must have:
 - "headline": a short punchy headline (max 10 words)
 - "body": the ad body copy (1-2 sentences)
-- "tone": one of "professional", "playful", "urgent", "emotional", "minimal"
+- "tone": the tone used for this variation`;
 
-Example output:
-[
-  {"headline": "Transform Your Morning Routine", "body": "Start every day with energy. Our product makes it effortless.", "tone": "professional"},
-  {"headline": "Wake Up. Show Up. Glow Up.", "body": "Because you deserve mornings that feel as good as you look.", "tone": "playful"}
-]
+  if (tone) {
+    prompt += `\n\nPrimary tone to use: "${tone}". Create variations within this tone but with different angles.`;
+  } else {
+    prompt += `\n\nUse a mix of tones: professional, playful, urgent, emotional, minimal.`;
+  }
 
-Return ONLY the JSON array, no markdown, no explanation.`;
+  if (maxLength) {
+    prompt += `\nIMPORTANT: Each body copy must be ${maxLength} characters or less.`;
+  }
+
+  if (useEmoji) {
+    prompt += `\nInclude relevant emojis in both headline and body to make them more engaging.`;
+  }
+
+  if (referenceCopy) {
+    prompt += `\n\nReference copy to draw inspiration from (maintain similar style but create original variations):\n"${referenceCopy}"`;
+  }
+
+  prompt += `\n\nReturn ONLY the JSON array, no markdown, no explanation.`;
+  return prompt;
+}
 
 export async function POST(req: NextRequest) {
-  const { copy } = await req.json();
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
+  const brandContext = await getBrandGuideContext(userEmail);
+
+  const { copy, tone, maxLength, useEmoji, count, referenceCopy } = await req.json();
   if (!copy || typeof copy !== 'string') {
     return NextResponse.json({ error: 'copy required' }, { status: 400 });
   }
 
   try {
-    const result = await generateCompletion(AD_COPYWRITER_PROMPT, copy);
+    const prompt = buildPrompt({ tone, maxLength, useEmoji, count, referenceCopy });
+    const copyWithContext = `${brandContext ? brandContext + '\n\n' : ''}${copy}`;
+    const result = await generateCompletion(prompt, copyWithContext);
 
     // Extract JSON array from response
     const jsonMatch = result.match(/\[[\s\S]*\]/);

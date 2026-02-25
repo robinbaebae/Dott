@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 // GET - 전체 업무 조회
 export async function GET() {
-  const { data, error } = await supabase
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
+  const { data, error } = await supabaseAdmin
     .from('tasks')
     .select('*')
+    .eq('user_id', userEmail)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -15,8 +20,11 @@ export async function GET() {
 
 // POST - 업무 생성
 export async function POST(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const body = await req.json();
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('tasks')
     .insert({
       title: body.title,
@@ -25,6 +33,7 @@ export async function POST(req: NextRequest) {
       due_date: body.due_date || null,
       urgent: body.urgent ?? false,
       important: body.important ?? false,
+      user_id: userEmail,
     })
     .select()
     .single();
@@ -36,13 +45,23 @@ export async function POST(req: NextRequest) {
 
 // PATCH - 업무 수정
 export async function PATCH(req: NextRequest) {
-  const body = await req.json();
-  const { id, ...updates } = body;
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
 
-  const { data, error } = await supabase
+  const ALLOWED_FIELDS = ['title', 'description', 'status', 'due_date', 'urgent', 'important'];
+
+  const body = await req.json();
+  const { id } = body;
+  const updates: Record<string, unknown> = {};
+  for (const key of ALLOWED_FIELDS) {
+    if (key in body) updates[key] = body[key];
+  }
+
+  const { data, error } = await supabaseAdmin
     .from('tasks')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', userEmail)
     .select()
     .single();
 
@@ -55,12 +74,15 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE - 업무 삭제
 export async function DELETE(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  const { error } = await supabaseAdmin.from('tasks').delete().eq('id', id).eq('user_id', userEmail);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { extractKeywords } from '@/lib/keywords';
 import { TrendArticle } from '@/types';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('trend_articles')
       .select('*')
       .order('pub_date', { ascending: false })

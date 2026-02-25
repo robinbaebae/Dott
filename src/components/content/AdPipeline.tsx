@@ -122,11 +122,11 @@ export default function AdPipeline() {
 
       const stageMessages = [
         '',
-        `소재 ${updated.creatives?.length || 0}개 생성 완료!`,
-        `광고 카피 ${updated.ad_copies?.length || 0}개 매칭 완료!`,
-        '메타 캠페인 설정이 완료됐어요!',
-        '성과 데이터를 수집했어요!',
-        'AI 분석 리포트가 완성됐어요!',
+        `소재 ${updated.creatives?.length || 0}개 다 만들었어요~`,
+        `카피 ${updated.ad_copies?.length || 0}개 붙여놨어요!`,
+        '캠페인 세팅 끝! 이제 돌려볼까요?',
+        '성과 데이터 긁어왔어요 👀',
+        '리포트 다 썼어요, 한번 봐주세요!',
       ];
       notifyPet(stageMessages[stage] || '');
     } catch (err) {
@@ -204,7 +204,7 @@ export default function AdPipeline() {
               <button
                 key={p.id}
                 onClick={() => setActiveProject(p)}
-                className="w-full text-left p-3 rounded-lg border hover:border-[#6B5B7B] hover:bg-[#6B5B7B]/5 transition-all flex items-center justify-between"
+                className="w-full text-left p-3 rounded-lg border hover:border-violet-400/50 hover:bg-violet-500/5 transition-all flex items-center justify-between"
               >
                 <div>
                   <p className="text-sm font-medium">{p.name}</p>
@@ -237,9 +237,9 @@ export default function AdPipeline() {
                 <div key={s.key} className="flex-1">
                   <div className={`h-1.5 rounded-full transition-colors ${
                     i < currentStageIndex
-                      ? 'bg-[#6B5B7B]'
+                      ? 'bg-gradient-to-r from-pink-500 to-violet-500'
                       : i === currentStageIndex
-                        ? 'bg-[#6B5B7B]/60'
+                        ? 'bg-violet-400/60'
                         : 'bg-muted'
                   }`} />
                   <p className={`text-[10px] mt-1 ${

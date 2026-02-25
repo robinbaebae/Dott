@@ -6,6 +6,7 @@ import {
   getCachedInsights,
 } from '@/lib/meta-ads';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 interface CampaignResponse {
   id: string;
@@ -33,23 +34,26 @@ function mapStatus(raw: string): 'Active' | 'Paused' | 'Ended' {
 
 export async function GET(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const refresh = req.nextUrl.searchParams.get('refresh') === 'true';
 
     let campaigns;
     if (refresh) {
-      campaigns = await fetchMetaCampaigns();
+      campaigns = await fetchMetaCampaigns(userEmail);
       // Also fetch account-level insights for per-campaign aggregation
       for (const c of campaigns.slice(0, 20)) {
         try {
-          await fetchCampaignInsights(c.campaign_id);
+          await fetchCampaignInsights(c.campaign_id, 'last_14d', userEmail);
         } catch {
           // skip individual campaign insight errors
         }
       }
     }
 
-    const cached = await getCachedCampaigns();
-    const insights = await getCachedInsights(30);
+    const cached = await getCachedCampaigns(userEmail);
+    const insights = await getCachedInsights(30, userEmail);
 
     // Build per-campaign aggregated metrics
     const result: CampaignResponse[] = cached.map((c) => {

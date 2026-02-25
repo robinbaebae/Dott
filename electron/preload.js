@@ -19,7 +19,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCalendarEvents: () => ipcRenderer.invoke('pet-calendar-events'),
   createCalendarEvent: (data) => ipcRenderer.invoke('pet-create-event', data),
   getEmails: () => ipcRenderer.invoke('pet-emails'),
+  getTasks: () => ipcRenderer.invoke('pet-tasks'),
   composeEmail: (data) => ipcRenderer.invoke('pet-compose-email', data),
+  getChatHistory: () => ipcRenderer.invoke('pet-chat-history'),
   contentStepNotification: (step, message) => ipcRenderer.send('content-step-notification', { step, message }),
+  onPetMood: (cb) => ipcRenderer.on('pet-mood', (_e, mood) => cb(mood)),
+  onThemeChange: (cb) => ipcRenderer.on('theme-changed', (_e, theme) => cb(theme)),
+  setTheme: (theme) => ipcRenderer.send('set-theme', theme),
+  getTheme: () => ipcRenderer.invoke('get-theme'),
   platform: process.platform,
 });

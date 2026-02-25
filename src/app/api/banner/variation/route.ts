@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletionWithImage } from '@/lib/claude';
 import { BANNER_VARIATION_PROMPT } from '@/lib/prompts';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { image, targetSize } = await req.json();
 
     if (!image || !targetSize) {
@@ -37,9 +41,9 @@ export async function POST(req: NextRequest) {
       .replace(/\n?```$/i, '')
       .trim();
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('banners')
-      .insert({ copy: `Size variation: ${targetSize}`, size: targetSize, html: cleanHtml })
+      .insert({ copy: `Size variation: ${targetSize}`, size: targetSize, html: cleanHtml, user_id: userEmail })
       .select()
       .single();
 

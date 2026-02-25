@@ -1,12 +1,12 @@
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 
 const FIGMA_API = 'https://api.figma.com/v1';
 
-async function getToken(): Promise<string | null> {
-  const { data, error } = await supabase
+async function getToken(userEmail: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
     .from('figma_tokens')
     .select('personal_access_token')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
 
   if (error || !data) return null;
@@ -14,7 +14,7 @@ async function getToken(): Promise<string | null> {
 }
 
 async function figmaFetch(path: string, token?: string) {
-  const pat = token || (await getToken());
+  const pat = token || null;
   if (!pat) throw new Error('Figma not connected');
 
   const res = await fetch(`${FIGMA_API}${path}`, {
@@ -29,8 +29,8 @@ async function figmaFetch(path: string, token?: string) {
   return res.json();
 }
 
-export async function isFigmaConnected(): Promise<boolean> {
-  const pat = await getToken();
+export async function isFigmaConnected(userEmail: string): Promise<boolean> {
+  const pat = await getToken(userEmail);
   if (!pat) return false;
 
   try {
@@ -63,17 +63,19 @@ export function parseFileUrl(url: string): { fileKey: string; nodeId?: string } 
   return { fileKey, nodeId };
 }
 
-export async function getFileInfo(fileKey: string): Promise<{ name: string }> {
-  const data = await figmaFetch(`/files/${fileKey}?depth=1`);
+export async function getFileInfo(fileKey: string, userEmail: string): Promise<{ name: string }> {
+  const pat = await getToken(userEmail);
+  const data = await figmaFetch(`/files/${fileKey}?depth=1`, pat!);
   return { name: data.name };
 }
 
 export async function getFileImages(
   fileKey: string,
-  nodeId?: string
+  nodeId?: string,
+  userEmail?: string
 ): Promise<{ [nodeId: string]: string }> {
+  const pat = userEmail ? await getToken(userEmail) : null;
   const ids = nodeId || '0:1'; // default to first page
-  const data = await figmaFetch(`/images/${fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`);
+  const data = await figmaFetch(`/images/${fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`, pat!);
   return data.images || {};
 }
-

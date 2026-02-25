@@ -1,0 +1,15 @@
+{
+  "name": "Dott",
+  "short_name": "Dott",
+  "description": "AI 브랜드 비서",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A191C",
+  "theme_color": "#7B5B8B",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

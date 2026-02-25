@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateDailyReport } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('daily_reports')
       .select('*')
       .eq('report_date', date)
+      .eq('user_id', userEmail)
       .single();
 
     if (data) {
@@ -25,11 +30,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
     const body = await req.json().catch(() => ({}));
     const date = body.date || new Date().toISOString().split('T')[0];
 
-    const result = await generateDailyReport(date);
+    const result = await generateDailyReport(date, userEmail);
 
     return NextResponse.json({
       report_date: date,

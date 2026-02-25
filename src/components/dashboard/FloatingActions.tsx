@@ -26,9 +26,9 @@ export default function FloatingActions() {
             Dott에게 질문
           </Button>
         </Link>
-        <Link href="/research">
+        <Link href="/insight">
           <Button variant="secondary" size="sm" className="shadow-lg gap-2 whitespace-nowrap">
-            리서치
+            인사이트
           </Button>
         </Link>
         <Link href="/create">

@@ -20,10 +20,10 @@ export default function Page() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-full">
       {/* Gradient background */}
-      <div className="absolute inset-0 -z-10 dashboard-gradient" />
-      <div className="max-w-5xl mx-auto px-6 py-10 animate-in fade-in duration-500">
+      <div className="fixed inset-0 -z-10 dashboard-gradient" />
+      <div className="max-w-5xl mx-auto px-6 py-4 animate-in fade-in duration-500">
         <DottPrompt />
       </div>
     </div>

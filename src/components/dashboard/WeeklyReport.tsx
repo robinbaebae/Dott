@@ -65,7 +65,7 @@ export default function WeeklyReport() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="size-4 text-accent" />
+            <FileText className="size-4 text-blue-500 dark:text-blue-400" />
             <CardTitle className="text-base">주간 리포트</CardTitle>
             {data && (
               <span className="text-xs text-muted-foreground">
@@ -89,21 +89,21 @@ export default function WeeklyReport() {
         <CardContent className="pt-0">
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <p className="text-lg font-semibold">{data.stats.doneTasks}/{data.stats.totalTasks}</p>
-              <p className="text-xs text-muted-foreground">완료 태스크</p>
+            <div className="text-center p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20">
+              <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">{data.stats.doneTasks}/{data.stats.totalTasks}</p>
+              <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60">완료 태스크</p>
             </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <p className="text-lg font-semibold">{data.stats.insightsCount}</p>
-              <p className="text-xs text-muted-foreground">인사이트</p>
+            <div className="text-center p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+              <p className="text-lg font-semibold text-blue-700 dark:text-blue-400">{data.stats.insightsCount}</p>
+              <p className="text-xs text-blue-600/70 dark:text-blue-400/60">인사이트</p>
             </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <p className="text-lg font-semibold">{data.stats.igPostsCount}</p>
-              <p className="text-xs text-muted-foreground">IG 게시물</p>
+            <div className="text-center p-2 rounded-lg bg-pink-50 dark:bg-pink-950/20">
+              <p className="text-lg font-semibold text-pink-700 dark:text-pink-400">{data.stats.igPostsCount}</p>
+              <p className="text-xs text-pink-600/70 dark:text-pink-400/60">IG 게시물</p>
             </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <p className="text-lg font-semibold">{data.stats.threadsPostsCount}</p>
-              <p className="text-xs text-muted-foreground">스레드</p>
+            <div className="text-center p-2 rounded-lg bg-orange-50 dark:bg-orange-950/20">
+              <p className="text-lg font-semibold text-orange-700 dark:text-orange-400">{data.stats.threadsPostsCount}</p>
+              <p className="text-xs text-orange-600/70 dark:text-orange-400/60">스레드</p>
             </div>
           </div>
 

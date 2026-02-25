@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 
 /**
@@ -7,13 +7,15 @@ import { generateCompletion } from '@/lib/claude';
 export async function logActivity(
   actionType: string,
   agentId?: string | null,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  userId?: string | null
 ) {
   try {
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       action_type: actionType,
       agent_id: agentId || null,
       details: details || {},
+      user_id: userId || null,
     });
   } catch (err) {
     console.error('Failed to log activity:', err);
@@ -23,25 +25,28 @@ export async function logActivity(
 /**
  * Get daily activity summary
  */
-export async function getDailyActivity(date: string) {
+export async function getDailyActivity(date: string, userId?: string | null) {
   const startOfDay = `${date}T00:00:00.000Z`;
   const endOfDay = `${date}T23:59:59.999Z`;
 
-  const { data } = await supabase
+  let query = supabaseAdmin
     .from('activity_logs')
     .select('*')
     .gte('created_at', startOfDay)
     .lte('created_at', endOfDay)
     .order('created_at', { ascending: false });
 
+  if (userId) query = query.eq('user_id', userId);
+
+  const { data } = await query;
   return data || [];
 }
 
 /**
  * Generate daily report with AI analysis
  */
-export async function generateDailyReport(date: string) {
-  const activities = await getDailyActivity(date);
+export async function generateDailyReport(date: string, userId?: string | null) {
+  const activities = await getDailyActivity(date, userId);
 
   if (activities.length === 0) {
     return { reportText: '오늘은 기록된 활동이 없습니다.', stats: {} };
@@ -62,7 +67,7 @@ export async function generateDailyReport(date: string) {
   }
 
   // Get completed tasks count
-  const { count: completedTasks } = await supabase
+  const { count: completedTasks } = await supabaseAdmin
     .from('agent_tasks')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'completed')
@@ -93,10 +98,11 @@ ${summaryData}
   const reportText = await generateCompletion('', prompt);
 
   // Save report
-  await supabase.from('daily_reports').upsert({
+  await supabaseAdmin.from('daily_reports').upsert({
     report_date: date,
     report_text: reportText,
     stats: { actionBreakdown: stats, agentStats, completedTasks: completedTasks || 0 },
+    user_id: userId || null,
   }, { onConflict: 'report_date' });
 
   return { reportText, stats };

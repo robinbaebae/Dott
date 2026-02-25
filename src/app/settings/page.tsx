@@ -5,13 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Palette, Bell, BookOpen } from 'lucide-react';
 import ThemeToggle from '@/components/shared/ThemeToggle';
 import BrandGuideForm from '@/components/settings/BrandGuideForm';
+import NotificationSettings from '@/components/settings/NotificationSettings';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
 
   return (
-    <div className="max-w-3xl mx-auto px-6 pt-24 pb-12 space-y-6 animate-in fade-in duration-500">
-      <h1 className="text-2xl tracking-tight">Settings</h1>
+    <div className="max-w-6xl mx-auto px-6 pt-6 pb-12 space-y-6 animate-in fade-in duration-500">
 
       {/* Brand Guide */}
       <Card>
@@ -72,9 +72,12 @@ export default function SettingsPage() {
             <Bell className="size-4 text-accent" />
             <CardTitle className="text-base">Notifications</CardTitle>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            미니펫 알림 카테고리별 ON/OFF
+          </p>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Notification preferences coming soon.</p>
+          <NotificationSettings />
         </CardContent>
       </Card>
     </div>

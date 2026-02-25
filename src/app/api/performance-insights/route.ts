@@ -1,20 +1,26 @@
 import { NextResponse } from 'next/server';
 import { generateCompletion } from '@/lib/claude';
 import { PERFORMANCE_INSIGHTS_PROMPT } from '@/lib/prompts';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function POST() {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const [igRes, threadsRes] = await Promise.all([
-      supabase
+      supabaseAdmin
         .from('instagram_posts')
         .select('*')
+        .eq('user_id', userEmail)
         .order('timestamp', { ascending: false })
         .limit(30),
-      supabase
+      supabaseAdmin
         .from('threads_posts')
         .select('*')
+        .eq('user_id', userEmail)
         .order('timestamp', { ascending: false })
         .limit(30),
     ]);

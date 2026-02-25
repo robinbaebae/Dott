@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendSummary, TrendArticle, TrendCategory } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { Pencil, X, ExternalLink, Loader2 } from 'lucide-react';
 
 interface TrendItem {
   topic: string;
@@ -43,16 +44,32 @@ const IMPACT_CONFIG: Record<string, { label: string; dot: string; text: string }
 };
 
 export default function IndustryCurationCard() {
+  const router = useRouter();
   const [summary, setSummary] = useState<TrendSummary | null>(null);
   const [articles, setArticles] = useState<TrendArticle[]>([]);
   const [generating, setGenerating] = useState(false);
   const [showArticles, setShowArticles] = useState(false);
   const [filter, setFilter] = useState<TrendCategory | 'all'>('all');
+  const [watchlistKeywords, setWatchlistKeywords] = useState<string[]>([]);
+  const [readerArticle, setReaderArticle] = useState<TrendArticle | null>(null);
+  const [readerLoading, setReaderLoading] = useState(false);
+  const [readerError, setReaderError] = useState(false);
+  const readerRef = React.useRef<HTMLDivElement>(null);
 
-  const fetchSummary = async (signal?: AbortSignal) => {
+  const fetchSummary = async (signal?: AbortSignal, autoGenerate = false) => {
     try {
       const res = await fetch('/api/trends/summary', { signal });
-      if (res.ok && !signal?.aborted) setSummary(await res.json());
+      if (res.ok && !signal?.aborted) {
+        const data = await res.json();
+        if (data && data.id) {
+          setSummary(data);
+          return;
+        }
+      }
+      // No summary for today — auto-generate if requested
+      if (autoGenerate && !signal?.aborted && !generating) {
+        generateSummary();
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('Failed to fetch summary:', err);
@@ -60,20 +77,18 @@ export default function IndustryCurationCard() {
   };
 
   const fetchArticles = async (currentFilter: TrendCategory | 'all', signal?: AbortSignal) => {
-    const ago = new Date();
-    ago.setDate(ago.getDate() - 7);
-
-    let query = supabase
-      .from('trend_articles')
-      .select('*')
-      .gte('pub_date', ago.toISOString())
-      .order('pub_date', { ascending: false })
-      .limit(30);
-
-    if (currentFilter !== 'all') query = query.eq('category', currentFilter);
-
-    const { data } = await query;
-    if (!signal?.aborted) setArticles(data ?? []);
+    try {
+      const params = new URLSearchParams();
+      if (currentFilter !== 'all') params.set('category', currentFilter);
+      const res = await fetch(`/api/trends?${params.toString()}`, { signal });
+      if (res.ok && !signal?.aborted) {
+        const data = await res.json();
+        setArticles(data.articles ?? data ?? []);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      console.error('Failed to fetch articles:', err);
+    }
   };
 
   const generateSummary = async () => {
@@ -93,12 +108,49 @@ export default function IndustryCurationCard() {
     }
   };
 
+  const openReader = async (article: TrendArticle) => {
+    setReaderArticle(article);
+    setReaderError(false);
+    setTimeout(() => readerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+
+    // If already fetched content, skip
+    if (article.content_text && article.fetched_at) return;
+
+    setReaderLoading(true);
+    try {
+      const res = await fetch('/api/trends/article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: article.id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReaderArticle(data);
+        if (!data.content_text) setReaderError(true);
+      } else {
+        setReaderError(true);
+      }
+    } catch {
+      setReaderError(true);
+    } finally {
+      setReaderLoading(false);
+    }
+  };
+
   useEffect(() => {
     const controller = new AbortController();
-    fetchSummary(controller.signal);
+    // Initial: refresh RSS, fetch summary (auto-generate if missing), fetch articles
+    fetch('/api/trends', { method: 'POST', signal: controller.signal }).catch(() => {});
+    fetchSummary(controller.signal, true);
     fetchArticles(filter, controller.signal);
+    // Fetch watchlist keywords for match badge
+    fetch('/api/trends/watchlist', { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: { keyword: string }[]) => setWatchlistKeywords(data.map((w) => w.keyword)))
+      .catch(() => {});
     const interval = setInterval(() => {
-      fetchSummary(controller.signal);
+      fetch('/api/trends', { method: 'POST' }).catch(() => {}); // refresh RSS
+      fetchSummary(controller.signal, true); // auto-generate if missing
       fetchArticles(filter, controller.signal);
     }, 5 * 60 * 1000);
     return () => {
@@ -120,6 +172,13 @@ export default function IndustryCurationCard() {
     acc[a.category] = (acc[a.category] || 0) + 1;
     return acc;
   }, {});
+
+  // Watchlist keyword match count
+  const watchlistHits = watchlistKeywords.length > 0
+    ? articles.filter((a) =>
+        watchlistKeywords.some((kw) => a.title.toLowerCase().includes(kw.toLowerCase()))
+      ).length
+    : 0;
 
   return (
     <Card>
@@ -180,6 +239,11 @@ export default function IndustryCurationCard() {
                   {cat} {count}
                 </span>
               ))}
+              {watchlistHits > 0 && (
+                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium bg-pink-500/15 text-pink-600 dark:text-pink-400">
+                  워치리스트 매치 {watchlistHits}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -209,6 +273,7 @@ export default function IndustryCurationCard() {
                       <th className="text-center px-4 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[70px]">
                         Impact
                       </th>
+                      <th className="w-[40px]" />
                     </tr>
                   </thead>
                   <tbody>
@@ -260,6 +325,15 @@ export default function IndustryCurationCard() {
                               <span className={`w-1.5 h-1.5 rounded-full ${impact.dot}`} />
                               {impact.label}
                             </span>
+                          </td>
+                          <td className="px-2 py-3 align-top">
+                            <button
+                              onClick={() => router.push(`/content?topic=${encodeURIComponent(t.topic)}`)}
+                              title="이 트렌드로 콘텐츠 만들기"
+                              className="p-1.5 rounded-md text-muted-foreground/40 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-950/30 transition-colors"
+                            >
+                              <Pencil className="size-3.5" />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -368,6 +442,103 @@ export default function IndustryCurationCard() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Reader panel */}
+          {readerArticle && (
+            <div ref={readerRef} className="mt-3 rounded-lg border bg-background overflow-hidden animate-in slide-in-from-top-2 duration-200">
+              {/* Reader header */}
+              <div className="flex items-start justify-between gap-3 px-4 py-3 border-b bg-muted/30">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold leading-snug line-clamp-2">
+                    {readerArticle.title}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    {readerArticle.source && (
+                      <span className="text-[11px] text-muted-foreground">
+                        {readerArticle.source}
+                      </span>
+                    )}
+                    {readerArticle.pub_date && (
+                      <span className="text-[11px] text-muted-foreground/50">
+                        {timeAgo(readerArticle.pub_date)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setReaderArticle(null); setReaderError(false); }}
+                  className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Reader body */}
+              <div className="px-4 py-4 max-h-[500px] overflow-y-auto">
+                {readerLoading ? (
+                  <div className="space-y-3 animate-pulse">
+                    <div className="h-40 bg-muted rounded-lg" />
+                    <div className="h-3 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-full" />
+                    <div className="h-3 bg-muted rounded w-5/6" />
+                    <div className="h-3 bg-muted rounded w-2/3" />
+                    <div className="h-3 bg-muted rounded w-full" />
+                    <div className="h-3 bg-muted rounded w-4/5" />
+                    <div className="flex items-center justify-center pt-2">
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-xs text-muted-foreground">본문 로딩 중...</span>
+                    </div>
+                  </div>
+                ) : readerError || !readerArticle.content_text ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      본문을 가져올 수 없습니다.
+                    </p>
+                    <a
+                      href={readerArticle.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      원문 보기
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    {readerArticle.og_image && (
+                      <div className="mb-4 rounded-lg overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={readerArticle.og_image}
+                          alt=""
+                          className="w-full h-auto max-h-[250px] object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      </div>
+                    )}
+                    <div
+                      className="prose prose-sm dark:prose-invert max-w-none text-[13px] leading-relaxed [&_img]:rounded-lg [&_img]:max-h-[300px] [&_a]:text-blue-600 dark:[&_a]:text-blue-400"
+                      dangerouslySetInnerHTML={{ __html: readerArticle.content_html || readerArticle.content_text }}
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Reader footer */}
+              <div className="px-4 py-2.5 border-t bg-muted/20 flex items-center justify-end">
+                <a
+                  href={readerArticle.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ExternalLink className="size-3" />
+                  원문 보기
+                </a>
+              </div>
             </div>
           )}
         </div>

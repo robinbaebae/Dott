@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion, generateCompletionWithImage } from '@/lib/claude';
 import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const brandContext = await getBrandGuideContext(userEmail);
+
     const { copy, reference, size, referenceImage } = await req.json();
 
     if (!copy || !size) {
@@ -14,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const [width, height] = size.split('x');
 
-    const userMessage = `배너 사이즈: ${width}px x ${height}px
+    const userMessage = `${brandContext ? brandContext + '\n\n' : ''}배너 사이즈: ${width}px x ${height}px
 카피: ${copy}
 ${reference ? `레퍼런스/참고사항: ${reference}` : ''}
 ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자인해주세요.' : ''}
@@ -42,9 +49,9 @@ ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자�
       .replace(/\n?```$/i, '')
       .trim();
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('banners')
-      .insert({ copy, reference, size, html: cleanHtml })
+      .insert({ copy, reference, size, html: cleanHtml, user_id: userEmail })
       .select()
       .single();
 
@@ -62,6 +69,9 @@ ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자�
 
 export async function GET(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -69,10 +79,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('banners')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userEmail)
       .single();
 
     if (error) {

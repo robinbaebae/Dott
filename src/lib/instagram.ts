@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 
 const GRAPH_API_BASE = 'https://graph.facebook.com/v21.0';
 const GRAPH_API_IG = 'https://graph.instagram.com';
@@ -24,7 +24,7 @@ export function getInstagramAuthUrl(): string {
   return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code`;
 }
 
-export async function handleInstagramCallback(code: string) {
+export async function handleInstagramCallback(code: string, userEmail: string) {
   const { appId, appSecret, redirectUri } = getConfig();
 
   // 1. Exchange code for short-lived token
@@ -87,8 +87,8 @@ export async function handleInstagramCallback(code: string) {
   }
 
   // 5. Store in Supabase
-  const { error } = await supabase.from('instagram_tokens').upsert({
-    id: 'default',
+  const { error } = await supabaseAdmin.from('instagram_tokens').upsert({
+    id: userEmail,
     access_token: longLivedToken,
     user_id: igUserId,
     ad_account_id: adAccountId || null,
@@ -100,41 +100,41 @@ export async function handleInstagramCallback(code: string) {
   if (error) throw error;
 }
 
-export async function isInstagramConnected(): Promise<boolean> {
-  const { data } = await supabase
+export async function isInstagramConnected(userEmail: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
     .from('instagram_tokens')
     .select('id')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
   return !!data;
 }
 
-export async function disconnectInstagram() {
-  await supabase.from('instagram_tokens').delete().eq('id', 'default');
-  await supabase.from('instagram_posts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+export async function disconnectInstagram(userEmail: string) {
+  await supabaseAdmin.from('instagram_tokens').delete().eq('id', userEmail);
+  await supabaseAdmin.from('instagram_posts').delete().eq('user_id', userEmail);
 }
 
-async function getTokenAndUserId() {
-  const { data } = await supabase
+async function getTokenAndUserId(userEmail: string) {
+  const { data } = await supabaseAdmin
     .from('instagram_tokens')
     .select('*')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
   if (!data) return null;
   return { accessToken: data.access_token, userId: data.user_id };
 }
 
-export async function getAdAccountId(): Promise<string | null> {
-  const { data } = await supabase
+export async function getAdAccountId(userEmail: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
     .from('instagram_tokens')
     .select('ad_account_id')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
   return data?.ad_account_id ?? null;
 }
 
-export async function fetchInstagramPosts() {
-  const creds = await getTokenAndUserId();
+export async function fetchInstagramPosts(userEmail: string) {
+  const creds = await getTokenAndUserId(userEmail);
   if (!creds) return [];
 
   const { accessToken, userId } = creds;
@@ -156,18 +156,19 @@ export async function fetchInstagramPosts() {
     like_count: (p.like_count as number) ?? 0,
     comments_count: (p.comments_count as number) ?? 0,
     fetched_at: new Date().toISOString(),
+    user_id: userEmail,
   }));
 
   // Upsert into Supabase
   for (const post of posts) {
-    await supabase.from('instagram_posts').upsert(post, { onConflict: 'ig_id' });
+    await supabaseAdmin.from('instagram_posts').upsert(post, { onConflict: 'ig_id' });
   }
 
   return posts;
 }
 
-export async function fetchPostInsights(mediaId: string) {
-  const creds = await getTokenAndUserId();
+export async function fetchPostInsights(mediaId: string, userEmail: string) {
+  const creds = await getTokenAndUserId(userEmail);
   if (!creds) return null;
 
   const { accessToken } = creds;
@@ -186,7 +187,7 @@ export async function fetchPostInsights(mediaId: string) {
 
   // Update cached post
   if (Object.keys(insights).length > 0) {
-    await supabase
+    await supabaseAdmin
       .from('instagram_posts')
       .update({
         impressions: insights.impressions ?? 0,
@@ -200,19 +201,20 @@ export async function fetchPostInsights(mediaId: string) {
   return insights;
 }
 
-export async function getCachedPosts() {
-  const { data } = await supabase
+export async function getCachedPosts(userEmail: string) {
+  const { data } = await supabaseAdmin
     .from('instagram_posts')
     .select('*')
+    .eq('user_id', userEmail)
     .order('timestamp', { ascending: false });
   return data ?? [];
 }
 
-export async function getInstagramContextForChat(): Promise<string> {
-  const connected = await isInstagramConnected();
+export async function getInstagramContextForChat(userEmail: string): Promise<string> {
+  const connected = await isInstagramConnected(userEmail);
   if (!connected) return '';
 
-  const posts = await getCachedPosts();
+  const posts = await getCachedPosts(userEmail);
   if (posts.length === 0) return '';
 
   const now = new Date();

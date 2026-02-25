@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { generateCompletion } from '@/lib/claude';
 import { WEEKLY_REPORT_PROMPT } from '@/lib/prompts';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function POST() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -12,25 +16,29 @@ export async function POST() {
 
     // Fetch weekly data in parallel
     const [tasksRes, insightsRes, igPostsRes, threadsRes] = await Promise.all([
-      supabase
+      supabaseAdmin
         .from('tasks')
         .select('*')
+        .eq('user_id', userEmail)
         .gte('created_at', weekAgoISO)
         .order('created_at', { ascending: false }),
-      supabase
+      supabaseAdmin
         .from('insights')
         .select('*')
+        .eq('user_id', userEmail)
         .gte('created_at', weekAgoISO)
         .order('created_at', { ascending: false }),
-      supabase
+      supabaseAdmin
         .from('instagram_posts')
         .select('*')
+        .eq('user_id', userEmail)
         .gte('fetched_at', weekAgoISO)
         .order('timestamp', { ascending: false })
         .limit(20),
-      supabase
+      supabaseAdmin
         .from('threads_posts')
         .select('*')
+        .eq('user_id', userEmail)
         .gte('fetched_at', weekAgoISO)
         .order('timestamp', { ascending: false })
         .limit(20),

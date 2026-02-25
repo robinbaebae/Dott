@@ -1,14 +1,15 @@
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 import { generateCompletion } from './claude';
 import { COMPETITOR_BRIEFING_PROMPT, AD_ANALYSIS_PROMPT } from './prompts';
 import { Competitor, CompetitorBriefing, CompetitorAd } from '@/types';
 
 // ---- Competitor CRUD ----
 
-export async function getCompetitors(): Promise<Competitor[]> {
-  const { data, error } = await supabase
+export async function getCompetitors(userEmail: string): Promise<Competitor[]> {
+  const { data, error } = await supabaseAdmin
     .from('competitors')
     .select('*')
+    .eq('user_id', userEmail)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -19,14 +20,15 @@ export async function addCompetitor(input: {
   website_url?: string;
   meta_page_id?: string;
   sns_handles?: Record<string, string>;
-}): Promise<Competitor> {
-  const { data, error } = await supabase
+}, userEmail: string): Promise<Competitor> {
+  const { data, error } = await supabaseAdmin
     .from('competitors')
     .insert({
       name: input.name,
       website_url: input.website_url || null,
       meta_page_id: input.meta_page_id || null,
       sns_handles: input.sns_handles || {},
+      user_id: userEmail,
     })
     .select()
     .single();
@@ -34,11 +36,12 @@ export async function addCompetitor(input: {
   return data;
 }
 
-export async function deleteCompetitor(id: string): Promise<void> {
-  const { error } = await supabase
+export async function deleteCompetitor(id: string, userEmail: string): Promise<void> {
+  const { error } = await supabaseAdmin
     .from('competitors')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userEmail);
   if (error) throw error;
 }
 
@@ -54,7 +57,7 @@ export async function getWeeklyBriefing(
   monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
   const weekStart = monday.toISOString().split('T')[0];
 
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('competitor_briefings')
     .select('*')
     .eq('competitor_id', competitorId)
@@ -68,7 +71,7 @@ export async function generateBriefing(
   competitorId: string
 ): Promise<CompetitorBriefing> {
   // Get competitor info
-  const { data: competitor, error: compError } = await supabase
+  const { data: competitor, error: compError } = await supabaseAdmin
     .from('competitors')
     .select('*')
     .eq('id', competitorId)
@@ -87,7 +90,7 @@ export async function generateBriefing(
   if (existing) return existing;
 
   // Search for recent news about the competitor
-  const { data: articles } = await supabase
+  const { data: articles } = await supabaseAdmin
     .from('trend_articles')
     .select('title, source, pub_date')
     .or(`title.ilike.%${competitor.name}%`)
@@ -128,7 +131,7 @@ ${articleList || '관련 뉴스 없음 - 일반적인 업계 동향 기반으로
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('competitor_briefings')
     .insert({
       competitor_id: competitorId,
@@ -148,7 +151,7 @@ ${articleList || '관련 뉴스 없음 - 일반적인 업계 동향 기반으로
 export async function getCompetitorAds(
   competitorId: string
 ): Promise<CompetitorAd[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('competitor_ads')
     .select('*')
     .eq('competitor_id', competitorId)
@@ -166,7 +169,7 @@ export async function addCompetitorAd(input: {
   cta_text?: string;
 }): Promise<CompetitorAd> {
   // Insert the ad
-  const { data: ad, error: insertError } = await supabase
+  const { data: ad, error: insertError } = await supabaseAdmin
     .from('competitor_ads')
     .insert({
       competitor_id: input.competitor_id,
@@ -195,7 +198,7 @@ export async function addCompetitorAd(input: {
 
       const analysis = await generateCompletion(AD_ANALYSIS_PROMPT, userMessage);
 
-      const { data: updated } = await supabase
+      const { data: updated } = await supabaseAdmin
         .from('competitor_ads')
         .update({ ai_analysis: analysis })
         .eq('id', ad.id)

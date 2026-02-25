@@ -1,25 +1,25 @@
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 import { getAdAccountId } from './instagram';
 
 const GRAPH_API_BASE = 'https://graph.facebook.com/v21.0';
 
-async function getTokenAndAdAccount() {
-  const { data } = await supabase
+async function getTokenAndAdAccount(userEmail: string) {
+  const { data } = await supabaseAdmin
     .from('instagram_tokens')
     .select('access_token, ad_account_id')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
   if (!data || !data.ad_account_id) return null;
   return { accessToken: data.access_token as string, adAccountId: data.ad_account_id as string };
 }
 
-export async function isMetaAdsConnected(): Promise<boolean> {
-  const adAccountId = await getAdAccountId();
+export async function isMetaAdsConnected(userEmail: string): Promise<boolean> {
+  const adAccountId = await getAdAccountId(userEmail);
   return !!adAccountId;
 }
 
-export async function fetchMetaCampaigns() {
-  const creds = await getTokenAndAdAccount();
+export async function fetchMetaCampaigns(userEmail: string) {
+  const creds = await getTokenAndAdAccount(userEmail);
   if (!creds) return [];
 
   const { accessToken, adAccountId } = creds;
@@ -41,10 +41,11 @@ export async function fetchMetaCampaigns() {
     created_time: c.created_time as string,
     updated_time: c.updated_time as string,
     fetched_at: new Date().toISOString(),
+    user_id: userEmail,
   }));
 
   for (const campaign of campaigns) {
-    await supabase
+    await supabaseAdmin
       .from('meta_ad_campaigns')
       .upsert(campaign, { onConflict: 'campaign_id' });
   }
@@ -52,8 +53,8 @@ export async function fetchMetaCampaigns() {
   return campaigns;
 }
 
-export async function fetchMetaInsights(datePreset = 'last_14d') {
-  const creds = await getTokenAndAdAccount();
+export async function fetchMetaInsights(datePreset = 'last_14d', userEmail: string) {
+  const creds = await getTokenAndAdAccount(userEmail);
   if (!creds) return [];
 
   const { accessToken, adAccountId } = creds;
@@ -85,11 +86,12 @@ export async function fetchMetaInsights(datePreset = 'last_14d') {
       cost_per_action_type: row.cost_per_action_type ?? [],
       actions: row.actions ?? [],
       fetched_at: new Date().toISOString(),
+      user_id: userEmail,
     };
   });
 
   for (const insight of insights) {
-    await supabase
+    await supabaseAdmin
       .from('meta_ad_insights')
       .upsert(insight, { onConflict: 'campaign_id,date_start,date_stop' });
   }
@@ -97,8 +99,8 @@ export async function fetchMetaInsights(datePreset = 'last_14d') {
   return insights;
 }
 
-export async function fetchCampaignInsights(campaignId: string, datePreset = 'last_14d') {
-  const creds = await getTokenAndAdAccount();
+export async function fetchCampaignInsights(campaignId: string, datePreset = 'last_14d', userEmail: string) {
+  const creds = await getTokenAndAdAccount(userEmail);
   if (!creds) return [];
 
   const { accessToken } = creds;
@@ -130,11 +132,12 @@ export async function fetchCampaignInsights(campaignId: string, datePreset = 'la
       cost_per_action_type: row.cost_per_action_type ?? [],
       actions: row.actions ?? [],
       fetched_at: new Date().toISOString(),
+      user_id: userEmail,
     };
   });
 
   for (const insight of insights) {
-    await supabase
+    await supabaseAdmin
       .from('meta_ad_insights')
       .upsert(insight, { onConflict: 'campaign_id,date_start,date_stop' });
   }
@@ -150,8 +153,8 @@ export async function createMetaCampaign(params: {
   objective?: string;
   dailyBudget: number; // in KRW cents
   status?: string;
-}): Promise<{ campaignId: string } | null> {
-  const creds = await getTokenAndAdAccount();
+}, userEmail: string): Promise<{ campaignId: string } | null> {
+  const creds = await getTokenAndAdAccount(userEmail);
   if (!creds) return null;
 
   const { accessToken, adAccountId } = creds;
@@ -175,7 +178,7 @@ export async function createMetaCampaign(params: {
   const campaignId = data.id as string;
 
   // Save to local DB
-  await supabase.from('meta_ad_campaigns').upsert({
+  await supabaseAdmin.from('meta_ad_campaigns').upsert({
     campaign_id: campaignId,
     name: params.name,
     status: params.status || 'PAUSED',
@@ -184,6 +187,7 @@ export async function createMetaCampaign(params: {
     created_time: new Date().toISOString(),
     updated_time: new Date().toISOString(),
     fetched_at: new Date().toISOString(),
+    user_id: userEmail,
   }, { onConflict: 'campaign_id' });
 
   return { campaignId };
@@ -194,9 +198,10 @@ export async function createMetaCampaign(params: {
  */
 export async function updateCampaignStatus(
   campaignId: string,
-  status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
+  status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED',
+  userEmail: string
 ): Promise<boolean> {
-  const creds = await getTokenAndAdAccount();
+  const creds = await getTokenAndAdAccount(userEmail);
   if (!creds) return false;
 
   const res = await fetch(`${GRAPH_API_BASE}/${campaignId}`, {
@@ -211,7 +216,7 @@ export async function updateCampaignStatus(
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
 
-  await supabase
+  await supabaseAdmin
     .from('meta_ad_campaigns')
     .update({ status, updated_time: new Date().toISOString() })
     .eq('campaign_id', campaignId);
@@ -219,32 +224,34 @@ export async function updateCampaignStatus(
   return data.success ?? true;
 }
 
-export async function getCachedCampaigns() {
-  const { data } = await supabase
+export async function getCachedCampaigns(userEmail: string) {
+  const { data } = await supabaseAdmin
     .from('meta_ad_campaigns')
     .select('*')
+    .eq('user_id', userEmail)
     .order('created_time', { ascending: false });
   return data ?? [];
 }
 
-export async function getCachedInsights(days = 14) {
+export async function getCachedInsights(days = 14, userEmail: string) {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('meta_ad_insights')
     .select('*')
+    .eq('user_id', userEmail)
     .gte('date_start', since.toISOString().split('T')[0])
     .order('date_start', { ascending: true });
   return data ?? [];
 }
 
-export async function getMetaAdsContextForChat(): Promise<string> {
-  const connected = await isMetaAdsConnected();
+export async function getMetaAdsContextForChat(userEmail: string): Promise<string> {
+  const connected = await isMetaAdsConnected(userEmail);
   if (!connected) return '';
 
-  const campaigns = await getCachedCampaigns();
-  const insights = await getCachedInsights(14);
+  const campaigns = await getCachedCampaigns(userEmail);
+  const insights = await getCachedInsights(14, userEmail);
 
   if (campaigns.length === 0 && insights.length === 0) return '';
 

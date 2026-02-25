@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 // POST — finalize project: create content_calendar entries
 export async function POST(
@@ -8,15 +9,19 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const { scheduleDate, scheduleTime } = body;
 
     // Fetch project
-    const { data: project, error: fetchErr } = await supabase
+    const { data: project, error: fetchErr } = await supabaseAdmin
       .from('content_projects')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userEmail)
       .single();
 
     if (fetchErr || !project) {
@@ -45,13 +50,14 @@ export async function POST(
         status: scheduleDate ? 'scheduled' : 'draft',
         content,
         notes: project.ai_explanation || '',
+        user_id: userEmail,
       };
 
       calendarEntries.push(entry);
     }
 
     if (calendarEntries.length > 0) {
-      const { error: insertErr } = await supabase
+      const { error: insertErr } = await supabaseAdmin
         .from('content_calendar')
         .insert(calendarEntries);
 
@@ -59,13 +65,14 @@ export async function POST(
     }
 
     // Update project status
-    const { data: updated, error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await supabaseAdmin
       .from('content_projects')
       .update({
         status: scheduleDate ? 'scheduled' : 'confirmed',
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('user_id', userEmail)
       .select()
       .single();
 

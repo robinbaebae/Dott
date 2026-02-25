@@ -1,20 +1,52 @@
-appId: com.codeandbutter.ditto
-productName: Ditto
+appId: com.codeandbutter.dott
+productName: Dott
 directories:
   output: dist-electron
 files:
   - electron/**/*
   - .next/**/*
+  - "!.next/dev/**"
+  - "!.next/cache/**"
+  - public/**/*
   - node_modules/**/*
   - package.json
+extraResources:
+  - from: .env.local
+    to: .env.local
 mac:
   category: public.app-category.productivity
+  icon: public/icon-512.png
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize:
+    teamId: ${APPLE_TEAM_ID}
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+dmg:
+  artifactName: Dott-${version}-${arch}.dmg
+  title: Dott
+  icon: public/icon-512.png
+  iconSize: 80
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
 win:
   target:
     - nsis
 linux:
   target:
     - AppImage
+publish:
+  provider: github
+  owner: codeandbutter
+  repo: dott
+  releaseType: release

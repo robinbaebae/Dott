@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 
 const THREADS_API_BASE = 'https://graph.threads.net';
 
@@ -17,7 +17,7 @@ export function getThreadsAuthUrl(): string {
   return `${THREADS_API_BASE}/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code`;
 }
 
-export async function handleThreadsCallback(code: string) {
+export async function handleThreadsCallback(code: string, userEmail: string) {
   const { appId, appSecret, redirectUri } = getConfig();
 
   // 1. Exchange code for short-lived token
@@ -49,8 +49,8 @@ export async function handleThreadsCallback(code: string) {
   const expiresIn = longData.expires_in ?? 5184000;
 
   // 3. Store in Supabase
-  const { error } = await supabase.from('threads_tokens').upsert({
-    id: 'default',
+  const { error } = await supabaseAdmin.from('threads_tokens').upsert({
+    id: userEmail,
     access_token: longLivedToken,
     user_id: userId,
     expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
@@ -60,32 +60,32 @@ export async function handleThreadsCallback(code: string) {
   if (error) throw error;
 }
 
-export async function isThreadsConnected(): Promise<boolean> {
-  const { data } = await supabase
+export async function isThreadsConnected(userEmail: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
     .from('threads_tokens')
     .select('id')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
   return !!data;
 }
 
-export async function disconnectThreads() {
-  await supabase.from('threads_tokens').delete().eq('id', 'default');
-  await supabase.from('threads_posts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+export async function disconnectThreads(userEmail: string) {
+  await supabaseAdmin.from('threads_tokens').delete().eq('id', userEmail);
+  await supabaseAdmin.from('threads_posts').delete().eq('user_id', userEmail);
 }
 
-async function getTokenAndUserId() {
-  const { data } = await supabase
+async function getTokenAndUserId(userEmail: string) {
+  const { data } = await supabaseAdmin
     .from('threads_tokens')
     .select('*')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
   if (!data) return null;
   return { accessToken: data.access_token, userId: data.user_id };
 }
 
-export async function fetchThreadsPosts() {
-  const creds = await getTokenAndUserId();
+export async function fetchThreadsPosts(userEmail: string) {
+  const creds = await getTokenAndUserId(userEmail);
   if (!creds) return [];
 
   const { accessToken, userId } = creds;
@@ -108,20 +108,22 @@ export async function fetchThreadsPosts() {
     repost_count: (p.repost_count as number) ?? 0,
     quote_count: (p.quote_count as number) ?? 0,
     fetched_at: new Date().toISOString(),
+    user_id: userEmail,
   }));
 
   // Upsert into Supabase
   for (const post of posts) {
-    await supabase.from('threads_posts').upsert(post, { onConflict: 'threads_id' });
+    await supabaseAdmin.from('threads_posts').upsert(post, { onConflict: 'threads_id' });
   }
 
   return posts;
 }
 
-export async function getCachedThreadsPosts() {
-  const { data } = await supabase
+export async function getCachedThreadsPosts(userEmail: string) {
+  const { data } = await supabaseAdmin
     .from('threads_posts')
     .select('*')
+    .eq('user_id', userEmail)
     .order('timestamp', { ascending: false });
   return data ?? [];
 }

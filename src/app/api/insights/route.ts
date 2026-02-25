@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/auth-guard';
 
 function classifyUrl(url: string): string {
   const lower = url.toLowerCase();
@@ -49,12 +50,20 @@ async function fetchMetadata(url: string) {
 
 // GET — list insights with optional content_type filter
 export async function GET(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const { searchParams } = new URL(req.url);
   const contentType = searchParams.get('content_type');
 
-  let query = supabase.from('insights').select('*').order('created_at', { ascending: false });
+  const q = searchParams.get('q');
+
+  let query = supabaseAdmin.from('insights').select('*').eq('user_id', userEmail).order('created_at', { ascending: false });
   if (contentType && contentType !== 'all') {
     query = query.eq('content_type', contentType);
+  }
+  if (q) {
+    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,memo.ilike.%${q}%`);
   }
 
   const { data, error } = await query;
@@ -64,6 +73,9 @@ export async function GET(req: NextRequest) {
 
 // POST — save a URL as an insight
 export async function POST(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const body = await req.json();
   const { url, content_type, swipe_category } = body;
   if (!url || typeof url !== 'string') {
@@ -82,15 +94,16 @@ export async function POST(req: NextRequest) {
     content_type: contentType,
     thumbnail_url: thumbnailUrl,
     source_domain: sourceDomain,
+    user_id: userEmail,
   };
 
   if (contentType === 'swipe' && swipe_category) {
     insertData.swipe_category = swipe_category;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('insights')
-    .upsert(insertData, { onConflict: 'url' })
+    .upsert(insertData, { onConflict: 'url,user_id' })
     .select()
     .single();
 
@@ -100,6 +113,9 @@ export async function POST(req: NextRequest) {
 
 // PATCH — update memo and/or tags
 export async function PATCH(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const body = await req.json();
   const { id, memo, tags } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
@@ -108,10 +124,11 @@ export async function PATCH(req: NextRequest) {
   if (memo !== undefined) updates.memo = memo;
   if (tags !== undefined) updates.tags = tags;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('insights')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', userEmail)
     .select()
     .single();
 
@@ -121,11 +138,14 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE — remove an insight by id
 export async function DELETE(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const { error } = await supabase.from('insights').delete().eq('id', id);
+  const { error } = await supabaseAdmin.from('insights').delete().eq('id', id).eq('user_id', userEmail);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

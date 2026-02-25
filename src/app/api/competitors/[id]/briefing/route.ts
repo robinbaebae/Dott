@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWeeklyBriefing, generateBriefing } from '@/lib/competitors';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
     const briefing = await getWeeklyBriefing(id);
     return NextResponse.json(briefing);
@@ -21,6 +25,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
     const briefing = await generateBriefing(id);
     await logActivity('briefing_generate', 'research', { competitorId: id });

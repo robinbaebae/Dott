@@ -1,20 +1,25 @@
-import { supabase } from '@/lib/supabase';
-import { notFound } from 'next/navigation';
+import { auth } from '@/auth';
+import { supabaseAdmin } from '@/lib/supabase';
+import { notFound, redirect } from 'next/navigation';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 export default async function BannerPage({ params }: Props) {
+  const session = await auth();
+  if (!session?.user?.email) redirect('/login');
+
   const { id } = await params;
 
-  const { data: banner, error } = await supabase
+  const { data: banner } = await supabaseAdmin
     .from('banners')
     .select('html')
     .eq('id', id)
+    .eq('user_id', session.user.email)
     .single();
 
-  if (error || !banner) {
+  if (!banner) {
     notFound();
   }
 

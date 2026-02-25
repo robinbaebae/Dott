@@ -321,7 +321,7 @@ function PerformanceCharts({
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
-                formatter={(v: number | undefined) => [formatValue(v ?? 0), activeMetric.label]}
+                formatter={(v: unknown) => [formatValue(Number(v) || 0), activeMetric.label]}
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(91,77,110,0.2)' }}
               />
               <Line
@@ -339,7 +339,7 @@ function PerformanceCharts({
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
-                formatter={(v: number | undefined) => [formatValue(v ?? 0), activeMetric.label]}
+                formatter={(v: unknown) => [formatValue(Number(v) || 0), activeMetric.label]}
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(91,77,110,0.2)' }}
               />
               <Bar dataKey={metric} fill={activeMetric.color} radius={[4, 4, 0, 0]} opacity={0.85} />
@@ -356,7 +356,7 @@ function PerformanceCharts({
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
-                formatter={(v: number | undefined) => [formatValue(v ?? 0), activeMetric.label]}
+                formatter={(v: unknown) => [formatValue(Number(v) || 0), activeMetric.label]}
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid rgba(91,77,110,0.2)' }}
               />
               <Area

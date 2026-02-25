@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
@@ -20,14 +20,15 @@ export function getAuthUrl(): string {
   });
 }
 
-export async function handleCallback(code: string) {
+export async function handleCallback(code: string, userEmail: string) {
   const client = getOAuth2Client();
   const { tokens } = await client.getToken(code);
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('google_tokens')
     .upsert({
-      id: 'default',
+      id: userEmail,
+      user_id: userEmail,
       access_token: tokens.access_token!,
       refresh_token: tokens.refresh_token!,
       expiry_date: tokens.expiry_date!,
@@ -37,11 +38,11 @@ export async function handleCallback(code: string) {
   if (error) throw error;
 }
 
-async function getAuthenticatedClient() {
-  const { data, error } = await supabase
+async function getAuthenticatedClient(userEmail: string) {
+  const { data, error } = await supabaseAdmin
     .from('google_tokens')
     .select('*')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
 
   if (error || !data) return null;
@@ -60,17 +61,17 @@ async function getAuthenticatedClient() {
     if (tokens.access_token) update.access_token = tokens.access_token;
     if (tokens.expiry_date) update.expiry_date = tokens.expiry_date;
 
-    await supabase
+    await supabaseAdmin
       .from('google_tokens')
       .update(update)
-      .eq('id', 'default');
+      .eq('id', userEmail);
   });
 
   return client;
 }
 
-export async function getCalendarEvents(timeMin: string, timeMax: string) {
-  const auth = await getAuthenticatedClient();
+export async function getCalendarEvents(timeMin: string, timeMax: string, userEmail: string) {
+  const auth = await getAuthenticatedClient(userEmail);
   if (!auth) return [];
 
   const calendar = google.calendar({ version: 'v3', auth });
@@ -100,9 +101,10 @@ export async function createCalendarEvent(
   startTime: string,
   endTime: string,
   description?: string,
-  attendees?: { email: string; displayName?: string }[]
+  attendees?: { email: string; displayName?: string }[],
+  userEmail?: string
 ) {
-  const auth = await getAuthenticatedClient();
+  const auth = await getAuthenticatedClient(userEmail!);
   if (!auth) throw new Error('Google Calendar not connected');
 
   const calendar = google.calendar({ version: 'v3', auth });
@@ -141,8 +143,8 @@ export async function createCalendarEvent(
 /**
  * Get unique attendees from past 90 days of calendar events
  */
-export async function getRecentAttendees(): Promise<{ name: string; email: string; count: number }[]> {
-  const auth = await getAuthenticatedClient();
+export async function getRecentAttendees(userEmail: string): Promise<{ name: string; email: string; count: number }[]> {
+  const auth = await getAuthenticatedClient(userEmail);
   if (!auth) return [];
 
   const calendar = google.calendar({ version: 'v3', auth });
@@ -180,19 +182,19 @@ export async function getRecentAttendees(): Promise<{ name: string; email: strin
   return Array.from(attendeeMap.values()).sort((a, b) => b.count - a.count);
 }
 
-export async function isConnected(): Promise<boolean> {
-  const { data } = await supabase
+export async function isConnected(userEmail: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
     .from('google_tokens')
     .select('id')
-    .eq('id', 'default')
+    .eq('id', userEmail)
     .single();
 
   return !!data;
 }
 
-export async function disconnect() {
-  await supabase
+export async function disconnect(userEmail: string) {
+  await supabaseAdmin
     .from('google_tokens')
     .delete()
-    .eq('id', 'default');
+    .eq('id', userEmail);
 }

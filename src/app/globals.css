@@ -50,71 +50,95 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #EEEAF2;
+  --background: #F0EAEE;
   --foreground: #1A1A1A;
-  --card: #FAF8FC;
+  --card: #FDFAFC;
   --card-foreground: #1A1A1A;
-  --popover: #FAF8FC;
+  --popover: #FDFAFC;
   --popover-foreground: #1A1A1A;
-  --primary: #D4C4D8;
+  --primary: #D8C4D4;
   --primary-foreground: #2D2D30;
-  --secondary: #E6DFE9;
+  --secondary: #EBE0E6;
   --secondary-foreground: #2D2D30;
-  --muted: #E6DFE9;
-  --muted-foreground: #7A6E80;
-  --accent: #6B5B7B;
+  --muted: #EBE0E6;
+  --muted-foreground: #7E6E78;
+  --accent: #7B5B8B;
   --accent-foreground: white;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: rgba(107, 91, 123, 0.2);
-  --input: #E2DAE6;
-  --ring: #D4C4D8;
-  --chart-1: #6B5B7B;
-  --chart-2: #5B4D6E;
-  --chart-3: #8B82A0;
-  --chart-4: #9E8B91;
-  --chart-5: #A89BA0;
-  --sidebar: #F5F1F8;
+  --border: rgba(123, 91, 139, 0.18);
+  --input: #E8DCE4;
+  --ring: #D8C4D4;
+  --chart-1: #7B5B8B;
+  --chart-2: #C87DA0;
+  --chart-3: #D4A06B;
+  --chart-4: #9E7BAA;
+  --chart-5: #E8A88E;
+  --sidebar: #F7F2F5;
   --sidebar-foreground: #1A1A1A;
-  --sidebar-primary: #6B5B7B;
+  --sidebar-primary: #7B5B8B;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E6DFE9;
+  --sidebar-accent: #EDE4E9;
   --sidebar-accent-foreground: #2D2D30;
-  --sidebar-border: rgba(107, 91, 123, 0.15);
-  --sidebar-ring: #8B82A0;
+  --sidebar-border: rgba(123, 91, 139, 0.12);
+  --sidebar-ring: #9B82A8;
+
+  /* Category colors */
+  --color-cat-blue: #DCEEFB;
+  --color-cat-blue-text: #2563EB;
+  --color-cat-pink: #FCE4EC;
+  --color-cat-pink-text: #DB2777;
+  --color-cat-green: #E8F5E9;
+  --color-cat-green-text: #16A34A;
+  --color-cat-amber: #FFF8E1;
+  --color-cat-amber-text: #D97706;
+  --color-cat-peach: #FFF3E0;
+  --color-cat-peach-text: #EA580C;
 }
 
 .dark {
-  --background: #1E1D1E;
-  --foreground: #EDE8F0;
-  --card: #2A2630;
-  --card-foreground: #EDE8F0;
-  --popover: #2A2630;
-  --popover-foreground: #EDE8F0;
-  --primary: #D4C4D8;
-  --primary-foreground: #1E1D1E;
-  --secondary: #352F3C;
-  --secondary-foreground: #EDE8F0;
-  --muted: #352F3C;
-  --muted-foreground: #A89BA0;
-  --accent: #8B7BA0;
+  --background: #1A191C;
+  --foreground: #EDE8EF;
+  --card: #242028;
+  --card-foreground: #EDE8EF;
+  --popover: #242028;
+  --popover-foreground: #EDE8EF;
+  --primary: #D4BFD0;
+  --primary-foreground: #1A191C;
+  --secondary: #2E2832;
+  --secondary-foreground: #EDE8EF;
+  --muted: #2E2832;
+  --muted-foreground: #9E929A;
+  --accent: #9B82A8;
   --accent-foreground: #FFFFFF;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgba(139, 123, 160, 0.22);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #6B5B7B;
-  --chart-1: #8B7BA0;
-  --chart-2: #6B5B7B;
-  --chart-3: #A89BA0;
-  --chart-4: #9E8B91;
-  --chart-5: #D4C4D8;
-  --sidebar: #252326;
-  --sidebar-foreground: #EDE8F0;
-  --sidebar-primary: #8B7BA0;
+  --border: rgba(155, 130, 168, 0.16);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #7B5B8B;
+  --chart-1: #9B82A8;
+  --chart-2: #A8688E;
+  --chart-3: #C49870;
+  --chart-4: #8E7BA0;
+  --chart-5: #D4BFD0;
+  --sidebar: #1F1D22;
+  --sidebar-foreground: #EDE8EF;
+  --sidebar-primary: #9B82A8;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #352F3C;
-  --sidebar-accent-foreground: #EDE8F0;
-  --sidebar-border: rgba(139, 123, 160, 0.15);
-  --sidebar-ring: #6B5B7B;
+  --sidebar-accent: #2E2832;
+  --sidebar-accent-foreground: #EDE8EF;
+  --sidebar-border: rgba(155, 130, 168, 0.1);
+  --sidebar-ring: #7B5B8B;
+
+  /* Category colors – dark */
+  --color-cat-blue: rgba(37, 99, 235, 0.15);
+  --color-cat-blue-text: #60A5FA;
+  --color-cat-pink: rgba(219, 39, 119, 0.15);
+  --color-cat-pink-text: #F472B6;
+  --color-cat-green: rgba(22, 163, 74, 0.15);
+  --color-cat-green-text: #4ADE80;
+  --color-cat-amber: rgba(217, 119, 6, 0.15);
+  --color-cat-amber-text: #FBBF24;
+  --color-cat-peach: rgba(234, 88, 12, 0.15);
+  --color-cat-peach-text: #FB923C;
 }
 
 @layer base {
@@ -280,22 +304,185 @@
   }
 }
 
-/* Dashboard gradient background — light mode */
-.dashboard-gradient {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(180, 160, 200, 0.45) 0%, transparent 70%),
-    radial-gradient(ellipse 70% 50% at 80% 40%, rgba(210, 170, 150, 0.35) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(200, 175, 190, 0.3) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 70% 20%, rgba(160, 140, 180, 0.2) 0%, transparent 55%),
-    linear-gradient(160deg, #E8E0ED 0%, #EADDD5 35%, #E0D0D8 65%, #E5DDE8 100%);
+/* ===== Paper Elevation System ===== */
+.elevation-0 { box-shadow: none; }
+.elevation-1 {
+  box-shadow:
+    0 1px 3px rgba(91, 77, 110, 0.06),
+    0 1px 2px rgba(91, 77, 110, 0.04);
+}
+.elevation-2 {
+  box-shadow:
+    0 3px 8px rgba(91, 77, 110, 0.08),
+    0 1px 3px rgba(91, 77, 110, 0.05);
+}
+.elevation-3 {
+  box-shadow:
+    0 6px 16px rgba(91, 77, 110, 0.1),
+    0 2px 6px rgba(91, 77, 110, 0.06);
+}
+.elevation-4 {
+  box-shadow:
+    0 10px 24px rgba(91, 77, 110, 0.12),
+    0 4px 10px rgba(91, 77, 110, 0.07);
+}
+.elevation-5 {
+  box-shadow:
+    0 16px 40px rgba(91, 77, 110, 0.15),
+    0 6px 14px rgba(91, 77, 110, 0.08);
 }
 
-/* Dashboard gradient background — dark mode: darker & muted */
+.dark .elevation-1 {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.dark .elevation-2 {
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.dark .elevation-3 {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.dark .elevation-4 {
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.35),
+    0 4px 10px rgba(0, 0, 0, 0.22);
+}
+.dark .elevation-5 {
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.4),
+    0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== Micro Interactions ===== */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.press-scale {
+  transition: transform 0.1s ease;
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* ===== Typography Scale ===== */
+.text-h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; }
+.text-h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.35; letter-spacing: -0.01em; }
+.text-h3 { font-size: 1.1rem; font-weight: 600; line-height: 1.4; }
+.text-h4 { font-size: 1rem; font-weight: 500; line-height: 1.45; }
+.text-body { font-size: 0.875rem; font-weight: 400; line-height: 1.6; }
+.text-caption { font-size: 0.75rem; font-weight: 400; line-height: 1.5; color: var(--muted-foreground); }
+
+/* ===== Page Enter Animation ===== */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.35s ease-out;
+}
+
+/* ===== BlockNote Editor Overrides ===== */
+.memo-editor-wrapper {
+  height: 100%;
+}
+
+.memo-editor-wrapper .bn-editor {
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 0.75rem;
+  padding: 1rem 1.5rem;
+}
+
+.memo-editor-wrapper .bn-container[data-color-scheme="light"] {
+  --bn-colors-editor-background: transparent;
+  --bn-colors-editor-text: var(--foreground);
+  --bn-colors-menu-background: var(--popover);
+  --bn-colors-menu-text: var(--foreground);
+  --bn-colors-hovered-background: var(--muted);
+  --bn-colors-hovered-text: var(--foreground);
+  --bn-colors-selected-background: var(--accent);
+  --bn-colors-selected-text: var(--accent-foreground);
+  --bn-colors-side-menu: var(--muted-foreground);
+  --bn-colors-highlights-gray-background: var(--muted);
+  --bn-colors-highlights-gray-text: var(--foreground);
+  --bn-colors-tooltip-background: var(--popover);
+  --bn-colors-tooltip-text: var(--foreground);
+}
+
+.memo-editor-wrapper .bn-container[data-color-scheme="dark"] {
+  --bn-colors-editor-background: transparent;
+  --bn-colors-editor-text: var(--foreground);
+  --bn-colors-menu-background: var(--popover);
+  --bn-colors-menu-text: var(--foreground);
+  --bn-colors-hovered-background: var(--muted);
+  --bn-colors-hovered-text: var(--foreground);
+  --bn-colors-selected-background: var(--accent);
+  --bn-colors-selected-text: var(--accent-foreground);
+  --bn-colors-side-menu: var(--muted-foreground);
+  --bn-colors-highlights-gray-background: var(--muted);
+  --bn-colors-highlights-gray-text: var(--foreground);
+  --bn-colors-tooltip-background: var(--popover);
+  --bn-colors-tooltip-text: var(--foreground);
+  --bn-colors-borders: var(--border);
+}
+
+/* Slash menu & toolbar border-radius */
+.memo-editor-wrapper .bn-slash-menu,
+.memo-editor-wrapper .bn-formatting-toolbar,
+.memo-editor-wrapper .bn-link-toolbar,
+.memo-editor-wrapper .bn-image-toolbar,
+.memo-editor-wrapper .bn-table-handle-menu {
+  border-radius: var(--radius);
+  border-color: var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.dark .memo-editor-wrapper .bn-slash-menu,
+.dark .memo-editor-wrapper .bn-formatting-toolbar,
+.dark .memo-editor-wrapper .bn-link-toolbar,
+.dark .memo-editor-wrapper .bn-image-toolbar,
+.dark .memo-editor-wrapper .bn-table-handle-menu {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Font consistency in all menus */
+.memo-editor-wrapper .bn-slash-menu,
+.memo-editor-wrapper .bn-formatting-toolbar,
+.memo-editor-wrapper .bn-side-menu {
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+/* Dashboard gradient background — light mode: amber → pink → violet */
+.dashboard-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 40%, rgba(232, 184, 109, 0.3) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(232, 160, 184, 0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 75% 60% at 85% 35%, rgba(180, 150, 220, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 30% 80%, rgba(220, 170, 160, 0.2) 0%, transparent 55%),
+    linear-gradient(135deg, #EDE4DB 0%, #F0DDE4 35%, #E8D8EC 65%, #E4DBF0 100%);
+}
+
+/* Dashboard gradient background — dark mode: same hues, deeply muted */
 .dark .dashboard-gradient {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(90, 70, 110, 0.35) 0%, transparent 70%),
-    radial-gradient(ellipse 70% 50% at 80% 40%, rgba(110, 80, 70, 0.25) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(100, 75, 90, 0.2) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 70% 20%, rgba(70, 55, 90, 0.15) 0%, transparent 55%),
-    linear-gradient(160deg, #1E1D1E 0%, #231F22 35%, #211D20 65%, #1E1D1E 100%);
+    radial-gradient(ellipse 80% 60% at 15% 40%, rgba(120, 80, 30, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(120, 60, 80, 0.1) 0%, transparent 65%),
+    radial-gradient(ellipse 75% 60% at 85% 35%, rgba(80, 55, 110, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 30% 80%, rgba(100, 65, 60, 0.08) 0%, transparent 55%),
+    linear-gradient(135deg, #1A191C 0%, #1C191E 35%, #1B1820 65%, #1A191C 100%);
 }

@@ -3,9 +3,16 @@ import { generateCompletion } from '@/lib/claude';
 import { REPURPOSE_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const brandContext = await getBrandGuideContext(userEmail);
+
     const { content, sourceFormat, targetFormats } = await req.json();
 
     if (!content || !sourceFormat || !targetFormats?.length) {
@@ -15,7 +22,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userMessage = `원본 플랫폼: ${sourceFormat}
+    const userMessage = `${brandContext ? brandContext + '\n\n' : ''}원본 플랫폼: ${sourceFormat}
 타겟 플랫폼: ${targetFormats.join(', ')}
 
 원본 콘텐츠:

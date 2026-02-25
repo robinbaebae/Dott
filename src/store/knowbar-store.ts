@@ -182,19 +182,22 @@ export const useKnowbarStore = create<KnowbarStore>((set, get) => ({
         content: m.content,
       }));
 
+      // Find most recent bannerId for banner edit context
+      const lastBannerId = [...currentMessages].reverse().find((m) => m.bannerId)?.bannerId;
+
       const res = await fetch('/api/knowbar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, history }),
+        body: JSON.stringify({ message: query, history, lastBannerId }),
       });
 
       if (res.ok) {
         const data: KnowbarAgentResponse = await res.json();
         const messageId = (Date.now() + 1).toString();
 
-        // Fetch banner HTML if bannerId exists
-        let bannerHtml: string | undefined;
-        if (data.bannerId) {
+        // Use bannerHtml from API if available (blog/banner_edit), otherwise fetch
+        let bannerHtml: string | undefined = data.bannerHtml;
+        if (!bannerHtml && data.bannerId) {
           try {
             const bRes = await fetch(`/api/banner?id=${data.bannerId}`);
             if (bRes.ok) {
@@ -216,6 +219,9 @@ export const useKnowbarStore = create<KnowbarStore>((set, get) => ({
           memoryCreated: data.memoryCreated,
           bannerId: data.bannerId,
           bannerHtml,
+          blogTitle: data.blogTitle,
+          blogContent: data.blogContent,
+          blogMetaDesc: data.blogMetaDesc,
         });
 
         // Toast for side-effects
@@ -275,18 +281,25 @@ export const useKnowbarStore = create<KnowbarStore>((set, get) => ({
           }
         }
       } else {
+        let errDetail = '';
+        try {
+          const errBody = await res.json();
+          errDetail = errBody.error || JSON.stringify(errBody);
+        } catch { errDetail = res.statusText; }
+        console.error(`[knowbar] API error: ${res.status} — ${errDetail}`);
         addMessage(tabId, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: '문제가 발생했습니다. 다시 시도해주세요.',
+          content: `문제가 발생했습니다 (${res.status}). 다시 시도해주세요.\n\n> ${errDetail}`,
         });
-        toast.error('응답 생성에 실패했어요');
+        toast.error(`응답 생성 실패 (${res.status})`);
       }
-    } catch {
+    } catch (err) {
+      console.error('[knowbar] fetch error:', err);
       addMessage(tabId, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '오류가 발생했습니다. 다시 시도해주세요.',
+        content: `오류가 발생했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`,
       });
       toast.error('서버 연결에 실패했어요');
     } finally {

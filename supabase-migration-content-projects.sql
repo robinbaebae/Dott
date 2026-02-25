@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS content_projects (
     CHECK (status IN ('idea_proposed', 'topic_selected', 'drafting', 'review', 'confirmed', 'scheduled', 'published')),
   ideas jsonb DEFAULT '[]',
   selected_idea_index integer,
+  materials jsonb DEFAULT '[]',
+  selected_image_index integer,
   drafts jsonb DEFAULT '{}',
   banner_id uuid REFERENCES banners(id),
   banner_html text,

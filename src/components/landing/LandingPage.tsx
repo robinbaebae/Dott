@@ -1,29 +1,34 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { signIn } from 'next-auth/react';
 
 export default function LandingPage() {
-  const [value, setValue] = useState('');
-  const [triggered, setTriggered] = useState(false);
   const [animating, setAnimating] = useState(false);
   const circleRef = useRef<HTMLDivElement>(null);
 
-  const isHi = value.trim().toLowerCase() === 'hi';
-
-  useEffect(() => {
-    if (isHi && !triggered) {
-      setTriggered(true);
-      setAnimating(true);
-      setTimeout(() => {
-        signIn('google', { callbackUrl: '/' });
-      }, 1200);
-    }
-  }, [isHi, triggered]);
+  const handleGetStarted = () => {
+    if (animating) return;
+    setAnimating(true);
+    setTimeout(() => {
+      signIn('google', { callbackUrl: '/' });
+    }, 1000);
+  };
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background overflow-hidden">
-      {/* Blue gradient circle animation */}
+    <div
+      className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(ellipse 80% 70% at 15% 50%, rgba(230, 190, 100, 0.4) 0%, transparent 60%),
+          radial-gradient(ellipse 70% 60% at 50% 40%, rgba(220, 160, 180, 0.5) 0%, transparent 55%),
+          radial-gradient(ellipse 80% 70% at 85% 50%, rgba(180, 160, 220, 0.5) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 50% at 60% 70%, rgba(200, 170, 200, 0.3) 0%, transparent 50%),
+          linear-gradient(135deg, #f0e4d8 0%, #e8d0d8 30%, #dcc8e0 60%, #d4c4e8 100%)
+        `,
+      }}
+    >
+      {/* Circle expand animation */}
       {animating && (
         <div
           ref={circleRef}
@@ -37,36 +42,30 @@ export default function LandingPage() {
       {/* Content */}
       <div className={`relative z-10 flex flex-col items-center transition-colors duration-500 ${animating ? 'text-white' : ''}`}>
         {/* Logo */}
-        <div className="mb-10 flex items-center gap-3">
-          <img src="/logo-dott.png" alt="Dott" className="w-16 h-16 rounded-2xl" />
+        <div className="mb-10">
+          <img src="/logo-dott.png" alt="Dott" className="w-28 h-28 rounded-3xl" />
         </div>
 
-        {/* Title */}
-        <h1 className={`text-6xl sm:text-8xl tracking-tight leading-[1.1] text-center transition-colors duration-500 ${animating ? 'text-white' : 'text-foreground'}`}>
-          Ask D<span className="text-primary">*</span>tt
-        </h1>
-
-        {/* Subtitle */}
-        <p className={`mt-4 text-lg tracking-wide transition-colors duration-500 ${animating ? 'text-white/70' : 'text-muted-foreground'}`}>
-          Your marketing AI team
+        {/* Copy */}
+        <p className={`text-base sm:text-lg tracking-wide text-center max-w-sm transition-colors duration-500 ${animating ? 'text-white/70' : 'text-[#5a4a60]'}`}>
+          Your brand assistant,<br />powered by your business DNA.
         </p>
 
-        {/* Underline-only input */}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className={`mt-14 w-72 sm:w-96 bg-transparent border-b text-center text-lg outline-none placeholder-transparent transition-colors duration-500 ${
+        {/* CTA Button */}
+        <button
+          onClick={handleGetStarted}
+          className={`mt-10 px-8 py-3.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer ${
             animating
-              ? 'border-white/40 text-white'
-              : 'border-foreground/20 text-foreground focus:border-primary/60'
+              ? 'bg-white/20 text-white border border-white/30'
+              : 'bg-[#2a2030] text-white hover:bg-[#3a3040] active:scale-[0.97]'
           }`}
-          autoFocus
-        />
+        >
+          Get started &rarr;
+        </button>
 
-        {/* Hint */}
-        <p className={`mt-8 text-xs uppercase tracking-[0.3em] transition-colors duration-500 ${animating ? 'text-white/50' : 'text-foreground/20'}`}>
-          try typing <span className="font-normal italic">Hi</span>
+        {/* Footer */}
+        <p className={`mt-4 text-xs tracking-wide transition-colors duration-500 ${animating ? 'text-white/40' : 'text-[#8a7a90]'}`}>
+          Built by Bae
         </p>
       </div>
     </div>

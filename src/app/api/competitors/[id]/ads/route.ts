@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompetitorAds, addCompetitorAd } from '@/lib/competitors';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
     const ads = await getCompetitorAds(id);
     return NextResponse.json(ads);
@@ -21,6 +25,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
     const body = await request.json();
     if (!body.ad_url) {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { Send, CheckCircle2, ExternalLink, Image, Loader2, Plus, X, Copy, Check, History, MessageSquarePlus, Trash2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, KeyboardEvent, CompositionEvent } from 'react';
+import { Send, CheckCircle2, ExternalLink, Image, Loader2, Plus, X, Copy, Check, History, MessageSquarePlus, Trash2, ArrowLeft, CalendarPlus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,17 +9,99 @@ import { ko } from 'date-fns/locale';
 import YesterdayWork from './YesterdayWork';
 import TodayOverview from './TodayOverview';
 import TodayTasks from './TodayTasks';
+import DailyBriefingPanel from './DailyBriefingPanel';
 import QuickActions from './QuickActions';
 import ActionPanel from './ActionPanel';
 import ContentCalendar from '@/components/content/ContentCalendar';
 import { useKnowbarStore } from '@/store/knowbar-store';
-import type { QuickActionType, KnowbarMessage } from '@/types';
-
-const TAB_ID = 'dashboard';
+import type { QuickActionCategory, KnowbarMessage } from '@/types';
 
 /* ------------------------------------------------------------------ */
 /* Assistant message with copy + HTML preview                          */
 /* ------------------------------------------------------------------ */
+
+function SaveToCalendarButton({ content }: { content: string }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [platform, setPlatform] = useState('instagram');
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const titleMatch = content.match(/\*\*(.+?)\*\*/);
+      const title = titleMatch ? titleMatch[1].slice(0, 80) : content.slice(0, 80);
+      const res = await fetch('/api/content-calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, platform, scheduled_date: date, content }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => { setSaved(false); setOpen(false); }, 1500);
+      }
+    } catch { /* silent */ }
+    setSaving(false);
+  };
+
+  if (saved) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500">
+        <Check className="size-3" /> 캘린더에 저장됨
+      </span>
+    );
+  }
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-muted cursor-pointer"
+        title="캘린더에 저장"
+      >
+        <CalendarPlus className="size-3.5 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-3 space-y-2 animate-in fade-in duration-150">
+          <select
+            value={platform}
+            onChange={(e) => setPlatform(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] focus:outline-none"
+          >
+            <option value="instagram">Instagram</option>
+            <option value="threads">Threads</option>
+            <option value="blog">Blog</option>
+            <option value="newsletter">Newsletter</option>
+          </select>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] focus:outline-none"
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-1.5 rounded-lg bg-accent text-accent-foreground text-[11px] font-medium hover:bg-accent/90 disabled:opacity-40 cursor-pointer"
+          >
+            {saving ? '저장 중...' : '캘린더에 저장'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
   const [copied, setCopied] = useState(false);
@@ -58,14 +140,18 @@ function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
               </span>
             )}
           </div>
-          {/* Copy button */}
-          <button
-            onClick={handleCopy}
-            className="opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-muted cursor-pointer"
-            title="복사"
-          >
-            {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5 text-muted-foreground" />}
-          </button>
+          <div className="flex items-center gap-0.5">
+            {/* Save to Calendar */}
+            <SaveToCalendarButton content={msg.content} />
+            {/* Copy button */}
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-muted cursor-pointer"
+              title="복사"
+            >
+              {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5 text-muted-foreground" />}
+            </button>
+          </div>
         </div>
 
         {msg.taskCreated && (
@@ -87,11 +173,13 @@ function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
         </div>
 
-        {/* Banner HTML inline preview */}
+        {/* Banner / Header image preview */}
         {msg.bannerHtml && (
           <div className="mt-3 pt-3 border-t border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">배너 미리보기</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {msg.blogTitle ? '헤더이미지 미리보기' : '배너 미리보기'}
+              </span>
               <button
                 onClick={handleCopyHtml}
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-border text-[11px] hover:bg-muted transition-colors cursor-pointer"
@@ -118,6 +206,26 @@ function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
                 sandbox=""
               />
             </div>
+          </div>
+        )}
+
+        {/* Blog content preview */}
+        {msg.blogTitle && msg.blogContent && (
+          <div className="mt-3 pt-3 border-t border-border">
+            <span className="text-xs font-medium text-muted-foreground mb-2 block">블로그 초안</span>
+            <div className="rounded-lg border border-border bg-white dark:bg-[#252326] p-5 max-h-80 overflow-auto">
+              <h2 className="text-base font-semibold text-foreground mb-3">{msg.blogTitle}</h2>
+              <div className="text-sm leading-relaxed text-foreground/85 knowbar-response">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.blogContent}</ReactMarkdown>
+              </div>
+              {msg.blogMetaDesc && (
+                <div className="mt-4 pt-3 border-t border-border/50">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Meta Description</span>
+                  <p className="text-xs text-muted-foreground mt-1">{msg.blogMetaDesc}</p>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">수정이 필요하면 말씀하세요.</p>
           </div>
         )}
 
@@ -166,7 +274,7 @@ function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
 /* Chat History Panel                                                  */
 /* ------------------------------------------------------------------ */
 
-function ChatHistoryPanel({ onClose }: { onClose: () => void }) {
+function ChatHistoryPanel({ activeTabId, onClose }: { activeTabId: string; onClose: () => void }) {
   const sessions = useKnowbarStore((s) => s.sessions);
   const sessionsLoaded = useKnowbarStore((s) => s.sessionsLoaded);
   const fetchSessions = useKnowbarStore((s) => s.fetchSessions);
@@ -186,7 +294,7 @@ function ChatHistoryPanel({ onClose }: { onClose: () => void }) {
         <span className="text-sm font-medium text-foreground">대화 기록</span>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { startNewSession(TAB_ID); onClose(); }}
+            onClick={() => { startNewSession(activeTabId); onClose(); }}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
             title="새 대화"
           >
@@ -227,7 +335,7 @@ function ChatHistoryPanel({ onClose }: { onClose: () => void }) {
           >
             <button
               className="flex-1 text-left min-w-0"
-              onClick={() => { loadSession(TAB_ID, session.id); onClose(); }}
+              onClick={() => { loadSession(activeTabId, session.id); onClose(); }}
             >
               <p className="text-sm truncate">{session.title}</p>
               <p className="text-[11px] text-muted-foreground">
@@ -252,15 +360,26 @@ function ChatHistoryPanel({ onClose }: { onClose: () => void }) {
 /* Main DottPrompt                                                     */
 /* ------------------------------------------------------------------ */
 
+let nextTabNum = 1;
+
 export default function DottPrompt() {
+  const [tabs, setTabs] = useState<{ id: string; label: string }[]>([
+    { id: 'tab-0', label: '대화 1' },
+  ]);
+  const [activeTabId, setActiveTabId] = useState('tab-0');
+
   const [query, setQuery] = useState('');
-  const [activeAction, setActiveAction] = useState<QuickActionType | null>(null);
+  const [activeAction, setActiveAction] = useState<QuickActionCategory | null>(null);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const messages = useKnowbarStore((s) => s.getTab(TAB_ID).messages);
-  const isLoading = useKnowbarStore((s) => s.getTab(TAB_ID).isLoading);
+  const composingRef = useRef(false);
+
+  const messages = useKnowbarStore((s) => s.getTab(activeTabId).messages);
+  const isLoading = useKnowbarStore((s) => s.getTab(activeTabId).isLoading);
   const sendMessage = useKnowbarStore((s) => s.sendMessage);
   const injectResult = useKnowbarStore((s) => s.injectResult);
+  const startNewSession = useKnowbarStore((s) => s.startNewSession);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -292,18 +411,30 @@ export default function DottPrompt() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showQuickMenu]);
 
-  const handleSubmit = () => {
+  // Focus input when switching tabs
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [activeTabId]);
+
+  const handleSubmit = useCallback(() => {
     if (!query.trim() || isLoading) return;
-    sendMessage(TAB_ID, query.trim());
+    sendMessage(activeTabId, query.trim());
     setQuery('');
     if (inputRef.current) inputRef.current.style.height = 'auto';
-  };
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [query, isLoading, sendMessage, activeTabId]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.metaKey || e.shiftKey)) {
+    if (composingRef.current) return; // Korean IME composing — ignore
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
+  };
+
+  const handleCompositionStart = () => { composingRef.current = true; };
+  const handleCompositionEnd = (e: CompositionEvent<HTMLTextAreaElement>) => {
+    composingRef.current = false;
   };
 
   const autoResize = (el: HTMLTextAreaElement) => {
@@ -312,26 +443,107 @@ export default function DottPrompt() {
   };
 
   const handleActionResult = (userLabel: string, content: string) => {
-    injectResult(TAB_ID, userLabel, content);
+    injectResult(activeTabId, userLabel, content);
     setActiveAction(null);
   };
 
-  const handleActionSelect = (action: QuickActionType) => {
+  const handleActionSelect = (action: QuickActionCategory) => {
     setActiveAction(action);
     setShowQuickMenu(false);
   };
 
+  // Tab management
+  const addTab = () => {
+    nextTabNum++;
+    const newTab = { id: `tab-${nextTabNum}`, label: `대화 ${nextTabNum}` };
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+    setQuery('');
+    setActiveAction(null);
+  };
+
+  const closeTab = (tabId: string) => {
+    if (tabs.length <= 1) return; // keep at least one
+    const idx = tabs.findIndex((t) => t.id === tabId);
+    const remaining = tabs.filter((t) => t.id !== tabId);
+    setTabs(remaining);
+    if (activeTabId === tabId) {
+      setActiveTabId(remaining[Math.max(0, idx - 1)].id);
+    }
+    // Clear messages for closed tab
+    startNewSession(tabId);
+  };
+
+  const goHome = () => {
+    startNewSession(activeTabId);
+    setQuery('');
+    setActiveAction(null);
+  };
+
   const hasMessages = messages.length > 0;
 
+  // Shared textarea props
+  const textareaProps = {
+    ref: inputRef,
+    autoFocus: true,
+    rows: 1,
+    value: query,
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => { setQuery(e.target.value); autoResize(e.target); },
+    onKeyDown: handleKeyDown,
+    onCompositionStart: handleCompositionStart,
+    onCompositionEnd: handleCompositionEnd,
+    placeholder: 'Dott에게 무엇이든 물어보세요...',
+    className: 'w-full rounded-2xl border border-border bg-card px-6 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 shadow-sm resize-none overflow-hidden',
+  };
+
   return (
-    <div className="relative flex flex-col" style={{ minHeight: 'calc(100vh - 6rem)' }}>
+    <div className={`relative flex flex-col ${hasMessages ? 'h-[calc(100vh-5rem)]' : ''}`}>
       {/* Chat History Panel */}
-      {showHistory && <ChatHistoryPanel onClose={() => setShowHistory(false)} />}
+      {showHistory && <ChatHistoryPanel activeTabId={activeTabId} onClose={() => setShowHistory(false)} />}
+
+      {/* Tab bar — always visible when multiple tabs */}
+      {tabs.length > 1 && (
+        <div className="shrink-0 flex items-center gap-1 pb-3 overflow-x-auto">
+          {tabs.map((tab) => {
+            const tabMessages = useKnowbarStore.getState().getTab(tab.id).messages;
+            const preview = tabMessages.length > 0
+              ? tabMessages[0].content.slice(0, 20) + (tabMessages[0].content.length > 20 ? '…' : '')
+              : tab.label;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTabId(tab.id)}
+                className={`group/tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+                  activeTabId === tab.id
+                    ? 'bg-accent text-accent-foreground'
+                    : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span className="max-w-[120px] truncate">{preview}</span>
+                {tabs.length > 1 && (
+                  <span
+                    onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
+                    className="opacity-0 group-hover/tab:opacity-100 hover:text-destructive transition-opacity cursor-pointer"
+                  >
+                    <X className="size-3" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <button
+            onClick={addTab}
+            className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+            title="새 대화 탭"
+          >
+            <Plus className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Empty state — greeting + search centered */}
       {!hasMessages && (
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <img src="/logo-dott.png" alt="Dott" className="size-12 rounded-2xl mb-4" />
+        <div className="flex flex-col items-center pt-[6vh]">
           <h1 className="text-2xl tracking-tight text-foreground">{getGreeting()}</h1>
           <p className="text-sm text-muted-foreground mt-2 mb-8">무슨 일을 도와드릴까요?</p>
           <div className="w-full max-w-xl relative flex items-center gap-2">
@@ -346,16 +558,7 @@ export default function DottPrompt() {
               <History className="size-4" />
             </button>
             <div className="relative flex-1">
-              <textarea
-                ref={inputRef}
-                autoFocus
-                rows={1}
-                value={query}
-                onChange={(e) => { setQuery(e.target.value); autoResize(e.target); }}
-                onKeyDown={handleKeyDown}
-                placeholder="Dott에게 무엇이든 물어보세요..."
-                className="w-full rounded-2xl border border-border bg-card px-6 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 shadow-sm resize-none overflow-hidden"
-              />
+              <textarea {...textareaProps} />
               <button
                 onClick={handleSubmit}
                 disabled={!query.trim() || isLoading}
@@ -377,6 +580,7 @@ export default function DottPrompt() {
             ) : (
               <>
                 <QuickActions onSelect={handleActionSelect} />
+                <DailyBriefingPanel />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TodayOverview />
                   <TodayTasks />
@@ -392,7 +596,7 @@ export default function DottPrompt() {
       {/* Conversation mode */}
       {hasMessages && (
         <>
-          <div className="flex-1 overflow-auto space-y-4 pb-4">
+          <div className="flex-1 min-h-0 overflow-auto space-y-4 pb-4">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
@@ -440,8 +644,17 @@ export default function DottPrompt() {
           </div>
 
           {/* Input — pinned to bottom */}
-          <div className="pt-4 border-t border-border">
+          <div className="shrink-0 pt-4 border-t border-border">
             <div className="relative flex items-center gap-2">
+              {/* Back to home */}
+              <button
+                onClick={goHome}
+                className="p-3 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                title="새 대화"
+              >
+                <ArrowLeft className="size-4" />
+              </button>
+
               {/* History button */}
               <button
                 onClick={() => setShowHistory((v) => !v)}
@@ -474,15 +687,7 @@ export default function DottPrompt() {
               </div>
 
               <div className="relative flex-1">
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  value={query}
-                  onChange={(e) => { setQuery(e.target.value); autoResize(e.target); }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Dott에게 무엇이든 물어보세요..."
-                  className="w-full rounded-2xl border border-border bg-card px-6 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 shadow-sm resize-none overflow-hidden"
-                />
+                <textarea {...textareaProps} />
                 <button
                   onClick={handleSubmit}
                   disabled={!query.trim() || isLoading}

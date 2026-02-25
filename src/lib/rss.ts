@@ -1,5 +1,5 @@
 import Parser from 'rss-parser';
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 import { TrendArticle } from '@/types';
 
 const parser = new Parser({
@@ -48,7 +48,7 @@ export async function fetchAndStoreArticles(): Promise<{ inserted: number; total
         const { cleanTitle, source } = extractSource(item.title);
         const pubDate = item.pubDate ? new Date(item.pubDate).toISOString() : null;
 
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('trend_articles')
           .upsert(
             {
@@ -64,7 +64,7 @@ export async function fetchAndStoreArticles(): Promise<{ inserted: number; total
         if (!error) inserted++;
       }
     } catch (err) {
-      console.error(`Failed to fetch RSS feed (${feed.category}):`, err);
+      console.error(`[RSS] Failed to fetch feed (${feed.category}, ${feed.url}):`, err instanceof Error ? err.message : err);
     }
   }
 
@@ -72,7 +72,7 @@ export async function fetchAndStoreArticles(): Promise<{ inserted: number; total
 }
 
 export async function getArticles(category?: string, since?: string): Promise<TrendArticle[]> {
-  let query = supabase
+  let query = supabaseAdmin
     .from('trend_articles')
     .select('*')
     .order('pub_date', { ascending: false })

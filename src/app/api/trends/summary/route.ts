@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTodaySummary, generateTrendSummary } from '@/lib/trend-summary';
 import { logActivity } from '@/lib/activity';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
     const summary = await getTodaySummary();
     return NextResponse.json(summary);
@@ -13,10 +17,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   try {
     const body = await request.json().catch(() => ({}));
     const summary = await generateTrendSummary(body.category);
-    await logActivity('summary_generate', 'research', { category: body.category });
+    await logActivity('summary_generate', 'research', { category: body.category }, userEmail);
     return NextResponse.json(summary);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to generate summary';

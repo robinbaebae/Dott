@@ -40,6 +40,10 @@ export interface TrendArticle {
   source: string | null;
   category: 'ai' | 'planning' | 'marketing' | 'tech';
   pub_date: string | null;
+  content_text: string;
+  content_html: string;
+  og_image: string;
+  fetched_at: string | null;
   created_at: string;
 }
 
@@ -50,6 +54,13 @@ export interface KeywordTrend {
   snapshot_date: string;
   source: string;
   related_article_ids: string[];
+  created_at: string;
+}
+
+export interface KeywordWatchItem {
+  id: string;
+  keyword: string;
+  user_id: string;
   created_at: string;
 }
 
@@ -178,6 +189,8 @@ export type QuickActionType =
   | 'calendar'
   | 'content';
 
+export type QuickActionCategory = 'content-tools' | 'ad-banner-copy' | 'newsletter-blog' | 'email-compose';
+
 export type TaskStatus = Task['status'];
 export type AutomationType = Automation['type'];
 export type TrendCategory = TrendArticle['category'];
@@ -231,6 +244,10 @@ export interface KnowbarAgentResponse {
   taskTitle?: string;
   memoryCreated?: boolean;
   bannerId?: string;
+  bannerHtml?: string;
+  blogTitle?: string;
+  blogContent?: string;
+  blogMetaDesc?: string;
 }
 
 export interface KnowbarMessage {
@@ -246,6 +263,9 @@ export interface KnowbarMessage {
   bannerId?: string;
   bannerHtml?: string;
   figmaUrl?: string;
+  blogTitle?: string;
+  blogContent?: string;
+  blogMetaDesc?: string;
 }
 
 export const TREND_CATEGORIES: { value: TrendCategory; label: string }[] = [
@@ -309,6 +329,15 @@ export interface BrandGuide {
   website_url: string;
   additional_notes: string;
   updated_at: string;
+  // Product Context
+  product_type: string;
+  industry: string;
+  competitors: string[];
+  usp: string;
+  pricing_model: string;
+  customer_pain_points: string[];
+  key_features: string[];
+  company_size: string;
 }
 
 export const TONE_OPTIONS: { value: BrandGuide['tone']; label: string }[] = [
@@ -336,12 +365,30 @@ export interface ContentIdea {
   hook: string;
 }
 
+export interface HeaderImageConcept {
+  label: string;
+  description: string;
+  style_keywords: string[];
+  mood: string;
+}
+
+export interface ContentMaterial {
+  title: string;
+  approach: string;
+  key_points: string[];
+  platform_fit: Record<string, number>;
+  engagement_reason: string;
+  header_images: HeaderImageConcept[];
+}
+
 export interface ContentDraft {
   content: string;
   hashtags?: string[];
   image_description?: string;
   title?: string;
   meta_description?: string;
+  cta_text?: string;
+  subject?: string;
 }
 
 export interface ContentProject {
@@ -351,6 +398,8 @@ export interface ContentProject {
   status: ContentProjectStatus;
   ideas: ContentIdea[];
   selected_idea_index: number | null;
+  materials: ContentMaterial[];
+  selected_image_index: number | null;
   drafts: Record<string, ContentDraft>;
   banner_id: string | null;
   banner_html: string | null;
@@ -374,6 +423,137 @@ export interface AdCreativeProject {
   campaign_id: string | null;
   performance_data: Record<string, unknown>;
   ai_report: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// SEO Brief
+export interface SeoOutlineSection {
+  heading: string;
+  level: 'h2' | 'h3';
+  description: string;
+  word_count: number;
+}
+
+export interface SeoBrief {
+  id: string;
+  topic: string;
+  primary_keyword: string;
+  secondary_keywords: string[];
+  search_intent: string;
+  title_tags: string[];
+  meta_descriptions: string[];
+  content_outline: SeoOutlineSection[];
+  internal_link_suggestions: string[];
+  competitor_notes: string;
+  word_count_estimate: number;
+  status: 'draft' | 'in_progress' | 'completed' | 'sent_to_compose';
+  sent_to_project_id: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Email Sequence
+export type EmailSequencePurpose = 'welcome' | 'onboarding' | 'promotion' | 're-engagement' | 'product_launch';
+
+export const EMAIL_SEQUENCE_PURPOSES: { value: EmailSequencePurpose; label: string }[] = [
+  { value: 'welcome', label: '웰컴' },
+  { value: 'onboarding', label: '온보딩' },
+  { value: 'promotion', label: '프로모션' },
+  { value: 're-engagement', label: '리인게이지먼트' },
+  { value: 'product_launch', label: '제품 런칭' },
+];
+
+export interface EmailSequenceItem {
+  id: string;
+  sequence_id: string;
+  position: number;
+  day_offset: number;
+  subject: string;
+  body_html: string;
+  cta_text: string;
+  cta_url: string;
+  notes: string;
+  gmail_draft_id: string | null;
+  gmail_message_id: string | null;
+  status: 'draft' | 'edited' | 'gmail_saved';
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailSequence {
+  id: string;
+  name: string;
+  purpose: EmailSequencePurpose;
+  target_audience: string;
+  key_messages: string[];
+  strategy_explanation: string;
+  email_count: number;
+  items?: EmailSequenceItem[];
+  status: 'draft' | 'generating' | 'completed' | 'active';
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Influencer Marketing
+export type InfluencerCampaignStatus =
+  | 'identified'
+  | 'contacted'
+  | 'negotiating'
+  | 'contracted'
+  | 'live'
+  | 'completed'
+  | 'rejected';
+
+export const INFLUENCER_CAMPAIGN_STATUSES: { value: InfluencerCampaignStatus; label: string }[] = [
+  { value: 'identified', label: '발굴' },
+  { value: 'contacted', label: '연락' },
+  { value: 'negotiating', label: '협상' },
+  { value: 'contracted', label: '계약' },
+  { value: 'live', label: '진행중' },
+  { value: 'completed', label: '완료' },
+  { value: 'rejected', label: '거절' },
+];
+
+export interface Influencer {
+  id: string;
+  name: string;
+  handle: string | null;
+  platform: string;
+  followers: number;
+  engagement_rate: number;
+  category: string | null;
+  bio: string | null;
+  email: string | null;
+  phone: string | null;
+  profile_image_url: string | null;
+  avg_likes: number;
+  avg_comments: number;
+  price_range: string | null;
+  notes: string | null;
+  tags: string[];
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InfluencerCampaign {
+  id: string;
+  name: string;
+  influencer_id: string;
+  influencer?: Influencer;
+  status: InfluencerCampaignStatus;
+  campaign_type: string | null;
+  budget: number | null;
+  deliverables: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  performance_data: Record<string, unknown>;
+  notes: string | null;
+  user_id: string;
   created_at: string;
   updated_at: string;
 }

@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
     // Today's usage
-    const { data: todayData, error: todayError } = await supabase
+    const { data: todayData, error: todayError } = await supabaseAdmin
       .from('token_usage')
       .select('tokens_in, tokens_out')
+      .eq('user_id', userEmail)
       .gte('created_at', todayStart);
 
     if (todayError) {
@@ -18,9 +23,10 @@ export async function GET() {
     }
 
     // This month's usage
-    const { data: monthData, error: monthError } = await supabase
+    const { data: monthData, error: monthError } = await supabaseAdmin
       .from('token_usage')
       .select('tokens_in, tokens_out')
+      .eq('user_id', userEmail)
       .gte('created_at', monthStart);
 
     if (monthError) {

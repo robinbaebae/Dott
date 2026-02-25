@@ -158,10 +158,10 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
                 캘린더
               </CardTitle>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 dark:bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 dark:bg-violet-500/20 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
                   캘린더
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 dark:bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-300">
+                <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 dark:bg-pink-500/20 px-2 py-0.5 text-[10px] font-medium text-pink-700 dark:text-pink-300">
                   내 태스크
                 </span>
               </div>
@@ -273,13 +273,13 @@ function MonthView({
               </p>
               <div className="space-y-0.5">
                 {dayEvents.slice(0, compact ? 1 : 2).map((e) => (
-                  <div key={e.id} className="text-[9px] truncate rounded px-1 bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
-                    {!e.allDay && <span className="text-blue-600/70 dark:text-blue-400/80">{format(parseISO(e.start), 'HH:mm')} </span>}
+                  <div key={e.id} className="text-[9px] truncate rounded px-1 bg-violet-500/10 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
+                    {!e.allDay && <span className="text-violet-600/70 dark:text-violet-400/80">{format(parseISO(e.start), 'HH:mm')} </span>}
                     {e.title}
                   </div>
                 ))}
                 {dayTasks.slice(0, compact ? 1 : 2).map((t) => (
-                  <div key={t.id} className="text-[9px] truncate rounded px-1 bg-green-500/10 dark:bg-green-500/20 text-green-700 dark:text-green-300">
+                  <div key={t.id} className="text-[9px] truncate rounded px-1 bg-green-500/10 dark:bg-green-500/20 text-pink-700 dark:text-pink-300">
                     {t.title}
                   </div>
                 ))}
@@ -343,13 +343,13 @@ function TimelineView({
               <div className="space-y-1.5 pl-4">
                 {dayEvents.map((event) => (
                   <div key={event.id} className="relative flex items-start gap-2">
-                    <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-blue-500 -translate-x-[3px]" />
-                    <div className="flex-1 rounded-md bg-blue-500/10 dark:bg-blue-500/20 px-2.5 py-1.5">
+                    <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-violet-500 -translate-x-[3px]" />
+                    <div className="flex-1 rounded-md bg-violet-500/10 dark:bg-violet-500/20 px-2.5 py-1.5">
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300 truncate">
+                        <p className="text-xs font-medium text-violet-700 dark:text-violet-300 truncate">
                           {event.title}
                         </p>
-                        <span className="text-[10px] text-blue-600/70 dark:text-blue-400/80 shrink-0">
+                        <span className="text-[10px] text-violet-600/70 dark:text-violet-400/80 shrink-0">
                           {event.allDay
                             ? '종일'
                             : `${format(parseISO(event.start), 'HH:mm')}–${format(parseISO(event.end), 'HH:mm')}`}
@@ -365,13 +365,13 @@ function TimelineView({
                     : null;
                   return (
                     <div key={task.id} className="relative flex items-start gap-2">
-                      <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 -translate-x-[3px]" />
-                      <div className="flex-1 rounded-md bg-green-500/10 dark:bg-green-500/20 px-2.5 py-1.5">
+                      <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-pink-500 -translate-x-[3px]" />
+                      <div className="flex-1 rounded-md bg-pink-500/10 dark:bg-pink-500/20 px-2.5 py-1.5">
                         <div className="flex items-center gap-2">
-                          <p className="text-xs font-medium text-green-700 dark:text-green-300 truncate">
+                          <p className="text-xs font-medium text-pink-700 dark:text-pink-300 truncate">
                             {task.title}
                           </p>
-                          <span className="text-[10px] text-green-600/70 dark:text-green-400/80 shrink-0">
+                          <span className="text-[10px] text-pink-600/70 dark:text-pink-400/80 shrink-0">
                             {timeStr ?? (task.status === 'todo'
                               ? '할 일'
                               : task.status === 'in_progress'

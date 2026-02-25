@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 const googleClientId = process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || '';
 const googleClientSecret = process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
@@ -42,9 +42,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         // Auto-connect Google Calendar & Gmail by storing tokens in Supabase
-        if (account.access_token) {
+        if (account.access_token && token.email) {
           const payload: Record<string, unknown> = {
-            id: 'default',
+            id: token.email as string,
+            user_id: token.email as string,
             access_token: account.access_token,
             expiry_date: (account.expires_at ?? 0) * 1000,
             updated_at: new Date().toISOString(),
@@ -54,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             payload.refresh_token = account.refresh_token;
           }
 
-          const { error } = await supabase.from('google_tokens').upsert(payload);
+          const { error } = await supabaseAdmin.from('google_tokens').upsert(payload);
           if (error) {
             console.error('[NextAuth] Failed to store Google tokens in Supabase:', error);
           } else {

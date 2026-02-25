@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generateCompletion } from '@/lib/claude';
 import { AUTOMATION_PROMPTS } from '@/lib/prompts';
+import { requireAuth } from '@/lib/auth-guard';
 
 // GET - 전체 자동화 조회
 export async function GET() {
-  const { data, error } = await supabase
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
+  const { data, error } = await supabaseAdmin
     .from('automations')
     .select('*')
+    .eq('user_id', userEmail)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -16,14 +21,18 @@ export async function GET() {
 
 // POST - 자동화 생성
 export async function POST(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const body = await req.json();
 
   // 실행 요청인 경우
   if (body.action === 'execute') {
-    const { data: automation } = await supabase
+    const { data: automation } = await supabaseAdmin
       .from('automations')
       .select('*')
       .eq('id', body.id)
+      .eq('user_id', userEmail)
       .single();
 
     if (!automation) {
@@ -38,13 +47,14 @@ export async function POST(req: NextRequest) {
     try {
       const result = await generateCompletion(systemPrompt, userPrompt);
 
-      await supabase
+      await supabaseAdmin
         .from('automations')
         .update({
           last_result: result,
           last_run_at: new Date().toISOString(),
         })
-        .eq('id', body.id);
+        .eq('id', body.id)
+        .eq('user_id', userEmail);
 
       return NextResponse.json({ result });
     } catch (error) {
@@ -54,12 +64,13 @@ export async function POST(req: NextRequest) {
   }
 
   // 생성 요청
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('automations')
     .insert({
       name: body.name,
       type: body.type,
       prompt_template: body.prompt_template,
+      user_id: userEmail,
     })
     .select()
     .single();
@@ -70,12 +81,15 @@ export async function POST(req: NextRequest) {
 
 // DELETE - 자동화 삭제
 export async function DELETE(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const { error } = await supabase.from('automations').delete().eq('id', id);
+  const { error } = await supabaseAdmin.from('automations').delete().eq('id', id).eq('user_id', userEmail);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

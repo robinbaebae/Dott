@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCompletion } from '@/lib/claude';
+import { requireAuth } from '@/lib/auth-guard';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 
 const TEMPLATES: Record<string, { name: string; prompt: string; variables: string[] }> = {
   // SNS
@@ -119,6 +121,11 @@ const TEMPLATES: Record<string, { name: string; prompt: string; variables: strin
 
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const brandContext = await getBrandGuideContext(userEmail);
+
     const { templateId, variables } = await req.json();
 
     const template = TEMPLATES[templateId];
@@ -130,7 +137,7 @@ export async function POST(req: NextRequest) {
       .map(([key, value]) => `- ${key}: ${value}`)
       .join('\n');
 
-    const userMessage = `${variableText}`;
+    const userMessage = `${brandContext ? brandContext + '\n\n' : ''}${variableText}`;
     const result = await generateCompletion(template.prompt, userMessage);
 
     return NextResponse.json({ result });
@@ -145,6 +152,9 @@ export async function POST(req: NextRequest) {
 
 // GET — return available templates
 export async function GET() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   const templateList = Object.entries(TEMPLATES).map(([id, t]) => ({
     id,
     name: t.name,

@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage } from '@/types';
-import { supabase } from '@/lib/supabase';
 
 export function useChat() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -12,21 +11,28 @@ export function useChat() {
 
   // 세션 목록 로드
   const loadSessions = useCallback(async () => {
-    const { data } = await supabase
-      .from('chat_sessions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setSessions(data);
+    try {
+      const res = await fetch('/api/chat');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sessions) setSessions(data.sessions);
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   // 세션 메시지 로드
   const loadMessages = useCallback(async (sessionId: string) => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('created_at', { ascending: true });
-    if (data) setMessages(data);
+    try {
+      const res = await fetch(`/api/chat?sessionId=${sessionId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages) setMessages(data.messages);
+      }
+    } catch {
+      // ignore
+    }
     setCurrentSessionId(sessionId);
   }, []);
 
@@ -38,7 +44,7 @@ export function useChat() {
 
   // 세션 삭제
   const deleteSession = useCallback(async (sessionId: string) => {
-    await supabase.from('chat_sessions').delete().eq('id', sessionId);
+    await fetch(`/api/chat?sessionId=${sessionId}`, { method: 'DELETE' });
     if (currentSessionId === sessionId) {
       setCurrentSessionId(null);
       setMessages([]);

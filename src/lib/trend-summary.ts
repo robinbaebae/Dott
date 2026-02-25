@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 import { generateCompletion } from './claude';
 import { TREND_SUMMARY_PROMPT } from './prompts';
 import { TrendArticle, TrendSummary } from '@/types';
@@ -6,7 +6,7 @@ import { TrendArticle, TrendSummary } from '@/types';
 /** Get today's cached summary, or null */
 export async function getTodaySummary(): Promise<TrendSummary | null> {
   const today = new Date().toISOString().split('T')[0];
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('trend_summaries')
     .select('*')
     .eq('summary_date', today)
@@ -26,7 +26,7 @@ export async function generateTrendSummary(category?: string): Promise<TrendSumm
   const dayAgo = new Date();
   dayAgo.setDate(dayAgo.getDate() - 7);
 
-  let query = supabase
+  let query = supabaseAdmin
     .from('trend_articles')
     .select('*')
     .gte('pub_date', dayAgo.toISOString())
@@ -53,7 +53,7 @@ export async function generateTrendSummary(category?: string): Promise<TrendSumm
   const summaryText = await generateCompletion(TREND_SUMMARY_PROMPT, userMessage);
   const articleIds = articles.map((a) => a.id);
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('trend_summaries')
     .upsert(
       {
@@ -72,7 +72,7 @@ export async function generateTrendSummary(category?: string): Promise<TrendSumm
 
 /** Get recent summaries */
 export async function getRecentSummaries(limit = 7): Promise<TrendSummary[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('trend_summaries')
     .select('*')
     .order('summary_date', { ascending: false })

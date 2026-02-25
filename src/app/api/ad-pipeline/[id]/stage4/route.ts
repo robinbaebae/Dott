@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { logActivity } from '@/lib/activity';
 import { fetchCampaignInsights } from '@/lib/meta-ads';
 import { withTimeout } from '@/lib/api-utils';
+import { requireAuth } from '@/lib/auth-guard';
 
 // POST — Stage 4: Collect campaign performance data
 export async function POST(
@@ -10,12 +11,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { id } = await params;
 
-    const { data: project, error: fetchErr } = await supabase
+    const { data: project, error: fetchErr } = await supabaseAdmin
       .from('ad_creative_projects')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userEmail)
       .single();
 
     if (fetchErr || !project) {
@@ -29,7 +34,7 @@ export async function POST(
     if (project.campaign_id) {
       try {
         const insights = await withTimeout(
-          fetchCampaignInsights(project.campaign_id, 'last_14d'),
+          fetchCampaignInsights(project.campaign_id, 'last_14d', userEmail),
           30000,
           '성과 데이터 수집 시간 초과'
         );
@@ -60,7 +65,7 @@ export async function POST(
 
     // Fallback: check cached insights from DB
     if (!fetchedFromApi && project.campaign_id) {
-      const { data: insights } = await supabase
+      const { data: insights } = await supabaseAdmin
         .from('meta_ad_insights')
         .select('*')
         .eq('campaign_id', project.campaign_id)
@@ -99,7 +104,7 @@ export async function POST(
       };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('ad_creative_projects')
       .update({
         performance_data: performanceData,
@@ -107,6 +112,7 @@ export async function POST(
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('user_id', userEmail)
       .select()
       .single();
 

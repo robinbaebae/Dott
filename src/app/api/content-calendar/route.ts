@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/auth-guard';
 
 // GET — list calendar items, optional date range filter
 export async function GET(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('start');
     const endDate = searchParams.get('end');
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('content_calendar')
       .select('*')
+      .eq('user_id', userEmail)
       .order('scheduled_date', { ascending: true });
 
     if (startDate) query = query.gte('scheduled_date', startDate);
@@ -28,6 +33,9 @@ export async function GET(req: NextRequest) {
 // POST — create a calendar item
 export async function POST(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const body = await req.json();
     const { title, platform, scheduled_date, scheduled_time, content, notes } = body;
 
@@ -35,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'title and scheduled_date required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('content_calendar')
       .insert({
         title,
@@ -45,6 +53,7 @@ export async function POST(req: NextRequest) {
         content: content || '',
         notes: notes || '',
         status: 'draft',
+        user_id: userEmail,
       })
       .select()
       .single();
@@ -60,15 +69,25 @@ export async function POST(req: NextRequest) {
 // PATCH — update a calendar item
 export async function PATCH(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const ALLOWED_FIELDS = ['title', 'platform', 'scheduled_date', 'scheduled_time', 'content', 'notes', 'status'];
+
     const body = await req.json();
-    const { id, ...updates } = body;
+    const { id } = body;
+    const updates: Record<string, unknown> = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (key in body) updates[key] = body[key];
+    }
 
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('content_calendar')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', userEmail)
       .select()
       .single();
 
@@ -83,12 +102,15 @@ export async function PATCH(req: NextRequest) {
 // DELETE — remove a calendar item
 export async function DELETE(req: NextRequest) {
   try {
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-    const { error } = await supabase.from('content_calendar').delete().eq('id', id);
+    const { error } = await supabaseAdmin.from('content_calendar').delete().eq('id', id).eq('user_id', userEmail);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch (err) {

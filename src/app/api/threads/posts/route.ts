@@ -5,20 +5,27 @@ import {
   isThreadsConnected,
   disconnectThreads,
 } from '@/lib/threads';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
-  const connected = await isThreadsConnected();
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
+  const connected = await isThreadsConnected(userEmail);
   if (!connected) {
     return NextResponse.json({ connected: false, posts: [] });
   }
 
-  const posts = await getCachedThreadsPosts();
+  const posts = await getCachedThreadsPosts(userEmail);
   return NextResponse.json({ connected: true, posts });
 }
 
 export async function POST() {
   try {
-    const posts = await fetchThreadsPosts();
+    const userEmail = await requireAuth();
+    if (userEmail instanceof NextResponse) return userEmail;
+
+    const posts = await fetchThreadsPosts(userEmail);
     return NextResponse.json({ posts });
   } catch (error) {
     console.error('Threads fetch error:', error);
@@ -30,6 +37,9 @@ export async function POST() {
 }
 
 export async function DELETE() {
-  await disconnectThreads();
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
+  await disconnectThreads(userEmail);
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,13 +52,16 @@ export default function TaskBoard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newDueDate, setNewDueDate] = useState('');
-  const [newDueTime, setNewDueTime] = useState('');
+  const [newDueDate, setNewDueDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [newDueTime, setNewDueTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [newUrgent, setNewUrgent] = useState(false);
   const [newImportant, setNewImportant] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [inlineAddSection, setInlineAddSection] = useState<string | null>(null);
   const [inlineTitle, setInlineTitle] = useState('');
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ section: string; taskId?: string } | null>(null);
+  const dragCounter = useRef(0);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -108,8 +111,8 @@ export default function TaskBoard() {
       toast.success('태스크가 추가되었습니다');
       setNewTitle('');
       setNewDescription('');
-      setNewDueDate('');
-      setNewDueTime('');
+      setNewDueDate(new Date().toISOString().slice(0, 10));
+      setNewDueTime(new Date().toTimeString().slice(0, 5));
       setNewUrgent(false);
       setNewImportant(false);
       setDialogOpen(false);
@@ -176,11 +179,31 @@ export default function TaskBoard() {
     setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
+  const handleDragStart = (task: Task) => {
+    setDraggedTaskId(task.id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTaskId(null);
+    setDropTarget(null);
+    dragCounter.current = 0;
+  };
+
+  const handleDropOnSection = (targetSection: string) => {
+    if (!draggedTaskId) return;
+    const task = tasks.find((t) => t.id === draggedTaskId);
+    if (task && task.status !== targetSection) {
+      updateTask(task.id, { status: targetSection as Task['status'] });
+    }
+    setDraggedTaskId(null);
+    setDropTarget(null);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">태스크 보드</h2>
+          <h2 className="text-lg font-semibold bg-gradient-to-r from-amber-600 via-pink-600 to-violet-600 dark:from-amber-400 dark:via-pink-400 dark:to-violet-400 bg-clip-text text-transparent">태스크 보드</h2>
           <span className="text-xs text-muted-foreground">{tasks.length}개</span>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -289,6 +312,12 @@ export default function TaskBoard() {
                   onInlineTitleChange={setInlineTitle}
                   onInlineAddSubmit={() => createInlineTask(section)}
                   onInlineAddCancel={() => setInlineAddSection(null)}
+                  draggedTaskId={draggedTaskId}
+                  dropTarget={dropTarget}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onDropOnSection={handleDropOnSection}
+                  onDropTargetChange={setDropTarget}
                 />
               );
             })}
@@ -313,6 +342,12 @@ function SectionGroup({
   onInlineTitleChange,
   onInlineAddSubmit,
   onInlineAddCancel,
+  draggedTaskId,
+  dropTarget,
+  onDragStart,
+  onDragEnd,
+  onDropOnSection,
+  onDropTargetChange,
 }: {
   section: string;
   tasks: Task[];
@@ -327,13 +362,33 @@ function SectionGroup({
   onInlineTitleChange: (v: string) => void;
   onInlineAddSubmit: () => void;
   onInlineAddCancel: () => void;
+  draggedTaskId: string | null;
+  dropTarget: { section: string; taskId?: string } | null;
+  onDragStart: (task: Task) => void;
+  onDragEnd: () => void;
+  onDropOnSection: (section: string) => void;
+  onDropTargetChange: (target: { section: string; taskId?: string } | null) => void;
 }) {
   return (
     <>
       {/* Section Header Row */}
       <tr
-        className={`border-b border-border bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors border-l-3 ${SECTION_COLORS[section]}`}
+        className={`border-b border-border bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors border-l-3 ${SECTION_COLORS[section]} ${
+          draggedTaskId && dropTarget?.section === section && !dropTarget?.taskId ? 'bg-accent/10' : ''
+        }`}
         onClick={onToggle}
+        onDragOver={(e) => {
+          if (!draggedTaskId) return;
+          e.preventDefault();
+          onDropTargetChange({ section });
+        }}
+        onDragLeave={() => {
+          if (dropTarget?.section === section && !dropTarget?.taskId) onDropTargetChange(null);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          onDropOnSection(section);
+        }}
       >
         <td className="px-2 py-2" colSpan={7}>
           <div className="flex items-center gap-2">
@@ -353,10 +408,33 @@ function SectionGroup({
       {!isCollapsed && tasks.map((task) => {
         const priority = getPriority(task);
         const isDone = task.status === 'done';
+        const isDragging = draggedTaskId === task.id;
+        const isDropTarget = dropTarget?.section === section && dropTarget?.taskId === task.id;
         return (
           <tr
             key={task.id}
-            className={`border-b border-border/50 hover:bg-muted/20 transition-colors group border-l-3 ${SECTION_COLORS[section]}`}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              onDragStart(task);
+            }}
+            onDragEnd={onDragEnd}
+            onDragOver={(e) => {
+              if (!draggedTaskId || draggedTaskId === task.id) return;
+              e.preventDefault();
+              onDropTargetChange({ section, taskId: task.id });
+            }}
+            onDragLeave={() => {
+              if (dropTarget?.taskId === task.id) onDropTargetChange(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDropOnSection(section);
+            }}
+            className={`border-b border-border/50 hover:bg-muted/20 transition-colors group border-l-3 ${SECTION_COLORS[section]} ${
+              isDragging ? 'opacity-40' : ''
+            } ${isDropTarget ? 'border-t-2 border-t-accent' : ''}`}
           >
             {/* Drag handle */}
             <td className="px-2 py-2.5">

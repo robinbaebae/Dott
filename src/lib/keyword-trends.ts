@@ -1,103 +1,156 @@
-import { supabase } from './supabase';
-import { extractKeywords } from './keywords';
+import { supabaseAdmin } from './supabase';
 import { TrendArticle, KeywordTrend } from '@/types';
 
-/** Create a keyword snapshot for today based on recent articles */
-export async function createKeywordSnapshot(): Promise<KeywordTrend[]> {
-  // Fetch articles from the last 30 days (wider window for keyword analysis)
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 30);
+/** Create a keyword snapshot for watchlist keywords based on article matching */
+export async function createWatchlistSnapshot(
+  watchlistKeywords: string[]
+): Promise<KeywordTrend[]> {
+  if (watchlistKeywords.length === 0) return [];
 
-  const { data: articles, error: fetchError } = await supabase
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+
+  const { data: articles, error: fetchError } = await supabaseAdmin
     .from('trend_articles')
     .select('*')
-    .gte('pub_date', weekAgo.toISOString())
+    .gte('pub_date', since.toISOString())
     .order('pub_date', { ascending: false });
 
-  if (fetchError) throw fetchError;
-  if (!articles || articles.length === 0) return [];
+  if (fetchError) {
+    console.error('[keyword-trends] Failed to fetch articles:', fetchError.message, fetchError.code);
+  }
 
-  const keywords = extractKeywords(articles as TrendArticle[]);
+  const allArticles = (articles as TrendArticle[] | null) ?? [];
+  console.log(`[keyword-trends] Found ${allArticles.length} articles from last 30 days`);
   const today = new Date().toISOString().split('T')[0];
   const inserted: KeywordTrend[] = [];
 
-  for (const kw of keywords) {
-    const articleIds = kw.articles.map((a) => a.id);
-    const { data, error } = await supabase
+  // Delete today's existing watchlist snapshots then re-insert
+  await supabaseAdmin
+    .from('keyword_trends')
+    .delete()
+    .eq('snapshot_date', today)
+    .eq('source', 'watchlist')
+    .in('keyword', watchlistKeywords);
+
+  for (const kw of watchlistKeywords) {
+    const lower = kw.toLowerCase();
+    // Match against title and source
+    const matched = allArticles.filter(
+      (a) =>
+        a.title.toLowerCase().includes(lower) ||
+        (a.source && a.source.toLowerCase().includes(lower))
+    );
+
+    const { data, error } = await supabaseAdmin
       .from('keyword_trends')
-      .upsert(
-        {
-          keyword: kw.word,
-          count: kw.count,
-          snapshot_date: today,
-          source: 'rss',
-          related_article_ids: articleIds,
-        },
-        { onConflict: 'keyword,snapshot_date,source' }
-      )
+      .insert({
+        keyword: kw,
+        count: matched.length,
+        snapshot_date: today,
+        source: 'watchlist',
+        related_article_ids: matched.map((a) => a.id),
+      })
       .select()
       .single();
 
-    if (!error && data) inserted.push(data);
+    if (error) {
+      console.error(`[keyword-trends] Insert failed for "${kw}":`, error.message, error.code, error.details);
+    } else if (data) {
+      inserted.push(data);
+    }
   }
 
   return inserted;
 }
 
-/** Get keyword trends with week-over-week change rate */
-export async function getKeywordTrends(): Promise<
-  (KeywordTrend & { prev_count: number; change_rate: number })[]
-> {
+/** Get keyword trends with week-over-week change rate, optionally filtered by keywords */
+export async function getKeywordTrends(
+  keywords?: string[]
+): Promise<(KeywordTrend & { prev_count: number; change_rate: number })[]> {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const weekAgo = new Date(today);
   weekAgo.setDate(weekAgo.getDate() - 7);
   const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-  // Get this week's snapshot (latest date)
-  const { data: current } = await supabase
+  let query = supabaseAdmin
     .from('keyword_trends')
     .select('*')
     .eq('snapshot_date', todayStr)
-    .order('count', { ascending: false })
-    .limit(10);
+    .order('count', { ascending: false });
+
+  if (keywords && keywords.length > 0) {
+    query = query.in('keyword', keywords);
+  } else {
+    query = query.limit(10);
+  }
+
+  const { data: current } = await query;
 
   if (!current || current.length === 0) {
     // Try the most recent snapshot date
-    const { data: latest } = await supabase
+    let latestQuery = supabaseAdmin
       .from('keyword_trends')
       .select('snapshot_date')
       .order('snapshot_date', { ascending: false })
       .limit(1);
 
+    if (keywords && keywords.length > 0) {
+      latestQuery = latestQuery.in('keyword', keywords);
+    }
+
+    const { data: latest } = await latestQuery;
     if (!latest || latest.length === 0) return [];
 
     const latestDate = latest[0].snapshot_date;
-    const { data: latestData } = await supabase
+    let fallbackQuery = supabaseAdmin
       .from('keyword_trends')
       .select('*')
       .eq('snapshot_date', latestDate)
-      .order('count', { ascending: false })
-      .limit(10);
+      .order('count', { ascending: false });
 
+    if (keywords && keywords.length > 0) {
+      fallbackQuery = fallbackQuery.in('keyword', keywords);
+    } else {
+      fallbackQuery = fallbackQuery.limit(10);
+    }
+
+    const { data: latestData } = await fallbackQuery;
     if (!latestData) return [];
 
-    // Get previous week's data
     const prevDate = new Date(latestDate);
     prevDate.setDate(prevDate.getDate() - 7);
-    const prevStr = prevDate.toISOString().split('T')[0];
-
-    return attachChangeRates(latestData, prevStr);
+    return attachChangeRates(latestData, prevDate.toISOString().split('T')[0]);
   }
 
   return attachChangeRates(current, weekAgoStr);
+}
+
+/** Get historical trend data for given keywords over the last N days */
+export async function getKeywordHistory(
+  keywords: string[],
+  days = 30
+): Promise<{ keyword: string; snapshot_date: string; count: number }[]> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString().split('T')[0];
+
+  const { data } = await supabaseAdmin
+    .from('keyword_trends')
+    .select('keyword, snapshot_date, count')
+    .in('keyword', keywords)
+    .gte('snapshot_date', sinceStr)
+    .order('snapshot_date', { ascending: true });
+
+  return data ?? [];
 }
 
 async function attachChangeRates(
   current: KeywordTrend[],
   prevDateStr: string
 ): Promise<(KeywordTrend & { prev_count: number; change_rate: number })[]> {
-  const { data: previous } = await supabase
+  const { data: previous } = await supabaseAdmin
     .from('keyword_trends')
     .select('keyword, count')
     .eq('snapshot_date', prevDateStr);

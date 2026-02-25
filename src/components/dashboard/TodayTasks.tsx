@@ -20,7 +20,7 @@ function DateTimePicker({
   onClose: () => void;
 }) {
   const [month, setMonth] = useState(() => initial || new Date());
-  const [selected, setSelected] = useState<Date | null>(initial);
+  const [selected, setSelected] = useState<Date | null>(initial ?? new Date());
   const [hour, setHour] = useState(() => (initial ? initial.getHours() : new Date().getHours()));
   const [minute, setMinute] = useState(() => (initial ? initial.getMinutes() : 0));
   const ref = useRef<HTMLDivElement>(null);
@@ -295,11 +295,11 @@ export default function TodayTasks() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ListTodo className="size-4 text-accent" />
+            <ListTodo className="size-4 text-pink-500 dark:text-pink-400" />
             <CardTitle className="text-sm">할일</CardTitle>
           </div>
           {activeCount > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/20 text-accent font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500/15 text-pink-500 dark:text-pink-400 font-medium">
               {activeCount}
             </span>
           )}
@@ -331,7 +331,7 @@ export default function TodayTasks() {
           <p className="text-xs text-muted-foreground py-2">할 일을 추가해보세요</p>
         ) : (
           <div className="relative space-y-0">
-            <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
+            <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gradient-to-b from-pink-300/40 via-blue-300/30 to-orange-300/30 dark:from-pink-700/30 dark:via-blue-700/20 dark:to-orange-700/20" />
 
             {tasks.map((task) => {
               const hasDue = !!task.due_date;
