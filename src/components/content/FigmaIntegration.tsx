@@ -37,7 +37,6 @@ const SIZES = [
 ];
 
 type PushStatus = 'idle' | 'generating' | 'previewing' | 'pushing' | 'done' | 'done-local' | 'failed';
-type SetupStep = 'token' | 'plugin' | 'complete';
 
 export default function FigmaIntegration() {
   // Connection & setup
@@ -45,7 +44,6 @@ export default function FigmaIntegration() {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
   const [connecting, setConnecting] = useState(false);
-  const [setupStep, setSetupStep] = useState<SetupStep>('token');
   const [pluginConfirmed, setPluginConfirmed] = useState(false);
 
   // Banner inputs
@@ -151,6 +149,7 @@ export default function FigmaIntegration() {
   };
 
   const renderPreview = useCallback(async (id: string) => {
+    let iframe: HTMLIFrameElement | null = null;
     try {
       setPushStatus('previewing');
       // Fetch the banner HTML
@@ -160,7 +159,7 @@ export default function FigmaIntegration() {
 
       // Render to image using html-to-image via hidden iframe approach
       const [w, h] = (banner.size || '1080x1080').split('x').map(Number);
-      const iframe = document.createElement('iframe');
+      iframe = document.createElement('iframe');
       iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:${h}px;border:none;`;
       document.body.appendChild(iframe);
 
@@ -174,14 +173,21 @@ export default function FigmaIntegration() {
 
       const { toBlob } = await import('html-to-image');
       const blob = await toBlob(iframeDoc.documentElement, { width: w, height: h });
-      document.body.removeChild(iframe);
 
       if (blob) {
-        const url = URL.createObjectURL(blob);
-        setPreviewDataUrl(url);
+        // Revoke previous blob URL to prevent memory leak
+        setPreviewDataUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(blob);
+        });
       }
     } catch (err) {
       console.error('Preview rendering failed:', err);
+    } finally {
+      // Always clean up iframe
+      if (iframe && iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
     }
   }, []);
 

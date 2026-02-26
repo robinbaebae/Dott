@@ -64,10 +64,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Mount tab when first visited
   useEffect(() => {
-    if (currentTab && !mountedTabs.has(currentTab)) {
-      setMountedTabs((prev) => new Set(prev).add(currentTab));
+    if (currentTab) {
+      setMountedTabs((prev) => {
+        if (prev.has(currentTab)) return prev;
+        return new Set(prev).add(currentTab);
+      });
     }
-  }, [currentTab, mountedTabs]);
+  }, [currentTab]);
 
   // Loading state
   if (status === 'loading') {

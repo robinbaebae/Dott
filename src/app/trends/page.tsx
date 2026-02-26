@@ -56,6 +56,20 @@ interface CustomFeed {
   enabled: boolean;
 }
 
+// ─── Sanitize HTML (strip scripts, event handlers) ───
+function sanitizeHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script,iframe,object,embed,form,input,link,style').forEach((el) => el.remove());
+  doc.querySelectorAll('*').forEach((el) => {
+    for (const attr of Array.from(el.attributes)) {
+      if (attr.name.startsWith('on') || attr.value.trim().toLowerCase().startsWith('javascript:')) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  return doc.body.innerHTML;
+}
+
 // ─── Constants ────────────────────────────────────────
 const CATEGORY_COLORS: Record<string, string> = {
   marketing: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
@@ -342,9 +356,20 @@ export default function TrendsDashboard() {
     finally { setGenIdeas(false); }
   };
 
-  // ─── Swipe save action ─────────────────────────────
+  // ─── Bookmark save action ──────────────────────────
+  const [savingUrls, setSavingUrls] = useState<Set<string>>(new Set());
   const saveToInsight = async (article: TrendArticle) => {
     const normalizedUrl = article.link.replace(/\/+$/, '');
+    // Prevent double-click race condition
+    if (savingUrls.has(normalizedUrl)) return;
+    setSavingUrls((prev) => new Set(prev).add(normalizedUrl));
+    try {
+      await _saveToInsight(article, normalizedUrl);
+    } finally {
+      setSavingUrls((prev) => { const next = new Set(prev); next.delete(normalizedUrl); return next; });
+    }
+  };
+  const _saveToInsight = async (article: TrendArticle, normalizedUrl: string) => {
     // Toggle: if already bookmarked, remove it
     if (bookmarkedUrls.has(normalizedUrl)) {
       try {
@@ -695,7 +720,7 @@ export default function TrendsDashboard() {
                           <img src={readerArticle.og_image} alt="" className="w-full h-auto max-h-[200px] object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                       )}
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: readerArticle.content_html || readerArticle.content_text }} />
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(readerArticle.content_html || readerArticle.content_text || '') }} />
                     </>
                   )}
                 </div>
