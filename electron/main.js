@@ -4,6 +4,7 @@ const {
   Tray,
   Menu,
   nativeImage,
+  nativeTheme,
   Notification,
   screen,
 } = require('electron');
@@ -83,7 +84,7 @@ let notificationSettingsCacheTime = 0;
 const SETTINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Theme sync
-let currentTheme = 'light';
+let currentTheme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 
 // Start Next.js server in production
 function startNextServer() {
@@ -1033,6 +1034,18 @@ ipcMain.on('set-theme', (_, theme) => {
 
 ipcMain.handle('get-theme', () => {
   return currentTheme;
+});
+
+// Listen for OS-level theme changes and sync to all windows
+nativeTheme.on('updated', () => {
+  const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+  currentTheme = theme;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('theme-changed', theme);
+  }
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.webContents.send('theme-changed', theme);
+  }
 });
 
 // =========================================================

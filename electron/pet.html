@@ -1034,9 +1034,6 @@
       chatOpen = true;
       const panel = document.getElementById('chatPanel');
       panel.style.display = 'flex';
-      // Force backgrounds on open (Electron transparent window workaround)
-      const isDark = document.documentElement.classList.contains('dark');
-      applyTheme(isDark ? 'dark' : 'light');
       resizeWindow(CHAT_SIZE.width, CHAT_SIZE.height);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -1374,6 +1371,20 @@
       chatSending = true;
       document.getElementById('chatSend').disabled = true;
       input.value = '';
+
+      // "퇴근" → 앱 종료
+      if (/^퇴근$/.test(message.trim())) {
+        addChatMessage('user', message);
+        addChatMessage('assistant', '수고했어요! 내일 봐요 :)');
+        setTimeout(() => {
+          if (window.electronAPI && window.electronAPI.quitApp) {
+            window.electronAPI.quitApp();
+          }
+        }, 1500);
+        chatSending = false;
+        document.getElementById('chatSend').disabled = false;
+        return;
+      }
 
       addChatMessage('user', message);
       chatHistory.push({ role: 'user', content: message });
