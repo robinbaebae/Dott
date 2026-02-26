@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Unplug } from 'lucide-react';
+import { toast } from 'sonner';
 import type { ThreadsPost } from '@/types';
 
 export default function ThreadsPosts() {
@@ -41,9 +42,14 @@ export default function ThreadsPosts() {
   };
 
   const handleDisconnect = async () => {
-    await fetch('/api/threads/posts', { method: 'DELETE' });
-    setConnected(false);
-    setPosts([]);
+    try {
+      const res = await fetch('/api/threads/posts', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to disconnect');
+      setConnected(false);
+      setPosts([]);
+    } catch {
+      toast.error('Failed to disconnect Threads');
+    }
   };
 
   if (loading) {

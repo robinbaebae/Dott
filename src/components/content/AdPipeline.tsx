@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { AdCreativeProject } from '@/types';
 import AdCreativeGrid from './AdCreativeGrid';
+import { toast } from 'sonner';
 
 const STAGES = [
   { key: 'stage_1', label: '소재 생성', desc: '템플릿 기반 대량 생성' },
@@ -48,11 +49,7 @@ export default function AdPipeline() {
   const [campaignName, setCampaignName] = useState('');
   const [dailyBudget, setDailyBudget] = useState('10000');
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       const res = await fetch('/api/ad-pipeline');
       if (res.ok) {
@@ -62,7 +59,11 @@ export default function AdPipeline() {
     } catch {
       /* skip */
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const createProject = async () => {
     if (!newName.trim()) return;
@@ -94,7 +95,7 @@ export default function AdPipeline() {
       if (stage === 1) {
         const copyList = copies.split('\n').map((c) => c.trim()).filter(Boolean);
         if (copyList.length === 0) {
-          alert('광고 카피를 최소 1개 입력해주세요.');
+          toast.warning('광고 카피를 최소 1개 입력해주세요.');
           setLoading(false);
           return;
         }
@@ -111,7 +112,7 @@ export default function AdPipeline() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Failed');
+        toast.error(err.error || 'Failed');
         setLoading(false);
         return;
       }

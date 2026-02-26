@@ -13,6 +13,7 @@ const ALWAYS_COLLAPSED_KEY = 'dott-sidebar-always-collapsed';
 const navItems = [
   { href: '/', label: 'Dashboard', symbol: '~', color: '', bold: true },
   { href: '/ads', label: 'Ad Analytics', symbol: '$', color: 'text-orange-500 dark:text-orange-400' },
+  { href: '/analytics', label: 'Analytics', symbol: '^', color: 'text-indigo-500 dark:text-indigo-400' },
   { href: '/assets', label: 'Assets', symbol: '&', color: 'text-sky-500 dark:text-sky-400' },
   { href: '/content', label: 'Content', symbol: '+', color: 'text-pink-500 dark:text-pink-400' },
   { href: '/influencer', label: 'Influencer', symbol: '%', color: 'text-purple-500 dark:text-purple-400' },
@@ -171,7 +172,7 @@ export default function Sidebar() {
               </div>
             )}
             <button
-              onClick={() => { sessionStorage.removeItem('dott-demo'); localStorage.removeItem('dott_ad_analytics'); localStorage.removeItem('dott-notif-read'); window.location.href = '/'; }}
+              onClick={() => { sessionStorage.removeItem('dott-demo'); localStorage.removeItem('dott_ad_analytics'); localStorage.removeItem('dott-notif-read'); localStorage.removeItem('dott_weekly_report'); window.location.href = '/'; }}
               title={collapsed ? '데모 나가기' : undefined}
               className={`w-full flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-xl text-[13px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer`}
             >

@@ -22,6 +22,7 @@ const LedgerPage = lazy(() => import('@/app/ledger/page'));
 const PromotionPage = lazy(() => import('@/app/promotion/page'));
 const ToolsPage = lazy(() => import('@/app/tools/page'));
 const SettingsPage = lazy(() => import('@/app/settings/page'));
+const AnalyticsPage = lazy(() => import('@/app/analytics/page'));
 
 /* ── Tab registry ── */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,6 +40,7 @@ const TAB_PAGES: Record<string, React.LazyExoticComponent<React.ComponentType<an
   '/promotion': PromotionPage,
   '/tools': ToolsPage,
   '/settings': SettingsPage,
+  '/analytics': AnalyticsPage,
 };
 
 const TAB_PATHS = Object.keys(TAB_PAGES);
@@ -66,9 +68,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         import('@/lib/demo-interceptor').then(({ setupDemoInterceptor }) => {
           setupDemoInterceptor();
         });
-        import('@/lib/demo-data').then(({ DEMO_AD_CSV, DEMO_AD_ANALYTICS }) => {
+        import('@/lib/demo-data').then(({ DEMO_AD_CSV, DEMO_AD_ANALYTICS, DEMO_WEEKLY_REPORT }) => {
           if (!localStorage.getItem('dott_ad_analytics')) {
-            // Parse CSV into rows for the Ads page
             const lines = DEMO_AD_CSV.split('\n');
             const rows = [];
             for (let i = 1; i < lines.length; i++) {
@@ -85,6 +86,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             }
             const stored = { ...DEMO_AD_ANALYTICS, meta: { ...DEMO_AD_ANALYTICS.meta, rows } };
             localStorage.setItem('dott_ad_analytics', JSON.stringify(stored));
+          }
+          if (!localStorage.getItem('dott_weekly_report')) {
+            localStorage.setItem('dott_weekly_report', JSON.stringify(DEMO_WEEKLY_REPORT));
           }
         });
       }

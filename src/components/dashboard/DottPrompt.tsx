@@ -17,6 +17,17 @@ import { useKnowbarStore } from '@/store/knowbar-store';
 import type { QuickActionCategory, KnowbarMessage } from '@/types';
 
 /* ------------------------------------------------------------------ */
+/* Tab label sub-component — uses hook properly for reactivity         */
+/* ------------------------------------------------------------------ */
+function TabLabel({ tabId, fallback }: { tabId: string; fallback: string }) {
+  const messages = useKnowbarStore((s) => s.getTab(tabId).messages);
+  const preview = messages.length > 0
+    ? messages[0].content.slice(0, 20) + (messages[0].content.length > 20 ? '…' : '')
+    : fallback;
+  return <>{preview}</>;
+}
+
+/* ------------------------------------------------------------------ */
 /* Assistant message with copy + HTML preview                          */
 /* ------------------------------------------------------------------ */
 
@@ -671,10 +682,6 @@ export default function DottPrompt() {
       {tabs.length > 1 && (
         <div className="shrink-0 flex items-center gap-1 pb-3 overflow-x-auto">
           {tabs.map((tab) => {
-            const tabMessages = useKnowbarStore.getState().getTab(tab.id).messages;
-            const preview = tabMessages.length > 0
-              ? tabMessages[0].content.slice(0, 20) + (tabMessages[0].content.length > 20 ? '…' : '')
-              : tab.label;
             return (
               <button
                 key={tab.id}
@@ -685,7 +692,7 @@ export default function DottPrompt() {
                     : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <span className="max-w-[120px] truncate">{preview}</span>
+                <span className="max-w-[120px] truncate"><TabLabel tabId={tab.id} fallback={tab.label} /></span>
                 {tabs.length > 1 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}

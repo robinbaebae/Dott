@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { BannerDesign } from '@/types';
@@ -13,11 +13,7 @@ export default function MediaLibrary() {
   const [search, setSearch] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchBanners();
-  }, []);
-
-  const fetchBanners = async () => {
+  const fetchBanners = useCallback(async () => {
     try {
       const res = await fetch('/api/banner');
       if (res.ok) {
@@ -25,7 +21,11 @@ export default function MediaLibrary() {
         setBanners(Array.isArray(data) ? data : data.banners || []);
       }
     } catch { /* skip */ }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchBanners();
+  }, [fetchBanners]);
 
   const filtered = banners.filter((b) => {
     if (search && !b.copy.toLowerCase().includes(search.toLowerCase())) return false;

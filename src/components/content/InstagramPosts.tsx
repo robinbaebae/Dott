@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Unplug } from 'lucide-react';
+import { toast } from 'sonner';
 import type { InstagramPost } from '@/types';
 
 export default function InstagramPosts() {
@@ -42,9 +43,14 @@ export default function InstagramPosts() {
   };
 
   const handleDisconnect = async () => {
-    await fetch('/api/instagram/posts', { method: 'DELETE' });
-    setConnected(false);
-    setPosts([]);
+    try {
+      const res = await fetch('/api/instagram/posts', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to disconnect');
+      setConnected(false);
+      setPosts([]);
+    } catch {
+      toast.error('Failed to disconnect Instagram');
+    }
   };
 
   if (loading) {

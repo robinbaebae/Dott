@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -300,7 +301,7 @@ export default function FigmaIntegration() {
         new ClipboardItem({ [blob.type]: blob }),
       ]);
       setError('');
-      alert('이미지가 클립보드에 복사되었습니다');
+      toast.success('이미지가 클립보드에 복사되었습니다');
     } catch {
       setError('클립보드 복사 실패');
     }

@@ -139,7 +139,7 @@ export default function ContentCalendar() {
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<'draft' | 'scheduled' | 'published'>('draft');
 
-  const weekDates = getWeekDates(baseDate);
+  const weekDates = useMemo(() => getWeekDates(baseDate), [baseDate]);
   const monthDates = useMemo(() => getMonthDates(baseDate), [baseDate]);
 
   const dateRange = useMemo(() => {

@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { sanitizeHtml } from '@/lib/sanitize';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChevronUp, ChevronDown, Upload, FileSpreadsheet, BarChart3,
@@ -476,7 +478,7 @@ function AiQueryPanel({ rows, platform }: { rows: CsvRow[]; platform: Platform }
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
         {answer && (
-          <div className="text-sm leading-relaxed rounded-lg border bg-muted/20 p-5 max-h-[400px] overflow-y-auto ai-answer" dangerouslySetInnerHTML={{ __html: renderMarkdown(answer) }} />
+          <div className="text-sm leading-relaxed rounded-lg border bg-muted/20 p-5 max-h-[400px] overflow-y-auto ai-answer" dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderMarkdown(answer)) }} />
         )}
       </CardContent>
     </Card>
@@ -701,7 +703,7 @@ export default function AdsPage() {
   const persist = useCallback((mR: CsvRow[], gR: CsvRow[], mU: UploadRecord[], gU: UploadRecord[]) => {
     const data: StoredAdData = { version: 1, meta: { rows: mR, uploads: mU }, google: { rows: gR, uploads: gU } };
     const json = JSON.stringify(data);
-    if (json.length > 4_000_000) { alert('저장 용량 한도(4MB)에 근접합니다. 오래된 데이터를 정리해주세요.'); }
+    if (json.length > 4_000_000) { toast.warning('저장 용량 한도(4MB)에 근접합니다. 오래된 데이터를 정리해주세요.'); }
     localStorage.setItem(CACHE_KEY, json);
   }, []);
 

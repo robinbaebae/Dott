@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -115,22 +116,6 @@ export default function FloatingPet() {
   const historyLoaded = useRef(false);
   const greetingShown = useRef(false);
 
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 150);
-      fetchNextMeeting();
-
-      if (!historyLoaded.current) {
-        historyLoaded.current = true;
-        loadChatHistory();
-        if (!greetingShown.current) {
-          greetingShown.current = true;
-          showSmartGreeting();
-        }
-      }
-    }
-  }, [open]);
-
   // Auto-dismiss bubble
   useEffect(() => {
     if (bubble) {
@@ -161,7 +146,7 @@ export default function FloatingPet() {
     return () => document.removeEventListener('keydown', handleKey);
   }, []);
 
-  async function fetchNextMeeting() {
+  const fetchNextMeeting = useCallback(async function fetchNextMeeting() {
     try {
       const now = new Date();
       const endOfDay = new Date(now);
@@ -191,9 +176,9 @@ export default function FloatingPet() {
         setNextMeeting(null);
       }
     } catch { /* skip */ }
-  }
+  }, []);
 
-  async function loadChatHistory() {
+  const loadChatHistory = useCallback(async function loadChatHistory() {
     if (!sessionId) return;
     try {
       const res = await fetch(`/api/chat?sessionId=${sessionId}`);
@@ -208,9 +193,16 @@ export default function FloatingPet() {
         })));
       }
     } catch { /* skip */ }
-  }
+  }, [sessionId]);
 
-  async function showSmartGreeting() {
+  const addAssistantMessage = useCallback((text: string, actions?: ActionData) => {
+    setMessages((prev) => {
+      const next = [...prev, { role: 'assistant' as const, content: text, time: getTimeStr(), actions }];
+      return next.length > CHAT_HISTORY_MAX ? next.slice(next.length - CHAT_HISTORY_MAX) : next;
+    });
+  }, []);
+
+  const showSmartGreeting = useCallback(async function showSmartGreeting() {
     try {
       const lines: string[] = [];
       // Tasks
@@ -248,14 +240,24 @@ export default function FloatingPet() {
         addAssistantMessage(`좋은 ${new Date().getHours() < 12 ? '아침' : new Date().getHours() < 18 ? '오후' : '저녁'}이에요!\n\n${lines.join('\n')}\n\n무엇을 도와드릴까요?`);
       }
     } catch { /* skip */ }
-  }
+  }, [nextMeeting, addAssistantMessage]);
 
-  const addAssistantMessage = useCallback((text: string, actions?: ActionData) => {
-    setMessages((prev) => {
-      const next = [...prev, { role: 'assistant' as const, content: text, time: getTimeStr(), actions }];
-      return next.length > CHAT_HISTORY_MAX ? next.slice(next.length - CHAT_HISTORY_MAX) : next;
-    });
-  }, []);
+  // Load chat history + greeting on first open
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 150);
+      fetchNextMeeting();
+
+      if (!historyLoaded.current) {
+        historyLoaded.current = true;
+        loadChatHistory();
+        if (!greetingShown.current) {
+          greetingShown.current = true;
+          showSmartGreeting();
+        }
+      }
+    }
+  }, [open, fetchNextMeeting, loadChatHistory, showSmartGreeting]);
 
   async function sendChat() {
     if (!input.trim() || sending) return;
@@ -501,7 +503,7 @@ export default function FloatingPet() {
                     {msg.role === 'assistant' ? (
                       <div
                         className="text-xs leading-relaxed px-3 py-2 break-words glass-subtle bg-white/10 text-foreground border border-white/15 rounded-xl rounded-tl-sm"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderMarkdown(msg.content)) }}
                       />
                     ) : (
                       <div className="text-xs leading-relaxed px-3 py-2 whitespace-pre-wrap break-words bg-violet-600 text-white rounded-xl rounded-tr-sm">
