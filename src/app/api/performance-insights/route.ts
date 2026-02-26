@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { PERFORMANCE_INSIGHTS_PROMPT } from '@/lib/prompts';
 import { supabaseAdmin } from '@/lib/supabase';
 import { withTimeout } from '@/lib/api-utils';
@@ -9,6 +9,8 @@ export async function POST() {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const [igRes, threadsRes] = await Promise.all([
       supabaseAdmin
@@ -48,7 +50,7 @@ ${threadsPosts.map((p, i) =>
 `;
 
     const result = await withTimeout(
-      generateCompletion(PERFORMANCE_INSIGHTS_PROMPT, dataContext),
+      generateCompletion(apiKey, PERFORMANCE_INSIGHTS_PROMPT, dataContext),
       60000,
       '성과 분석 시간 초과'
     );

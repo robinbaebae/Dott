@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabase';
-import { generateCompletion } from './claude';
+import { generateCompletion, getUserApiKey } from './claude';
 import { COMPETITOR_BRIEFING_PROMPT, AD_ANALYSIS_PROMPT } from './prompts';
 import { Competitor, CompetitorBriefing, CompetitorAd } from '@/types';
 
@@ -68,7 +68,8 @@ export async function getWeeklyBriefing(
 }
 
 export async function generateBriefing(
-  competitorId: string
+  competitorId: string,
+  userEmail?: string
 ): Promise<CompetitorBriefing> {
   // Get competitor info
   const { data: competitor, error: compError } = await supabaseAdmin
@@ -111,7 +112,10 @@ ${articleList || '관련 뉴스 없음 - 일반적인 업계 동향 기반으로
 
 이 경쟁사에 대한 주간 브리핑을 작성해주세요.`;
 
-  const raw = await generateCompletion(COMPETITOR_BRIEFING_PROMPT, userMessage);
+  const apiKey = await getUserApiKey(userEmail || '');
+
+
+  const raw = await generateCompletion(apiKey, COMPETITOR_BRIEFING_PROMPT, userMessage);
 
   // AI returns JSON: {key_points, items[{category, title, detail, impact, action}]}
   let briefingText = raw;
@@ -167,7 +171,7 @@ export async function addCompetitorAd(input: {
   creative_type?: string;
   copy_text?: string;
   cta_text?: string;
-}): Promise<CompetitorAd> {
+}, userEmail?: string): Promise<CompetitorAd> {
   // Insert the ad
   const { data: ad, error: insertError } = await supabaseAdmin
     .from('competitor_ads')
@@ -196,7 +200,9 @@ export async function addCompetitorAd(input: {
 
 이 광고를 분석해주세요.`;
 
-      const analysis = await generateCompletion(AD_ANALYSIS_PROMPT, userMessage);
+      const adApiKey = await getUserApiKey(userEmail || '');
+
+      const analysis = await generateCompletion(adApiKey, AD_ANALYSIS_PROMPT, userMessage);
 
       const { data: updated } = await supabaseAdmin
         .from('competitor_ads')

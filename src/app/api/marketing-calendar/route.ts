@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
 
-interface IBossEvent {
+export interface MarketingEvent {
+  title: string;
+  start: string;
+  end: string;
+  category: string;
+  description: string;
+}
+
+interface IBossAjaxEvent {
   className: string;
   title: string;
   start: string;
@@ -11,61 +19,113 @@ interface IBossEvent {
   category: string;
 }
 
-export interface MarketingEvent {
-  title: string;
-  start: string;
-  end: string;
-  category: string;
-  description: string;
-}
-
 // Simple in-memory cache (key: year-month, TTL: 1 hour)
 const cache = new Map<string, { data: MarketingEvent[]; ts: number }>();
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL = 60 * 60 * 1000;
 
-function parseEventsFromHtml(html: string): IBossEvent[] {
-  // Extract the events array from FullCalendar initialization
-  // Pattern: events: [ ... ] within the script
-  const match = html.match(/events\s*:\s*\[(\s*\{[\s\S]*?\})\s*\]/);
-  if (!match) return [];
+// Session cookie cache (reuse across requests)
+let sessionCookie: { value: string; ts: number } | null = null;
+const SESSION_TTL = 30 * 60 * 1000; // 30 min
 
-  const rawArray = match[0]; // events: [...]
-  // Extract just the array part
-  const arrayStr = rawArray.replace(/^events\s*:\s*/, '');
+async function getSessionCookie(): Promise<string> {
+  if (sessionCookie && Date.now() - sessionCookie.ts < SESSION_TTL) {
+    return sessionCookie.value;
+  }
 
-  // Convert JS object notation to valid JSON:
-  // 1. Replace single quotes with double quotes
-  // 2. Add quotes around unquoted keys
-  let jsonStr = arrayStr
-    // Quote unquoted keys: className: -> "className":
-    .replace(/(\w+)\s*:/g, '"$1":')
-    // Replace single-quoted values with double quotes
-    .replace(/'([^']*)'/g, '"$1"');
+  const res = await fetch('https://www.i-boss.co.kr/ab-marketing_calendar', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      'Accept': 'text/html',
+    },
+    redirect: 'follow',
+  });
 
-  // Fix potential double-quoting of already quoted keys
-  jsonStr = jsonStr.replace(/""/g, '"');
+  const setCookies = res.headers.getSetCookie?.() || [];
+  const phpSession = setCookies
+    .map((c) => c.split(';')[0])
+    .find((c) => c.startsWith('PHPSESSID='));
 
-  try {
-    const events = JSON.parse(jsonStr) as IBossEvent[];
-    return events;
-  } catch {
-    // Fallback: extract events one by one using regex
-    const events: IBossEvent[] = [];
-    const eventRegex = /\{\s*"className"\s*:\s*"([^"]*)"\s*,\s*"title"\s*:\s*"([^"]*)"\s*,\s*"start"\s*:\s*"([^"]*)"\s*,\s*"end"\s*:\s*"([^"]*)"\s*,\s*"url"\s*:\s*"([^"]*)"\s*,\s*"description"\s*:\s*"([^"]*)"\s*,\s*"category"\s*:\s*"([^"]*)"\s*\}/g;
-    let m;
-    while ((m = eventRegex.exec(jsonStr)) !== null) {
+  const cookie = phpSession || '';
+  sessionCookie = { value: cookie, ts: Date.now() };
+
+  // Also parse current month events from the initial HTML for caching
+  const html = await res.text();
+  cacheCurrentMonthFromHtml(html);
+
+  return cookie;
+}
+
+function cacheCurrentMonthFromHtml(html: string) {
+  // Parse events from initial page load (current month only)
+  const startIdx = html.indexOf('events: [');
+  if (startIdx === -1) return;
+
+  let bracketDepth = 0, arrayStart = -1, arrayEnd = -1;
+  for (let i = startIdx; i < html.length; i++) {
+    if (html[i] === '[') { if (!bracketDepth) arrayStart = i; bracketDepth++; }
+    else if (html[i] === ']') { bracketDepth--; if (!bracketDepth) { arrayEnd = i; break; } }
+  }
+  if (arrayStart === -1 || arrayEnd === -1) return;
+
+  const events = parseEventsFromRaw(html.slice(arrayStart + 1, arrayEnd));
+  if (events.length === 0) return;
+
+  // Determine month from first event
+  const firstDate = events[0].start;
+  const monthKey = firstDate.slice(0, 7); // e.g. "2026-02"
+  if (!cache.has(monthKey)) {
+    cache.set(monthKey, { data: events, ts: Date.now() });
+  }
+}
+
+function parseEventsFromRaw(content: string): MarketingEvent[] {
+  // Handle escaped quotes: \' → placeholder
+  const PLACEHOLDER = '\x00';
+  const safe = content.replace(/\\'/g, PLACEHOLDER);
+  const KEYS = ['className', 'title', 'start', 'end', 'url', 'description', 'category'];
+  const events: MarketingEvent[] = [];
+  const chunks = safe.split(/\{/).filter((s) => s.trim());
+
+  for (const chunk of chunks) {
+    const vals: Record<string, string> = {};
+    let remaining = chunk;
+
+    for (let i = 0; i < KEYS.length; i++) {
+      const key = KEYS[i];
+      const keyPos = remaining.indexOf(key);
+      if (keyPos === -1) break;
+      const colonIdx = remaining.indexOf(':', keyPos);
+      const quoteStart = remaining.indexOf("'", colonIdx);
+      if (quoteStart === -1) break;
+
+      let quoteEnd: number;
+      if (i < KEYS.length - 1) {
+        const nextKey = KEYS[i + 1];
+        const searchPattern = new RegExp(`'\\s*,\\s*${nextKey}`);
+        const tail = remaining.slice(quoteStart + 1);
+        const searchMatch = searchPattern.exec(tail);
+        if (!searchMatch) break;
+        quoteEnd = quoteStart + 1 + searchMatch.index;
+      } else {
+        quoteEnd = remaining.lastIndexOf("'");
+        if (quoteEnd <= quoteStart) break;
+      }
+
+      vals[key] = remaining.slice(quoteStart + 1, quoteEnd).replace(/\x00/g, "'");
+      remaining = remaining.slice(quoteEnd + 1);
+    }
+
+    if (vals.start) {
       events.push({
-        className: m[1],
-        title: m[2],
-        start: m[3],
-        end: m[4],
-        url: m[5],
-        description: m[6],
-        category: m[7],
+        title: vals.title || '',
+        start: (vals.start || '').split(' ')[0],
+        end: (vals.end || '').split(' ')[0],
+        category: vals.category || '',
+        description: vals.description || '',
       });
     }
-    return events;
   }
+  return events;
 }
 
 async function fetchIBossEvents(year: number, month: number): Promise<MarketingEvent[]> {
@@ -76,39 +136,78 @@ async function fetchIBossEvents(year: number, month: number): Promise<MarketingE
   }
 
   try {
-    // Fetch the i-boss marketing calendar page
-    const res = await fetch('https://www.i-boss.co.kr/ab-marketing_calendar', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'ko-KR,ko;q=0.9',
-      },
-      next: { revalidate: 3600 },
-    });
+    // Step 1: Get session cookie (may also cache current month)
+    const cookie = await getSessionCookie();
+
+    // Check if cacheCurrentMonthFromHtml already populated this month
+    const freshCached = cache.get(cacheKey);
+    if (freshCached && Date.now() - freshCached.ts < CACHE_TTL) {
+      return freshCached.data;
+    }
+
+    // Step 2: Call AJAX endpoint for the specific month
+    const monthStr = `${year}년 ${month}월`;
+    const body = `month=${encodeURIComponent(monthStr)}&filter%5B%5D=all&type=calendar`;
+
+    const res = await fetch(
+      'https://www.i-boss.co.kr/template/PLUGIN_utility/program/calendar_keyword.ajax.php',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Referer': 'https://www.i-boss.co.kr/ab-marketing_calendar',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Cookie': cookie,
+        },
+        body,
+      }
+    );
 
     if (!res.ok) return [];
 
-    const html = await res.text();
-    const rawEvents = parseEventsFromHtml(html);
+    const json = await res.json();
+    if (json.code !== 1 || !json.makeEvents) {
+      // Retry with fresh session
+      sessionCookie = null;
+      const freshCookie = await getSessionCookie();
+      const retryRes = await fetch(
+        'https://www.i-boss.co.kr/template/PLUGIN_utility/program/calendar_keyword.ajax.php',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Referer': 'https://www.i-boss.co.kr/ab-marketing_calendar',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cookie': freshCookie,
+          },
+          body,
+        }
+      );
+      const retryJson = await retryRes.json();
+      if (retryJson.code !== 1 || !retryJson.makeEvents) return [];
+      return processAjaxEvents(retryJson.makeEvents, cacheKey);
+    }
 
-    // Filter to requested month and convert
-    const prefix = `${year}-${String(month).padStart(2, '0')}`;
-    const events: MarketingEvent[] = rawEvents
-      .filter((e) => e.start.startsWith(prefix))
-      .map((e) => ({
-        title: e.title,
-        start: e.start.split(' ')[0],
-        end: e.end.split(' ')[0],
-        category: e.category,
-        description: e.description,
-      }));
-
-    cache.set(cacheKey, { data: events, ts: Date.now() });
-    return events;
+    return processAjaxEvents(json.makeEvents, cacheKey);
   } catch (err) {
     console.error('[marketing-calendar] fetch error:', err);
     return [];
   }
+}
+
+function processAjaxEvents(makeEvents: IBossAjaxEvent[], cacheKey: string): MarketingEvent[] {
+  const events: MarketingEvent[] = makeEvents.map((e) => ({
+    title: e.title || '',
+    start: (e.start || '').split(' ')[0],
+    end: (e.end || '').split(' ')[0],
+    category: e.category || '',
+    description: e.description || '',
+  }));
+
+  cache.set(cacheKey, { data: events, ts: Date.now() });
+  return events;
 }
 
 export async function GET(req: NextRequest) {

@@ -184,11 +184,13 @@ export const useKnowbarStore = create<KnowbarStore>((set, get) => ({
 
       // Find most recent bannerId for banner edit context
       const lastBannerId = [...currentMessages].reverse().find((m) => m.bannerId)?.bannerId;
+      // Find most recent figmaDesignId for design edit context
+      const lastFigmaDesignId = [...currentMessages].reverse().find((m) => m.figmaDesign?.designId)?.figmaDesign?.designId;
 
       const res = await fetch('/api/knowbar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, history, lastBannerId }),
+        body: JSON.stringify({ message: query, history, lastBannerId, lastFigmaDesignId }),
       });
 
       if (res.ok) {
@@ -222,6 +224,7 @@ export const useKnowbarStore = create<KnowbarStore>((set, get) => ({
           blogTitle: data.blogTitle,
           blogContent: data.blogContent,
           blogMetaDesc: data.blogMetaDesc,
+          figmaDesign: data.figmaDesign,
         });
 
         // Toast for side-effects

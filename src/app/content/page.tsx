@@ -27,25 +27,27 @@ function ContentPageInner() {
 
   return (
     <>
-      {/* Tab bar — sticky top, surface background like mockup */}
-      <div className="sticky top-0 z-10 flex gap-0 border-b border-border bg-card px-8">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-3.5 text-[13px] font-medium border-b-2 transition-colors ${
-              activeTab === tab.key
-                ? tab.activeColor
-                : 'text-muted-foreground border-transparent hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Tab bar */}
+      <div className="px-6 pt-2 pb-4">
+        <div className="inline-flex p-1 rounded-2xl bg-muted/40">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-card text-foreground elevation-1'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content area */}
-      <div className="p-7">
+      <div className="px-6 pt-2 pb-12">
         {activeTab === 'compose' && <ContentWorkflow initialTopic={topicFromTrend} />}
         {activeTab === 'seo' && <SeoBriefGenerator />}
         {activeTab === 'email' && <EmailSequenceBuilder />}

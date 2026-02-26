@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { ORCHESTRATOR_CLASSIFY_PROMPT, AGENT_PROMPTS } from '@/lib/agent-prompts';
 import { getWebSearchContext } from '@/lib/web-search';
 import { getInstagramContextForChat } from '@/lib/instagram';
@@ -49,11 +49,11 @@ const AGENT_INFO: Record<string, { name: string; icon: string; name_ko: string }
 /**
  * Classify user input via Orchestrator
  */
-export async function classifyTask(message: string): Promise<ClassifyResult> {
+export async function classifyTask(apiKey: string | null, message: string): Promise<ClassifyResult> {
   try {
     const prompt = `${ORCHESTRATOR_CLASSIFY_PROMPT}\n\n---\nUser input: ${message}`;
     const result = await withTimeout(
-      generateCompletion('', prompt),
+      generateCompletion(apiKey, '', prompt),
       15000,
       '분류 시간 초과'
     );
@@ -100,10 +100,14 @@ export async function runAgentPipeline(
 ): Promise<AgentExecutionResult> {
   const { history = [], extraInstructions = '', userEmail = '' } = options;
 
+  // 0. Get API key
+  const apiKey = await getUserApiKey(userEmail);
+
+
   // 1. Classify (on raw message)
   let classification: ClassifyResult;
   try {
-    classification = await classifyTask(message);
+    classification = await classifyTask(apiKey, message);
   } catch {
     classification = {
       agentId: 'marketing', skill: '', reasoning: 'fallback',
@@ -174,6 +178,7 @@ export async function runAgentPipeline(
 
   // 6. Execute via agent
   return executeAgentTask(
+    apiKey,
     classification.agentId,
     enrichedMessage,
     classification.skill,
@@ -185,6 +190,7 @@ export async function runAgentPipeline(
  * Execute agent task with timeout and web search integration
  */
 export async function executeAgentTask(
+  apiKey: string | null,
   agentId: string,
   message: string,
   skill?: string,
@@ -209,7 +215,7 @@ export async function executeAgentTask(
 
   try {
     const response = await withTimeout(
-      generateCompletion(systemPrompt, message),
+      generateCompletion(apiKey, systemPrompt, message),
       90000,
       `${info.name_ko} 응답 시간 초과`
     );

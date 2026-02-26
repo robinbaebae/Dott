@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireAuth } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/activity";
-import { generateCompletion } from "@/lib/claude";
+import { generateCompletion, getUserApiKey } from "@/lib/claude";
 import { withTimeout } from "@/lib/api-utils";
 
 // POST: AI-powered influencer recommendation
@@ -10,6 +10,8 @@ export async function POST(req: NextRequest) {
   const authResult = await requireAuth();
   if (authResult instanceof NextResponse) return authResult;
   const userEmail = authResult;
+  const apiKey = await getUserApiKey(userEmail);
+
 
   try {
     const body = await req.json();
@@ -92,7 +94,7 @@ Score should be 0-100 based on overall fit.`;
 
     // 4. Generate AI recommendation with timeout
     const aiResponse = await withTimeout(
-      generateCompletion(systemPrompt, userMessage),
+      generateCompletion(apiKey, systemPrompt, userMessage),
       30000
     );
 

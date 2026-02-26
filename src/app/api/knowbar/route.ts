@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { runAgentPipeline } from '@/lib/agents';
 import { logActivity } from '@/lib/activity';
-import { generateCompletion } from '@/lib/claude';
-import { BANNER_GENERATION_PROMPT, BANNER_EDIT_PROMPT } from '@/lib/prompts';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
+import { BANNER_GENERATION_PROMPT, BANNER_EDIT_PROMPT, FIGMA_DESIGN_PROMPT, FIGMA_DESIGN_EDIT_PROMPT } from '@/lib/prompts';
+import { getBrandGuideContext } from '@/lib/brand-guide';
 import { requireAuth } from '@/lib/auth-guard';
 
 // Detection instructions injected so all agents can use structured response tags
@@ -71,6 +72,19 @@ If the user wants to schedule a social media post (e.g. "내일 인스타 포스
 <schedule>{"title":"content title","platform":"instagram","date":"YYYY-MM-DD"}</schedule>
 Then confirm like "콘텐츠 예약했어요!"
 
+FIGMA DESIGN:
+If the user wants to create a design, visual, creative, or graphic for Figma (e.g. "인스타 포스트 디자인 만들어줘", "프로모션 배너 피그마에 만들어줘", "소셜 미디어 카드 디자인해줘", "랜딩페이지 섹션 만들어줘"):
+<figma_design>{"description":"detailed design description in Korean","size":"1080x1080","type":"social_post"}</figma_design>
+- description: 디자인의 상세 설명 (레이아웃, 색상, 텍스트 내용, 스타일 등 가능한 구체적으로)
+- size: 디자인 사이즈 (Instagram: 1080x1080, Story: 1080x1920, Facebook: 1200x630, 프레젠테이션: 1920x1080, 세로: 1080x1350)
+- type: social_post, story, banner, presentation, card, infographic, landing_section
+Then confirm like "피그마 디자인을 생성할게요! 잠시만 기다려주세요."
+
+FIGMA DESIGN EDIT:
+If the user wants to MODIFY a previously generated Figma design (e.g. "배경색 바꿔줘", "텍스트 크기 키워줘", "CTA 버튼 추가해줘"):
+<figma_design_edit>{"instruction":"user's edit request verbatim"}</figma_design_edit>
+Then confirm like "디자인을 수정할게요!"
+
 LANGUAGE: Always reply in the SAME language the user writes in. Korean → Korean. English → English.
 --- END INSTRUCTIONS ---
 `;
@@ -78,17 +92,121 @@ LANGUAGE: Always reply in the SAME language the user writes in. Korean → Korea
 export async function POST(req: NextRequest) {
   const userEmail = await requireAuth();
   if (userEmail instanceof NextResponse) return userEmail;
+  const apiKey = await getUserApiKey(userEmail);
+
 
   const body = await req.json();
   const message = body.message;
   const history: { role: string; content: string }[] = body.history || [];
   const lastBannerId: string | undefined = body.lastBannerId;
-  console.log('[knowbar] message:', message, '| lastBannerId:', lastBannerId);
+  const lastFigmaDesignId: string | undefined = body.lastFigmaDesignId;
+  console.log('[knowbar] message:', message, '| lastBannerId:', lastBannerId, '| lastFigmaDesignId:', lastFigmaDesignId);
   if (!message || typeof message !== 'string') {
     return NextResponse.json({ error: 'message required' }, { status: 400 });
   }
 
   try {
+    // ─── Shortcut: detect design requests early → skip full pipeline ───
+    const isDesignRequest = /디자인|피그마.*(디자인|작업|생성|제작)|figma|포스트.*만들|배너.*만들|카드.*만들|템플릿.*만들|소셜.*미디어.*만들|인스타.*만들|크리에이티브.*만들|design.*make|design.*create/i.test(message);
+    const isDesignEdit = lastFigmaDesignId && /수정|바꿔|변경|키워|줄여|추가|제거|색상|컬러|폰트|텍스트|배경|edit|change|modify/i.test(message);
+
+    if (isDesignRequest || isDesignEdit) {
+      console.log('[knowbar] Design shortcut — skipping full pipeline');
+
+      let brandContext = '';
+      try { brandContext = await getBrandGuideContext(userEmail); } catch { /* */ }
+
+      let figmaDesignResult: { designId: string; html: string; description: string; size: string; status: string } | undefined;
+
+      if (isDesignEdit && lastFigmaDesignId) {
+        // Edit existing design
+        const { data: existing } = await supabaseAdmin
+          .from('figma_designs')
+          .select('id, html')
+          .eq('id', lastFigmaDesignId)
+          .single();
+
+        if (existing?.html) {
+          const editPrompt = `Existing HTML:\n${existing.html}\n\nEdit request: ${message}\n\nReturn ONLY the modified HTML. Start with <!DOCTYPE html>.${brandContext ? `\n\nBrand context:\n${brandContext}` : ''}`;
+          const editedHtml = await generateCompletion(apiKey, FIGMA_DESIGN_EDIT_PROMPT, editPrompt);
+          const cleanHtml = editedHtml.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').replace(/^[\s\S]*?(<!DOCTYPE)/i, '$1').trim();
+
+          await supabaseAdmin
+            .from('figma_designs')
+            .update({ html: cleanHtml, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+
+          figmaDesignResult = {
+            designId: existing.id,
+            html: cleanHtml,
+            description: message.slice(0, 200),
+            size: '',
+            status: 'generated',
+          };
+        }
+      } else {
+        // New design
+        let size = '1080x1080';
+        const sizeMatch = message.match(/(\d{3,4})\s*[x×]\s*(\d{3,4})/);
+        if (sizeMatch) size = `${sizeMatch[1]}x${sizeMatch[2]}`;
+        else if (/스토리|story|릴스|reels/i.test(message)) size = '1080x1920';
+        else if (/페이스북|facebook|og/i.test(message)) size = '1200x630';
+        else if (/프레젠|presentation|슬라이드/i.test(message)) size = '1920x1080';
+        else if (/세로|portrait|1350/i.test(message)) size = '1080x1350';
+
+        const designPrompt = `Create a ${size} design for: ${message}\n\nReturn ONLY the complete HTML document. Start with <!DOCTYPE html> and end with </html>. Use a fixed-size container of exactly ${size.replace('x', 'px width and ')}px height. No explanations.${brandContext ? `\n\nBrand context:\n${brandContext}` : ''}`;
+        const designHtml = await generateCompletion(apiKey, FIGMA_DESIGN_PROMPT, designPrompt);
+        const cleanHtml = designHtml.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').replace(/^[\s\S]*?(<!DOCTYPE)/i, '$1').trim();
+
+        const { data: saved } = await supabaseAdmin
+          .from('figma_designs')
+          .insert({
+            user_id: userEmail,
+            prompt: message.slice(0, 200),
+            size,
+            html: cleanHtml,
+            status: 'generated',
+          })
+          .select('id')
+          .single();
+
+        if (saved) {
+          figmaDesignResult = {
+            designId: saved.id,
+            html: cleanHtml,
+            description: message.slice(0, 200),
+            size,
+            status: 'generated',
+          };
+        }
+      }
+
+      if (figmaDesignResult) {
+        await logActivity('figma_design', 'design', { designId: figmaDesignResult.designId });
+
+        const confirmMsg = isDesignEdit
+          ? '디자인을 수정했어요! 아래 미리보기를 확인해주세요. 추가 수정이 필요하면 말씀해주세요.'
+          : '디자인을 생성했어요! 아래 미리보기를 확인하고, Figma로 바로 보낼 수 있어요. 수정이 필요하면 말씀해주세요.';
+
+        return NextResponse.json({
+          response: confirmMsg,
+          agentId: 'design',
+          agentName: 'Design Expert',
+          agentIcon: '🎨',
+          skill: 'figma_design',
+          figmaDesign: {
+            designId: figmaDesignResult.designId,
+            html: figmaDesignResult.html,
+            description: figmaDesignResult.description,
+            size: figmaDesignResult.size,
+            status: figmaDesignResult.status,
+          },
+        });
+      }
+    }
+
+    // ─── Normal path: full agent pipeline ───
+
     // Run the full agent pipeline: classify → context → execute
     const result = await runAgentPipeline(message, {
       history,
@@ -158,7 +276,7 @@ export async function POST(req: NextRequest) {
         const { copy, size = '1080x1080', reference = '' } = bannerData;
         if (copy) {
           const userPrompt = `카피: ${copy}\n사이즈: ${size}\n참고사항: ${reference}`;
-          const htmlResult = await generateCompletion(BANNER_GENERATION_PROMPT, userPrompt);
+          const htmlResult = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, userPrompt);
           const cleanHtml = htmlResult
             .replace(/^```html?\n?/i, '')
             .replace(/\n?```$/i, '')
@@ -196,7 +314,7 @@ export async function POST(req: NextRequest) {
 
         if (headerCopy) {
           const userPrompt = `카피: ${headerCopy}\n사이즈: 1200x630\n참고사항: 블로그 헤더이미지, 세련되고 모던한 디자인, 코드앤버터 브랜드 #5B4D6E 퍼플 계열`;
-          const htmlResult = await generateCompletion(BANNER_GENERATION_PROMPT, userPrompt);
+          const htmlResult = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, userPrompt);
           const cleanHtml = htmlResult
             .replace(/^```html?\n?/i, '')
             .replace(/\n?```$/i, '')
@@ -235,7 +353,7 @@ export async function POST(req: NextRequest) {
 
           if (existing?.html) {
             const editPrompt = `기존 HTML:\n${existing.html}\n\n수정 요청: ${editData.instruction}`;
-            const editedHtml = await generateCompletion(BANNER_EDIT_PROMPT, editPrompt);
+            const editedHtml = await generateCompletion(apiKey, BANNER_EDIT_PROMPT, editPrompt);
             const cleanEdited = editedHtml
               .replace(/^```html?\n?/i, '')
               .replace(/\n?```$/i, '')
@@ -437,7 +555,159 @@ export async function POST(req: NextRequest) {
       } catch { /* parse error */ }
     }
 
-    const cleanResponse = responseText
+    // Step 11: Check for Figma design creation
+    const figmaDesignMatch = responseText.match(/<figma_design>\s*(\{[\s\S]*?\})\s*<\/figma_design>/);
+    let figmaDesign: { designId: string; html: string; description: string; size: string; status: string } | undefined;
+
+    if (figmaDesignMatch) {
+      try {
+        const designData = JSON.parse(figmaDesignMatch[1]);
+        if (designData.description) {
+          // Get brand context
+          let brandContext = '';
+          try { brandContext = await getBrandGuideContext(userEmail); } catch { /* */ }
+
+          const designPrompt = `디자인 요청: ${designData.description}\n사이즈: ${designData.size || '1080x1080'}\n유형: ${designData.type || 'social_post'}${brandContext ? `\n\n브랜드 컨텍스트:\n${brandContext}` : ''}`;
+          const designHtml = await generateCompletion(apiKey, FIGMA_DESIGN_PROMPT, designPrompt);
+          const cleanHtml = designHtml.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+
+          // Save to DB
+          const { data: saved } = await supabaseAdmin
+            .from('figma_designs')
+            .insert({
+              user_id: userEmail,
+              prompt: designData.description,
+              size: designData.size || '1080x1080',
+              html: cleanHtml,
+              status: 'generated',
+            })
+            .select('id')
+            .single();
+
+          if (saved) {
+            figmaDesign = {
+              designId: saved.id,
+              html: cleanHtml,
+              description: designData.description,
+              size: designData.size || '1080x1080',
+              status: 'generated',
+            };
+          }
+        }
+      } catch (e) {
+        console.error('[knowbar] figma design error:', e);
+      }
+    }
+
+    // Step 11b: Check for Figma design edit
+    const figmaDesignEditMatch = responseText.match(/<figma_design_edit>\s*(\{[\s\S]*?\})\s*<\/figma_design_edit>/);
+
+    if (figmaDesignEditMatch && !figmaDesign) {
+      try {
+        const editData = JSON.parse(figmaDesignEditMatch[1]);
+        // Find the most recent figma_design for this user
+        const targetDesignId = editData.designId || lastFigmaDesignId;
+
+        let existingHtml = '';
+        let existingId = targetDesignId;
+
+        if (targetDesignId) {
+          const { data: existing } = await supabaseAdmin
+            .from('figma_designs')
+            .select('id, html')
+            .eq('id', targetDesignId)
+            .single();
+          existingHtml = existing?.html || '';
+          existingId = existing?.id;
+        }
+
+        if (!existingHtml) {
+          // Fallback: get most recent design
+          const { data: latest } = await supabaseAdmin
+            .from('figma_designs')
+            .select('id, html')
+            .eq('user_id', userEmail)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          existingHtml = latest?.html || '';
+          existingId = latest?.id;
+        }
+
+        if (existingHtml && editData.instruction) {
+          let brandContext = '';
+          try { brandContext = await getBrandGuideContext(userEmail); } catch { /* */ }
+
+          const editPrompt = `기존 HTML:\n${existingHtml}\n\n수정 요청: ${editData.instruction}${brandContext ? `\n\n브랜드 컨텍스트:\n${brandContext}` : ''}`;
+          const editedHtml = await generateCompletion(apiKey, FIGMA_DESIGN_EDIT_PROMPT, editPrompt);
+          const cleanEdited = editedHtml.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+
+          // Update DB
+          if (existingId) {
+            await supabaseAdmin
+              .from('figma_designs')
+              .update({ html: cleanEdited, updated_at: new Date().toISOString() })
+              .eq('id', existingId);
+          }
+
+          figmaDesign = {
+            designId: existingId,
+            html: cleanEdited,
+            description: editData.instruction,
+            size: '',
+            status: 'generated',
+          };
+        }
+      } catch (e) {
+        console.error('[knowbar] figma design edit error:', e);
+      }
+    }
+
+    // Step 11c: Fallback — if no figma_design tag but response contains raw HTML (CLI often does this)
+    if (!figmaDesign && !bannerId) {
+      const isDesignRequest = /디자인|피그마|figma|포스트.*만들|배너.*만들|카드.*만들|템플릿/i.test(message);
+      const htmlCodeBlock = responseText.match(/```html?\s*\n([\s\S]*?)```/);
+      const rawHtmlMatch = !htmlCodeBlock ? responseText.match(/(<!DOCTYPE html[\s\S]*<\/html>)/i) : null;
+      const extractedHtml = htmlCodeBlock?.[1]?.trim() || rawHtmlMatch?.[1]?.trim();
+
+      if (isDesignRequest && extractedHtml && extractedHtml.length > 100) {
+        try {
+          // Detect size from message or default
+          let size = '1080x1080';
+          const sizeMatch = message.match(/(\d{3,4})\s*[x×]\s*(\d{3,4})/);
+          if (sizeMatch) size = `${sizeMatch[1]}x${sizeMatch[2]}`;
+          else if (/스토리|story|릴스|reels/i.test(message)) size = '1080x1920';
+          else if (/페이스북|facebook|og/i.test(message)) size = '1200x630';
+          else if (/프레젠|presentation|슬라이드/i.test(message)) size = '1920x1080';
+
+          const { data: saved } = await supabaseAdmin
+            .from('figma_designs')
+            .insert({
+              user_id: userEmail,
+              prompt: message.slice(0, 200),
+              size,
+              html: extractedHtml,
+              status: 'generated',
+            })
+            .select('id')
+            .single();
+
+          if (saved) {
+            figmaDesign = {
+              designId: saved.id,
+              html: extractedHtml,
+              description: message.slice(0, 200),
+              size,
+              status: 'generated',
+            };
+          }
+        } catch (e) {
+          console.error('[knowbar] figma design fallback error:', e);
+        }
+      }
+    }
+
+    let cleanResponse = responseText
       .replace(/<task>\s*\{[^}]+\}\s*<\/task>\s*/g, '')
       .replace(/<memory>\s*\{[^}]+\}\s*<\/memory>\s*/g, '')
       .replace(/<banner>\s*\{[\s\S]*?\}\s*<\/banner>\s*/g, '')
@@ -449,7 +719,22 @@ export async function POST(req: NextRequest) {
       .replace(/<task_update>\s*\{[\s\S]*?\}\s*<\/task_update>\s*/g, '')
       .replace(/<memo>\s*\{[\s\S]*?\}\s*<\/memo>\s*/g, '')
       .replace(/<schedule>\s*\{[\s\S]*?\}\s*<\/schedule>\s*/g, '')
+      .replace(/<figma_design>\s*\{[\s\S]*?\}\s*<\/figma_design>\s*/g, '')
+      .replace(/<figma_design_edit>\s*\{[\s\S]*?\}\s*<\/figma_design_edit>\s*/g, '')
       .trim();
+
+    // When figmaDesign was created, strip out any raw HTML from response text
+    if (figmaDesign) {
+      cleanResponse = cleanResponse
+        .replace(/```html?\s*\n[\s\S]*?```/g, '')
+        .replace(/<!DOCTYPE html[\s\S]*<\/html>/gi, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      // If nothing meaningful left, provide a default message
+      if (!cleanResponse || cleanResponse.length < 10) {
+        cleanResponse = `디자인을 생성했어요! 아래 미리보기를 확인하고, Figma로 바로 보낼 수 있어요. 수정이 필요하면 말씀해주세요.`;
+      }
+    }
 
     const webSearchUsed = !!result.webSearchUsed;
 
@@ -498,6 +783,13 @@ export async function POST(req: NextRequest) {
       memoTitle,
       scheduleCreated,
       scheduleTitle,
+      figmaDesign: figmaDesign ? {
+        designId: figmaDesign.designId,
+        html: figmaDesign.html,
+        description: figmaDesign.description,
+        size: figmaDesign.size,
+        status: figmaDesign.status,
+      } : undefined,
     });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);

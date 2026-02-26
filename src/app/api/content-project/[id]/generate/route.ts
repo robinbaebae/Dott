@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { CONTENT_DRAFT_PROMPT, BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { requireAuth } from '@/lib/auth-guard';
@@ -14,6 +14,8 @@ export async function POST(
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { id } = await params;
 
@@ -51,7 +53,7 @@ ${brandContext || ''}
 
 이 아이디어를 각 플랫폼에 맞게 콘텐츠를 작성해주세요.`;
 
-    const draftResponse = await generateCompletion(CONTENT_DRAFT_PROMPT, userMessage);
+    const draftResponse = await generateCompletion(apiKey, CONTENT_DRAFT_PROMPT, userMessage);
 
     let parsed: { drafts: Record<string, unknown>; explanation: string; banner_suggestion?: { copy: string; reference: string } };
     try {
@@ -74,7 +76,7 @@ ${brandContext || ''}
 
     try {
       const bannerUserMsg = `카피: "${bannerCopy}"\n참고: ${bannerRef}\n사이즈: 1080x1080\n${brandContext || '주요색상 #5B4D6E 퍼플 계열'}`;
-      const bannerResult = await generateCompletion(BANNER_GENERATION_PROMPT, bannerUserMsg);
+      const bannerResult = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, bannerUserMsg);
 
       bannerHtml = bannerResult
         .replace(/^```html\n?/m, '')

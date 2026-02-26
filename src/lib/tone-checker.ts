@@ -1,4 +1,4 @@
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { getBrandGuideContext } from '@/lib/brand-guide';
 
 const TONE_CHECK_PROMPT = `당신은 브랜드 톤앤매너 전문 검수자입니다.
@@ -22,7 +22,10 @@ export async function checkTone(content: string, userEmail: string): Promise<{
   if (!brandContext) return null;
 
   const userMessage = `${brandContext}\n\n---\n\n검수할 콘텐츠:\n${content}`;
-  const raw = await generateCompletion(TONE_CHECK_PROMPT, userMessage);
+  const apiKey = await getUserApiKey(userEmail);
+
+
+  const raw = await generateCompletion(apiKey, TONE_CHECK_PROMPT, userMessage);
 
   try {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);

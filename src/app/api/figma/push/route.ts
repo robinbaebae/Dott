@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion, generateCompletionWithImage } from '@/lib/claude';
+import { generateCompletion, generateCompletionWithImage, getUserApiKey } from '@/lib/claude';
 import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { parseFileUrl, getFileInfo } from '@/lib/figma';
 import { requireAuth } from '@/lib/auth-guard';
@@ -9,6 +9,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+    if (!apiKey) return NextResponse.json({ error: 'API 키가 설정되지 않았습니다. 설정에서 등록해 주세요.' }, { status: 400 });
 
     const { copy, reference, size, referenceImage, figmaFileUrl } = await req.json();
 
@@ -31,12 +33,12 @@ ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자�
       if (match) {
         const mediaType = match[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
         const base64Data = match[2];
-        html = await generateCompletionWithImage(BANNER_GENERATION_PROMPT, userMessage, base64Data, mediaType);
+        html = await generateCompletionWithImage(apiKey, BANNER_GENERATION_PROMPT, userMessage, base64Data, mediaType);
       } else {
-        html = await generateCompletion(BANNER_GENERATION_PROMPT, userMessage);
+        html = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, userMessage);
       }
     } else {
-      html = await generateCompletion(BANNER_GENERATION_PROMPT, userMessage);
+      html = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, userMessage);
     }
 
     // HTML 코드만 추출 (마크다운 코드블록 제거)

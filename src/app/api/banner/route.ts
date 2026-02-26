@@ -1,18 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion, generateCompletionWithImage } from '@/lib/claude';
+import { requireAuth } from '@/lib/auth-guard';
+import { generateCompletion, generateCompletionWithImage, getUserApiKey } from '@/lib/claude';
 import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
-import { requireAuth } from '@/lib/auth-guard';
-import { getBrandGuideContext } from '@/lib/brand-guide';
 
+// GET - Fetch banner by id
+export async function GET(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
+  const id = req.nextUrl.searchParams.get('id');
+  if (!id) {
+    return NextResponse.json({ error: 'id required' }, { status: 400 });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('banners')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', userEmail)
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: 'Banner not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(data);
+}
+
+// POST - Generate a new banner (used by NewBannerForm)
 export async function POST(req: NextRequest) {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+  const apiKey = await getUserApiKey(userEmail);
+  if (!apiKey) {
+    return NextResponse.json({ error: 'API 키가 설정되지 않았습니다.' }, { status: 400 });
+  }
+
   try {
-    const userEmail = await requireAuth();
-    if (userEmail instanceof NextResponse) return userEmail;
-
-    const brandContext = await getBrandGuideContext(userEmail);
-
     const { copy, reference, size, referenceImage } = await req.json();
 
     if (!copy || !size) {
@@ -20,8 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const [width, height] = size.split('x');
-
-    const userMessage = `${brandContext ? brandContext + '\n\n' : ''}배너 사이즈: ${width}px x ${height}px
+    const userMessage = `배너 사이즈: ${width}px x ${height}px
 카피: ${copy}
 ${reference ? `레퍼런스/참고사항: ${reference}` : ''}
 ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자인해주세요.' : ''}
@@ -30,67 +55,36 @@ ${referenceImage ? '첨부된 이미지를 레퍼런스로 참고하여 디자�
 
     let html: string;
     if (referenceImage) {
-      // Extract base64 data and media type from data URL
       const match = referenceImage.match(/^data:(image\/\w+);base64,(.+)$/);
       if (match) {
         const mediaType = match[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
         const base64Data = match[2];
-        html = await generateCompletionWithImage(BANNER_GENERATION_PROMPT, userMessage, base64Data, mediaType);
+        html = await generateCompletionWithImage(apiKey, BANNER_GENERATION_PROMPT, userMessage, base64Data, mediaType);
       } else {
-        html = await generateCompletion(BANNER_GENERATION_PROMPT, userMessage);
+        html = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, userMessage);
       }
     } else {
-      html = await generateCompletion(BANNER_GENERATION_PROMPT, userMessage);
+      html = await generateCompletion(apiKey, BANNER_GENERATION_PROMPT, userMessage);
     }
 
-    // HTML 코드만 추출 (마크다운 코드블록 제거)
     const cleanHtml = html
       .replace(/^```html?\n?/i, '')
       .replace(/\n?```$/i, '')
       .trim();
 
-    const { data, error } = await supabaseAdmin
+    const { data: banner, error: bannerError } = await supabaseAdmin
       .from('banners')
       .insert({ copy, reference, size, html: cleanHtml, user_id: userEmail })
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (bannerError) {
+      return NextResponse.json({ error: bannerError.message }, { status: 500 });
     }
 
-    await logActivity('banner_generate', 'design', { size, copy: copy.slice(0, 50) });
-    return NextResponse.json(data);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+    await logActivity('banner_created', 'design', { size, bannerId: banner.id }, userEmail);
 
-export async function GET(req: NextRequest) {
-  try {
-    const userEmail = await requireAuth();
-    if (userEmail instanceof NextResponse) return userEmail;
-
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 });
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('banners')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', userEmail)
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-
-    return NextResponse.json(data);
+    return NextResponse.json(banner);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

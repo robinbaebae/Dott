@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 16px;
+      background: #fff;
+      color: #333;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .header img { width: 24px; height: 24px; border-radius: 6px; }
+    .header h1 { font-size: 15px; font-weight: 600; }
+    
+    .setup { margin-bottom: 16px; }
+    label { display: block; font-size: 11px; font-weight: 500; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 8px;
+    }
+    input:focus { border-color: #5B4D6E; box-shadow: 0 0 0 2px rgba(91,77,110,0.15); }
+    
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #5B4D6E; color: #fff; }
+    .btn-primary:hover { background: #6B5B7B; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: #f5f5f5; color: #333; border: 1px solid #ddd; }
+    .btn-secondary:hover { background: #eee; }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin: 12px 0;
+      font-size: 12px;
+    }
+    .status.connected { background: #e8f5e9; color: #2e7d32; }
+    .status.polling { background: #e3f2fd; color: #1565c0; }
+    .status.disconnected { background: #fafafa; color: #888; }
+    .status .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .status.connected .dot { background: #4caf50; animation: pulse 2s infinite; }
+    .status.polling .dot { background: #2196f3; animation: pulse 1s infinite; }
+    .status.disconnected .dot { background: #ccc; }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .queue-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+    .queue-item .info { flex: 1; min-width: 0; }
+    .queue-item .info p { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .queue-item .info .meta { color: #888; font-size: 11px; }
+    .queue-item .badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;
+    }
+    .badge-pending { background: #fff3e0; color: #e65100; }
+    .badge-done { background: #e8f5e9; color: #2e7d32; }
+    .badge-failed { background: #ffebee; color: #c62828; }
+    
+    .log { margin-top: 12px; max-height: 100px; overflow-y: auto; }
+    .log p { font-size: 11px; color: #888; padding: 2px 0; }
+    
+    .empty { text-align: center; padding: 24px 0; color: #aaa; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="width:24px;height:24px;border-radius:6px;background:#5B4D6E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;">D</div>
+    <h1>Dott Auto Push</h1>
+  </div>
+
+  <!-- Setup -->
+  <div id="setup-view">
+    <div class="setup">
+      <label>Dott 서버 URL</label>
+      <input id="serverUrl" value="http://localhost:3000" placeholder="http://localhost:3000" />
+      <label>사용자 이메일</label>
+      <input id="userEmail" type="email" placeholder="your@email.com" />
+    </div>
+    <button class="btn btn-primary" id="connectBtn" onclick="startPolling()">연결하기</button>
+  </div>
+
+  <!-- Connected view -->
+  <div id="connected-view" style="display:none;">
+    <div class="status connected" id="statusBar">
+      <span class="dot"></span>
+      <span id="statusText">연결됨 - 대기 중</span>
+    </div>
+    
+    <div id="queue"></div>
+    
+    <div class="log" id="logArea"></div>
+    
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="disconnect()">연결 해제</button>
+  </div>
+
+  <script>
+    let pollInterval = null;
+    let serverUrl = '';
+    let userEmail = '';
+    
+    function log(msg) {
+      const el = document.getElementById('logArea');
+      const p = document.createElement('p');
+      p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      el.prepend(p);
+      // Keep only last 20 logs
+      while (el.children.length > 20) el.removeChild(el.lastChild);
+    }
+    
+    function updateStatus(text, type) {
+      const bar = document.getElementById('statusBar');
+      const statusText = document.getElementById('statusText');
+      bar.className = 'status ' + type;
+      statusText.textContent = text;
+    }
+    
+    async function startPolling() {
+      serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
+      userEmail = document.getElementById('userEmail').value.trim();
+      
+      if (!serverUrl || !userEmail) {
+        alert('서버 URL과 이메일을 입력해주세요.');
+        return;
+      }
+      
+      // Test connection
+      try {
+        const res = await fetch(`${serverUrl}/api/figma/auto-push?user_id=${encodeURIComponent(userEmail)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await res.json();
+      } catch (err) {
+        alert('서버 연결 실패: ' + err.message);
+        return;
+      }
+      
+      document.getElementById('setup-view').style.display = 'none';
+      document.getElementById('connected-view').style.display = 'block';
+      
+      log('서버에 연결되었습니다');
+      updateStatus('연결됨 - 대기 중', 'connected');
+      
+      // Start polling every 3 seconds
+      poll();
+      pollInterval = setInterval(poll, 3000);
+    }
+    
+    function disconnect() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = null;
+      document.getElementById('setup-view').style.display = 'block';
+      document.getElementById('connected-view').style.display = 'none';
+      document.getElementById('queue').innerHTML = '';
+      document.getElementById('logArea').innerHTML = '';
+      log('연결 해제됨');
+    }
+    
+    async function poll() {
+      try {
+        const res = await fetch(`${serverUrl}/api/figma/auto-push?user_id=${encodeURIComponent(userEmail)}`);
+        if (!res.ok) return;
+        const items = await res.json();
+        
+        if (items.length > 0) {
+          updateStatus(`${items.length}개 대기 중 - 처리 중...`, 'polling');
+          for (const item of items) {
+            await processItem(item);
+          }
+          updateStatus('연결됨 - 대기 중', 'connected');
+        }
+      } catch (err) {
+        log('폴링 오류: ' + err.message);
+      }
+    }
+    
+    async function processItem(item) {
+      log(`처리 중: ${item.prompt || item.size}`);
+      
+      try {
+        // Download the image
+        const imgRes = await fetch(item.image_url);
+        if (!imgRes.ok) throw new Error('이미지 다운로드 실패');
+        const arrayBuffer = await imgRes.arrayBuffer();
+        const imageData = new Uint8Array(arrayBuffer);
+        
+        // Send to plugin code for placement
+        parent.postMessage({
+          pluginMessage: {
+            type: 'place-image',
+            imageData,
+            size: item.size,
+            name: item.prompt ? `Dott: ${item.prompt.slice(0, 40)}` : 'Dott Design',
+            pushId: item.id,
+          }
+        }, '*');
+        
+      } catch (err) {
+        log('처리 실패: ' + err.message);
+        // Mark as failed
+        await updatePushStatus(item.id, 'failed');
+      }
+    }
+    
+    async function updatePushStatus(id, status) {
+      try {
+        await fetch(`${serverUrl}/api/figma/auto-push`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status }),
+        });
+      } catch { /* silent */ }
+    }
+    
+    // Listen for messages from plugin code
+    window.onmessage = async (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      
+      if (msg.type === 'place-success') {
+        log('✅ Figma에 배치 완료!');
+        await updatePushStatus(msg.pushId, 'done');
+        renderQueue();
+      }
+      
+      if (msg.type === 'place-error') {
+        log('❌ 배치 실패: ' + msg.error);
+        await updatePushStatus(msg.pushId, 'failed');
+      }
+    };
+    
+    async function renderQueue() {
+      try {
+        const res = await fetch(`${serverUrl}/api/figma/auto-push?user_id=${encodeURIComponent(userEmail)}`);
+        if (!res.ok) return;
+        const items = await res.json();
+        const el = document.getElementById('queue');
+        
+        if (items.length === 0) {
+          el.innerHTML = '<div class="empty">대기 중인 디자인이 없습니다</div>';
+          return;
+        }
+        
+        el.innerHTML = items.map(item => `
+          <div class="queue-item">
+            <img src="${item.image_url}" alt="" />
+            <div class="info">
+              <p>${item.prompt || 'Design'}</p>
+              <p class="meta">${item.size} · ${new Date(item.created_at).toLocaleTimeString()}</p>
+            </div>
+            <span class="badge badge-${item.status}">${item.status}</span>
+          </div>
+        `).join('');
+      } catch { /* silent */ }
+    }
+  </script>
+</body>
+</html>

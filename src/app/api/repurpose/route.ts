@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { REPURPOSE_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
@@ -10,6 +10,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const brandContext = await getBrandGuideContext(userEmail);
 
@@ -31,7 +33,7 @@ ${content}
 위 콘텐츠를 각 타겟 플랫폼에 맞게 변환해주세요.`;
 
     const result = await withTimeout(
-      generateCompletion(REPURPOSE_PROMPT, userMessage),
+      generateCompletion(apiKey, REPURPOSE_PROMPT, userMessage),
       60000,
       '콘텐츠 변환 시간 초과'
     );

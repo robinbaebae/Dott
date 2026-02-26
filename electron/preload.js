@@ -27,5 +27,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onThemeChange: (cb) => ipcRenderer.on('theme-changed', (_e, theme) => cb(theme)),
   setTheme: (theme) => ipcRenderer.send('set-theme', theme),
   getTheme: () => ipcRenderer.invoke('get-theme'),
+  setPetOpacity: (value) => ipcRenderer.send('pet-set-opacity', value),
   platform: process.platform,
 });

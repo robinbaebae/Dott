@@ -81,10 +81,25 @@ export default function FloatingPet() {
   });
   const [bubble, setBubble] = useState('');
   const [nextMeeting, setNextMeeting] = useState<string | null>(null);
+  const [isElectron, setIsElectron] = useState(false);
+  const [petOpacity, setPetOpacity] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dott-web-pet-opacity');
+      return saved ? parseInt(saved, 10) : 100;
+    }
+    return 100;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bubbleTimer = useRef<NodeJS.Timeout | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Detect Electron — hide this component in desktop app (has its own floating pet window)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      setIsElectron(true);
+    }
+  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -383,13 +398,16 @@ export default function FloatingPet() {
     finally { setSending(false); }
   }
 
+  // Electron desktop app has its own floating pet window
+  if (isElectron) return null;
+
   return (
     <>
       {/* Speech Bubble */}
       {bubble && !open && (
         <div
           onClick={() => setBubble('')}
-          className="fixed bottom-[76px] right-5 z-[9998] max-w-[240px] rounded-xl rounded-br-sm bg-black text-white px-3.5 py-2.5 text-[13px] font-medium leading-relaxed cursor-pointer shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300"
+          className="fixed bottom-[76px] right-5 z-[9998] max-w-[240px] rounded-xl rounded-br-sm glass-float text-foreground px-3.5 py-2.5 text-[13px] font-medium leading-relaxed cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           {bubble}
         </div>
@@ -400,10 +418,11 @@ export default function FloatingPet() {
         <div
           data-pet-panel
           ref={panelRef}
-          className="fixed bottom-[76px] right-5 z-[9999] w-[360px] h-[560px] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className={`fixed bottom-[76px] right-5 z-[9999] w-[360px] h-[560px] rounded-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200 ${petOpacity < 100 ? 'glass-panel' : 'bg-card border border-border shadow-lg'}`}
+          style={petOpacity < 100 ? { opacity: petOpacity / 100 } : undefined}
         >
           {/* Header */}
-          <div className="bg-background px-3.5 pt-3.5 pb-2.5 border-b border-border space-y-2.5">
+          <div className="px-3.5 pt-3.5 pb-2.5 border-b border-white/10 space-y-2.5">
             <div className="flex items-center gap-2.5">
               <div className="w-[30px] h-[30px] rounded-lg overflow-hidden shrink-0">
                 <Image src="/logo-dott.png" alt="Dott" width={30} height={30} />
@@ -417,7 +436,7 @@ export default function FloatingPet() {
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="w-[26px] h-[26px] rounded-lg bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex items-center justify-center text-sm"
+                className="w-[26px] h-[26px] rounded-lg glass-subtle bg-white/10 text-muted-foreground hover:bg-white/20 hover:text-foreground transition-colors flex items-center justify-center text-sm"
               >
                 ✕
               </button>
@@ -433,11 +452,28 @@ export default function FloatingPet() {
                   key={qa.label}
                   onClick={qa.action}
                   disabled={sending}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg glass-subtle bg-white/10 border border-white/15 text-[10px] text-muted-foreground hover:bg-white/20 hover:text-foreground transition-colors disabled:opacity-50"
                 >
                   <span>{qa.icon}</span> {qa.label}
                 </button>
               ))}
+            </div>
+            {/* Opacity Slider */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-muted-foreground min-w-[32px]">투명도</span>
+              <input
+                type="range"
+                min={20}
+                max={100}
+                value={petOpacity}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  setPetOpacity(v);
+                  localStorage.setItem('dott-web-pet-opacity', String(v));
+                }}
+                className="flex-1 h-[3px] appearance-none rounded-sm bg-border outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-card [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
+              />
+              <span className="text-[10px] text-muted-foreground min-w-[28px] text-right tabular-nums">{petOpacity}%</span>
             </div>
           </div>
 
@@ -464,7 +500,7 @@ export default function FloatingPet() {
                   <div className={`max-w-[78%] flex flex-col gap-0.5 ${msg.role === 'user' ? 'items-end' : ''}`}>
                     {msg.role === 'assistant' ? (
                       <div
-                        className="text-xs leading-relaxed px-3 py-2 break-words bg-muted/60 text-foreground border border-border rounded-xl rounded-tl-sm"
+                        className="text-xs leading-relaxed px-3 py-2 break-words glass-subtle bg-white/10 text-foreground border border-white/15 rounded-xl rounded-tl-sm"
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                       />
                     ) : (
@@ -483,7 +519,7 @@ export default function FloatingPet() {
                 <div className="w-6 h-6 rounded-lg overflow-hidden shrink-0">
                   <Image src="/logo-dott.png" alt="Dott" width={24} height={24} />
                 </div>
-                <div className="bg-muted/60 border border-border rounded-xl rounded-tl-sm px-4 py-2.5 flex gap-1 items-center">
+                <div className="glass-subtle bg-white/10 border border-white/15 rounded-xl rounded-tl-sm px-4 py-2.5 flex gap-1 items-center">
                   <span className="w-[5px] h-[5px] rounded-full bg-violet-400 animate-pulse" />
                   <span className="w-[5px] h-[5px] rounded-full bg-violet-400 animate-pulse [animation-delay:0.2s]" />
                   <span className="w-[5px] h-[5px] rounded-full bg-violet-400 animate-pulse [animation-delay:0.4s]" />
@@ -494,8 +530,8 @@ export default function FloatingPet() {
           </div>
 
           {/* Input */}
-          <div className="bg-background px-3 py-2.5 border-t border-border">
-            <div className="flex items-center gap-1 bg-muted/30 border border-border rounded-full px-3.5 focus-within:border-violet-400/40 transition-colors">
+          <div className="px-3 py-2.5 border-t border-white/10">
+            <div className="flex items-center gap-1 glass-subtle bg-white/10 border border-white/15 rounded-full px-3.5 focus-within:border-violet-400/40 transition-colors">
               <input
                 ref={inputRef}
                 value={input}

@@ -234,6 +234,16 @@ export interface FigmaPush {
 }
 
 // Knowbar (dashboard prompt)
+export interface FigmaDesignResult {
+  designId: string;
+  html: string;
+  description: string;
+  size: string;
+  figmaUrl?: string;
+  figmaFileKey?: string;
+  status: 'generated' | 'pushing' | 'pushed' | 'failed';
+}
+
 export interface KnowbarAgentResponse {
   response: string;
   agentId?: string;
@@ -248,6 +258,7 @@ export interface KnowbarAgentResponse {
   blogTitle?: string;
   blogContent?: string;
   blogMetaDesc?: string;
+  figmaDesign?: FigmaDesignResult;
 }
 
 export interface KnowbarMessage {
@@ -266,6 +277,7 @@ export interface KnowbarMessage {
   blogTitle?: string;
   blogContent?: string;
   blogMetaDesc?: string;
+  figmaDesign?: FigmaDesignResult;
 }
 
 export const TREND_CATEGORIES: { value: TrendCategory; label: string }[] = [

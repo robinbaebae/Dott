@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { SEO_CONTENT_BRIEF_PROMPT } from '@/lib/prompts';
 import { getBrandGuideContext } from '@/lib/brand-guide';
 import { logActivity } from '@/lib/activity';
@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { topic } = await req.json();
     if (!topic) {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     const userMessage = `${brandContext ? brandContext + '\n\n' : ''}주제: "${topic}"\n\n이 주제에 대한 SEO 콘텐츠 브리프를 생성해주세요.`;
 
     const raw = await withTimeout(
-      generateCompletion(SEO_CONTENT_BRIEF_PROMPT, userMessage),
+      generateCompletion(apiKey, SEO_CONTENT_BRIEF_PROMPT, userMessage),
       60000,
       'SEO 브리프 생성 시간 초과'
     );

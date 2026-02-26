@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
@@ -14,6 +14,8 @@ export async function POST(
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { id } = await params;
     const body = await req.json();
@@ -30,6 +32,7 @@ export async function POST(
         try {
           const html = await withTimeout(
             generateCompletion(
+              apiKey,
               BANNER_GENERATION_PROMPT,
               `카피: "${copy}"\n사이즈: ${size}\n참고: ${reference || '코드앤버터 브랜드, #5B4D6E 퍼플 계열'}`
             ),

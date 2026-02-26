@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabaseAdmin.from('figma_tokens').upsert({
       id: userEmail,
+      user_id: userEmail,
       personal_access_token: token,
       updated_at: new Date().toISOString(),
     });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { logActivity } from '@/lib/activity';
 import { requireAuth } from '@/lib/auth-guard';
 
@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { question, context, platform } = await req.json();
 
@@ -33,7 +35,7 @@ ${context}
 
 Question: ${question}`;
 
-    const answer = await generateCompletion(SYSTEM_PROMPT, userMessage);
+    const answer = await generateCompletion(apiKey, SYSTEM_PROMPT, userMessage);
 
     await logActivity('ad_query', null, {
       platform,

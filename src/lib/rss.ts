@@ -33,11 +33,29 @@ function extractSource(title: string): { cleanTitle: string; source: string | nu
   return { cleanTitle: title, source: null };
 }
 
-export async function fetchAndStoreArticles(): Promise<{ inserted: number; total: number }> {
+export async function fetchAndStoreArticles(userEmail?: string): Promise<{ inserted: number; total: number }> {
   let inserted = 0;
   let total = 0;
 
-  for (const feed of FEEDS) {
+  // Combine default feeds with user's custom feeds
+  const allFeeds: { url: string; category: string }[] = [...FEEDS];
+
+  if (userEmail) {
+    try {
+      const { data } = await supabaseAdmin
+        .from('custom_rss_feeds')
+        .select('url, category')
+        .eq('user_id', userEmail)
+        .eq('enabled', true);
+      if (data) {
+        for (const f of data) allFeeds.push({ url: f.url, category: f.category });
+      }
+    } catch {
+      // custom feeds table might not exist yet — skip silently
+    }
+  }
+
+  for (const feed of allFeeds) {
     try {
       const result = await parser.parseURL(feed.url);
 

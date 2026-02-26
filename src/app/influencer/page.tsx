@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Users, BarChart3 } from 'lucide-react';
+import { Search, Plus, Users, BarChart3, LayoutGrid, List, Pencil, Mail, ExternalLink, Trash2 } from 'lucide-react';
 import type { Influencer, InfluencerCampaign, InfluencerCampaignStatus } from '@/types';
 import InfluencerCard from '@/components/influencer/InfluencerCard';
 import InfluencerForm from '@/components/influencer/InfluencerForm';
@@ -11,9 +11,24 @@ import AIRecommendation from '@/components/influencer/AIRecommendation';
 import EmptyState from '@/components/shared/EmptyState';
 
 type Tab = 'db' | 'campaigns';
+type ViewMode = 'grid' | 'list';
+
+const PLATFORM_COLORS: Record<string, string> = {
+  instagram: 'bg-pink-500/15 text-pink-600 dark:text-pink-400',
+  youtube: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  tiktok: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
+  blog: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+};
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
 
 export default function InfluencerPage() {
   const [tab, setTab] = useState<Tab>('db');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [campaigns, setCampaigns] = useState<InfluencerCampaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,36 +95,30 @@ export default function InfluencerPage() {
   const platforms = ['instagram', 'youtube', 'tiktok', 'blog'];
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-6 pb-12 page-enter">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-h2">Influencer</h1>
-          <p className="text-caption mt-1">인플루언서 발굴 & 캠페인 관리</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="max-w-6xl mx-auto px-6 pt-2 pb-12 space-y-4 animate-in fade-in duration-500">
+      {/* Controls */}
+      <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => setShowAI(!showAI)}
-            className="text-xs px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted transition-colors cursor-pointer press-scale"
+            className="text-xs px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted transition-colors cursor-pointer"
           >
             AI 추천
           </button>
           <button
             onClick={() => { setEditingInfluencer(null); setShowForm(true); }}
-            className="text-xs px-3 py-2 rounded-lg bg-accent text-accent-foreground hover:opacity-90 transition-opacity cursor-pointer press-scale"
+            className="text-xs px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:opacity-90 transition-opacity cursor-pointer"
           >
             <Plus className="size-3.5 inline mr-1" />
             추가
           </button>
-        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-5 p-0.5 bg-muted rounded-lg w-fit">
+      <div className="inline-flex items-center gap-0.5 p-0.5 bg-muted/30 rounded-xl w-fit">
         <button
           onClick={() => setTab('db')}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-            tab === 'db' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            tab === 'db' ? 'bg-card elevation-1 text-foreground' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Users className="size-3.5" />
@@ -118,8 +127,8 @@ export default function InfluencerPage() {
         </button>
         <button
           onClick={() => setTab('campaigns')}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-            tab === 'campaigns' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            tab === 'campaigns' ? 'bg-card elevation-1 text-foreground' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <BarChart3 className="size-3.5" />
@@ -154,11 +163,11 @@ export default function InfluencerPage() {
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-card focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-muted/30">
               <button
                 onClick={() => setPlatformFilter('')}
-                className={`text-[11px] px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-                  !platformFilter ? 'bg-accent/15 text-accent font-medium' : 'text-muted-foreground hover:text-foreground'
+                className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  !platformFilter ? 'bg-card elevation-1 text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 전체
@@ -167,17 +176,38 @@ export default function InfluencerPage() {
                 <button
                   key={p}
                   onClick={() => setPlatformFilter(p === platformFilter ? '' : p)}
-                  className={`text-[11px] px-2.5 py-1 rounded-md transition-colors cursor-pointer capitalize ${
-                    platformFilter === p ? 'bg-accent/15 text-accent font-medium' : 'text-muted-foreground hover:text-foreground'
+                  className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer capitalize ${
+                    platformFilter === p ? 'bg-card elevation-1 text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {p}
                 </button>
               ))}
             </div>
+            {/* View mode toggle */}
+            <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-muted/30 ml-auto">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'grid' ? 'bg-card elevation-1 text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title="카드 보기"
+              >
+                <LayoutGrid className="size-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'list' ? 'bg-card elevation-1 text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title="리스트 보기"
+              >
+                <List className="size-3.5" />
+              </button>
+            </div>
           </div>
 
-          {/* Grid */}
+          {/* Content */}
           {loading ? (
             <p className="text-sm text-muted-foreground py-8 text-center">로딩 중...</p>
           ) : influencers.length === 0 ? (
@@ -187,7 +217,7 @@ export default function InfluencerPage() {
               description="인플루언서를 추가하고 캠페인을 관리해보세요"
               action={{ label: '인플루언서 추가', onClick: () => { setEditingInfluencer(null); setShowForm(true); } }}
             />
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {influencers.map((inf) => (
                 <InfluencerCard
@@ -197,6 +227,74 @@ export default function InfluencerPage() {
                   onSelect={() => setOutreachId(inf.id)}
                 />
               ))}
+            </div>
+          ) : (
+            /* List view */
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="text-left px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide">이름</th>
+                    <th className="text-left px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[80px]">플랫폼</th>
+                    <th className="text-right px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[80px]">팔로워</th>
+                    <th className="text-right px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[70px]">참여율</th>
+                    <th className="text-right px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[80px]">평균 좋아요</th>
+                    <th className="text-left px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[80px]">카테고리</th>
+                    <th className="text-left px-3 py-2.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide w-[100px]">단가</th>
+                    <th className="w-[100px]" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {influencers.map((inf) => {
+                    const pColor = PLATFORM_COLORS[inf.platform] || 'bg-muted text-muted-foreground';
+                    const profileUrl =
+                      inf.platform === 'instagram' ? `https://instagram.com/${inf.handle}` :
+                      inf.platform === 'youtube' ? `https://youtube.com/@${inf.handle}` :
+                      inf.platform === 'tiktok' ? `https://tiktok.com/@${inf.handle}` : null;
+                    return (
+                      <tr key={inf.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-[11px] font-bold text-muted-foreground">
+                              {inf.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-semibold truncate">{inf.name}</p>
+                              {inf.handle && <p className="text-[11px] text-muted-foreground">@{inf.handle}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${pColor}`}>{inf.platform}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-[12px] font-medium">{formatNumber(inf.followers)}</td>
+                        <td className="px-3 py-2.5 text-right text-[12px]">{inf.engagement_rate.toFixed(1)}%</td>
+                        <td className="px-3 py-2.5 text-right text-[12px] text-muted-foreground">{inf.avg_likes ? formatNumber(inf.avg_likes) : '-'}</td>
+                        <td className="px-3 py-2.5 text-[12px] text-muted-foreground">{inf.category || '-'}</td>
+                        <td className="px-3 py-2.5 text-[12px] text-muted-foreground">{inf.price_range || '-'}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setOutreachId(inf.id)} className="p-1.5 rounded-md hover:bg-accent/10 transition-colors" title="아웃리치">
+                              <Mail className="size-3.5 text-muted-foreground" />
+                            </button>
+                            <button onClick={() => { setEditingInfluencer(inf); setShowForm(true); }} className="p-1.5 rounded-md hover:bg-muted transition-colors" title="수정">
+                              <Pencil className="size-3.5 text-muted-foreground" />
+                            </button>
+                            {profileUrl && inf.handle && (
+                              <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-muted transition-colors" title="프로필">
+                                <ExternalLink className="size-3.5 text-muted-foreground" />
+                              </a>
+                            )}
+                            <button onClick={() => handleDelete(inf.id)} className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors" title="삭제">
+                              <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </>

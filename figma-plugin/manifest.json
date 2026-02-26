@@ -1,0 +1,14 @@
+{
+  "name": "Dott - Auto Push",
+  "id": "dott-figma-auto-push",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "Dott 서버에서 배너 이미지를 가져와 Figma에 자동 배치하기 위해 네트워크 접근이 필요합니다."
+  }
+}

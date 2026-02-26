@@ -31,7 +31,7 @@ export default function ChatWindow() {
   return (
     <div className="flex h-full">
       {/* 세션 목록 */}
-      <div className="w-64 border-r border-border bg-muted/30 flex flex-col shrink-0">
+      <div className="w-64 glass-card flex flex-col shrink-0">
         <div className="p-3 border-b border-border">
           <Button onClick={startNewSession} className="w-full" size="sm">
             + New chat

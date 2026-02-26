@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { requireAuth } from '@/lib/auth-guard';
 import { getBrandGuideContext } from '@/lib/brand-guide';
 
@@ -38,6 +38,8 @@ Return ONLY a valid JSON array. Each element must have:
 export async function POST(req: NextRequest) {
   const userEmail = await requireAuth();
   if (userEmail instanceof NextResponse) return userEmail;
+  const apiKey = await getUserApiKey(userEmail);
+
 
   const brandContext = await getBrandGuideContext(userEmail);
 
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
   try {
     const prompt = buildPrompt({ tone, maxLength, useEmoji, count, referenceCopy });
     const copyWithContext = `${brandContext ? brandContext + '\n\n' : ''}${copy}`;
-    const result = await generateCompletion(prompt, copyWithContext);
+    const result = await generateCompletion(apiKey, prompt, copyWithContext);
 
     // Extract JSON array from response
     const jsonMatch = result.match(/\[[\s\S]*\]/);

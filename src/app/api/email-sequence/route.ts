@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { EMAIL_SEQUENCE_PROMPT } from '@/lib/prompts';
 import { getBrandGuideContext } from '@/lib/brand-guide';
 import { createDraft } from '@/lib/gmail';
@@ -55,6 +55,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { name, purpose, target_audience, email_count, key_messages } = await req.json();
     if (!name || !purpose) {
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
 위 정보를 바탕으로 이메일 시퀀스를 설계해주세요.`;
 
     const raw = await withTimeout(
-      generateCompletion(EMAIL_SEQUENCE_PROMPT, userMessage),
+      generateCompletion(apiKey, EMAIL_SEQUENCE_PROMPT, userMessage),
       90000,
       '이메일 시퀀스 생성 시간 초과'
     );

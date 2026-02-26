@@ -16,17 +16,11 @@ extraResources:
 mac:
   category: public.app-category.productivity
   icon: public/icon-512.png
-  hardenedRuntime: true
+  hardenedRuntime: false
   gatekeeperAssess: false
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
-  notarize:
-    teamId: ${APPLE_TEAM_ID}
+  notarize: false
   target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
+    - dmg
 dmg:
   artifactName: Dott-${version}-${arch}.dmg
   title: Dott

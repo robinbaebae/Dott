@@ -15,7 +15,7 @@
       --text-muted: #7E6E78;
       --border: rgba(123, 91, 139, 0.18);
       --radius: 14px;
-      --radius-lg: 18px;
+      --radius-lg: 20px;
       --radius-sm: 10px;
       --font: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
       --scrollbar-thumb: rgba(0, 0, 0, 0.08);
@@ -40,6 +40,31 @@
       --overlay-bg: rgba(255, 255, 255, 0.06);
       --overlay-bg-hover: rgba(255, 255, 255, 0.10);
       --code-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    /* ===== Glass Design System ===== */
+    /* glass-panel removed — styles merged into .chat-panel directly.
+       glass-float kept for speech bubble, tooltip, DND prompt. */
+    .glass-float {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.5) 0%, transparent 50%),
+        linear-gradient(180deg, #FDFAFC 0%, #F5EFF2 50%, #F0EAEE 100%);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255,255,255,0.8),
+        0 6px 24px rgba(91, 77, 110, 0.15),
+        0 2px 6px rgba(91, 77, 110, 0.08);
+    }
+    html.dark .glass-float {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(155, 130, 168, 0.12) 0%, transparent 50%),
+        linear-gradient(180deg, #302A36 0%, #282330 50%, #221E26 100%);
+      border: 1px solid rgba(255,255,255,0.11);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255,255,255,0.14),
+        inset 0 0 16px 0 rgba(155, 130, 168, 0.05),
+        0 6px 24px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.25);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -103,24 +128,13 @@
       position: absolute;
       bottom: 58px;
       right: 0;
-      background: var(--bg-dark);
       color: var(--text);
       padding: 6px 12px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 400;
       white-space: nowrap;
-      border: 1px solid var(--border);
       -webkit-app-region: no-drag;
-    }
-    .tooltip::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      right: 16px;
-      border-left: 4px solid transparent;
-      border-right: 4px solid transparent;
-      border-top: 4px solid var(--bg-dark);
     }
     .pet-wrapper:hover .tooltip { display: block; }
 
@@ -129,8 +143,7 @@
       position: absolute;
       bottom: 64px;
       right: 10px;
-      background: #000000;
-      color: #FFFFFF;
+      color: var(--text);
       padding: 10px 14px;
       border-radius: 12px 12px 4px 12px;
       font-size: 13px;
@@ -153,6 +166,8 @@
     }
 
     /* ===== Chat Panel ===== */
+    /* Electron macOS: transparent window + border-radius = backgrounds don't render.
+       Fix: NO border-radius on .chat-panel. Rounded corners on first/last child only. */
     .chat-panel {
       display: none;
       position: absolute;
@@ -160,9 +175,6 @@
       right: 0;
       width: 360px;
       height: 580px;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      border: 1px solid var(--border);
       z-index: 20;
       -webkit-app-region: no-drag;
       flex-direction: column;
@@ -176,14 +188,28 @@
       transform: translateY(0) scale(1);
     }
 
-    /* ===== Chat Header ===== */
+    /* ===== Chat Header (glass) ===== */
     .chat-header {
-      background: var(--bg-dark);
+      background: #F0EAEE;
       padding: 14px 14px 10px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       border-bottom: 1px solid var(--border);
+      position: relative;
+      border-radius: 20px 20px 0 0;
+    }
+    html.dark .chat-header {
+      background: #1E1A22;
+    }
+    .chat-header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 12px;
+      right: 12px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
     }
     .chat-header-top {
       display: flex;
@@ -228,21 +254,28 @@
     .chat-close {
       width: 26px;
       height: 26px;
-      border-radius: 7px;
-      border: none;
-      background: var(--overlay-bg);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.35);
       color: var(--text-muted);
       font-size: 14px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, color 0.2s;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
       flex-shrink: 0;
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.4);
     }
-    .chat-close:hover { background: var(--overlay-bg-hover); color: var(--text); }
+    html.dark .chat-close {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.06);
+    }
+    .chat-close:hover { background: rgba(255,255,255,0.5); color: var(--text); }
+    html.dark .chat-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
 
-    /* ===== Quick Actions ===== */
+    /* ===== Quick Actions (glass) ===== */
     .quick-actions {
       display: flex;
       gap: 5px;
@@ -251,20 +284,30 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 9px;
-      background: var(--overlay-bg);
-      border: 1px solid var(--border);
-      border-radius: 7px;
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 10px;
       color: var(--text-muted);
       font-size: 10px;
       font-family: var(--font);
       font-weight: 400;
       cursor: pointer;
-      transition: background 0.2s, color 0.2s;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
       white-space: nowrap;
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.5);
+    }
+    html.dark .quick-action {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.09);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.08);
     }
     .quick-action:hover:not(:disabled) {
-      background: var(--overlay-bg-hover);
+      background: rgba(255,255,255,0.6);
+      color: var(--text);
+    }
+    html.dark .quick-action:hover:not(:disabled) {
+      background: rgba(255,255,255,0.1);
       color: var(--text);
     }
     .quick-action:disabled {
@@ -272,26 +315,45 @@
       cursor: not-allowed;
     }
     .quick-action-icon {
-      font-size: 11px;
+      display: flex;
+      align-items: center;
+    }
+    .quick-action-icon svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    /* ===== Action Cards ===== */
+    /* ===== Action Cards (glass) ===== */
     .action-card {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 8px 11px;
       border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: rgba(139, 123, 160, 0.08);
+      border: 1px solid rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.4);
       margin-top: 4px;
       cursor: pointer;
       transition: background 0.2s;
       font-size: 11px;
       color: var(--text);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.4);
+    }
+    html.dark .action-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.06);
     }
     .action-card:hover {
-      background: rgba(139, 123, 160, 0.16);
+      background: rgba(255,255,255,0.55);
+    }
+    html.dark .action-card:hover {
+      background: rgba(255,255,255,0.08);
     }
     .action-card-icon {
       font-size: 14px;
@@ -321,12 +383,15 @@
     /* ===== Chat Body ===== */
     .chat-body {
       flex: 1;
-      background: var(--bg-card);
+      background: #F0EAEE;
       overflow-y: auto;
       padding: 14px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+    html.dark .chat-body {
+      background: #1A191C;
     }
     .chat-body::-webkit-scrollbar { width: 3px; }
     .chat-body::-webkit-scrollbar-track { background: transparent; }
@@ -394,18 +459,24 @@
       line-height: 1.6;
       padding: 9px 12px;
       word-break: break-word;
-      white-space: pre-wrap;
     }
     .msg-row.assistant .msg-bubble {
-      background: var(--bg-bubble);
+      background: rgba(255,255,255,0.5);
       color: var(--text);
       border-radius: 4px 14px 14px 14px;
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.5);
+    }
+    html.dark .msg-row.assistant .msg-bubble {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.06);
     }
     .msg-row.user .msg-bubble {
       background: var(--accent);
       color: white;
       border-radius: 14px 4px 14px 14px;
+      border: none;
     }
     .msg-bubble strong { font-weight: 600; }
     .msg-bubble em { font-style: italic; }
@@ -416,6 +487,73 @@
       font-family: 'SF Mono', 'Menlo', monospace;
       font-size: 11px;
     }
+
+    /* ===== Markdown Elements ===== */
+    .msg-bubble .md-h1,
+    .msg-bubble .md-h2,
+    .msg-bubble .md-h3 {
+      margin: 4px 0 6px;
+      line-height: 1.3;
+      color: var(--text);
+    }
+    .msg-bubble .md-h1 { font-size: 15px; font-weight: 700; }
+    .msg-bubble .md-h2 { font-size: 13px; font-weight: 700; }
+    .msg-bubble .md-h3 { font-size: 12px; font-weight: 600; }
+
+    .msg-bubble .md-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0;
+      font-size: 11px;
+    }
+    .msg-bubble .md-table th,
+    .msg-bubble .md-table td {
+      padding: 5px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .msg-bubble .md-table th {
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(123, 91, 139, 0.06);
+    }
+    html.dark .msg-bubble .md-table th {
+      background: rgba(155, 130, 168, 0.08);
+    }
+    .msg-bubble .md-table td {
+      color: var(--text);
+    }
+    .msg-bubble .md-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .msg-bubble .md-blockquote {
+      margin: 6px 0;
+      padding: 6px 10px;
+      border-left: 3px solid var(--accent);
+      background: rgba(123, 91, 139, 0.06);
+      border-radius: 0 6px 6px 0;
+      font-size: 11px;
+      color: var(--text);
+    }
+    html.dark .msg-bubble .md-blockquote {
+      background: rgba(155, 130, 168, 0.08);
+    }
+
+    .msg-bubble .md-hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 8px 0;
+    }
+
+    .msg-bubble .md-list {
+      margin: 4px 0;
+      padding-left: 16px;
+    }
+    .msg-bubble .md-list li {
+      margin: 2px 0;
+    }
+
     .msg-time {
       font-size: 9px;
       color: var(--text-muted);
@@ -429,13 +567,19 @@
       gap: 7px;
     }
     .typing-dots {
-      background: var(--bg-bubble);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.6);
       border-radius: 4px 14px 14px 14px;
       padding: 10px 16px;
       display: flex;
       gap: 4px;
       align-items: center;
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.5);
+    }
+    html.dark .typing-dots {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.06);
     }
     .typing-dots span {
       width: 5px;
@@ -452,24 +596,49 @@
       30% { opacity: 1; transform: scale(1.15); }
     }
 
-    /* ===== Chat Input ===== */
+    /* ===== Chat Input (glass) ===== */
     .chat-input-area {
-      background: var(--bg-dark);
+      background: #F0EAEE;
       padding: 10px 12px;
       border-top: 1px solid var(--border);
+      position: relative;
+      border-radius: 0 0 20px 20px;
+    }
+    html.dark .chat-input-area {
+      background: #1E1A22;
+    }
+    .chat-input-area::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 12px;
+      right: 12px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
     }
     .chat-input-wrapper {
       flex: 1;
-      background: var(--overlay-bg);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.6);
       border-radius: 20px;
       display: flex;
       align-items: center;
       padding: 0 4px 0 14px;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.5);
+    }
+    html.dark .chat-input-wrapper {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.09);
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.06);
     }
     .chat-input-wrapper:focus-within {
       border-color: rgba(139, 123, 160, 0.4);
+      background: rgba(255,255,255,0.55);
+    }
+    html.dark .chat-input-wrapper:focus-within {
+      border-color: rgba(155, 130, 168, 0.3);
+      background: rgba(255,255,255,0.08);
     }
     .chat-input {
       flex: 1;
@@ -521,8 +690,6 @@
       position: absolute;
       bottom: 64px;
       right: 10px;
-      background: var(--bg-dark);
-      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px 20px;
       width: 240px;
@@ -540,7 +707,10 @@
     }
     .dnd-prompt-icon {
       text-align: center;
-      font-size: 24px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.05em;
       margin-bottom: 8px;
     }
     .dnd-prompt-text {
@@ -558,10 +728,10 @@
     }
     .dnd-btn {
       padding: 7px 20px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: none;
       font-size: 12px;
-      font-weight: 400;
+      font-weight: 500;
       font-family: var(--font);
       cursor: pointer;
       transition: all 0.2s;
@@ -628,6 +798,52 @@
       animation: float 5s ease-in-out infinite; /* slower float */
     }
 
+    /* ===== Opacity Slider ===== */
+    .opacity-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0 2px;
+    }
+    .opacity-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 32px;
+    }
+    .opacity-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    .opacity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg-card);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .opacity-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .opacity-value {
+      font-size: 10px;
+      color: var(--text-muted);
+      min-width: 28px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* ===== Hide tooltip when panels are open ===== */
     .chat-panel.visible ~ .pet-wrapper .tooltip,
     .speech-bubble.visible ~ .pet-wrapper .tooltip,
@@ -638,7 +854,7 @@
 </head>
 <body>
   <div class="pet-container">
-    <div class="speech-bubble" id="speechBubble" onclick="dismissBubble()"></div>
+    <div class="speech-bubble glass-float" id="speechBubble" onclick="dismissBubble()"></div>
 
     <!-- Chat Panel -->
     <div class="chat-panel" id="chatPanel">
@@ -662,17 +878,23 @@
         <!-- Quick Actions -->
         <div class="quick-actions">
           <button class="quick-action" onclick="showCalendar()">
-            <span class="quick-action-icon">📅</span> Calendar
+            <span class="quick-action-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></span> Calendar
           </button>
           <button class="quick-action" onclick="showEmails()">
-            <span class="quick-action-icon">📧</span> Email
+            <span class="quick-action-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" /><polyline points="22,4 12,13 2,4" /></svg></span> Email
           </button>
           <button class="quick-action" onclick="showTasks()">
-            <span class="quick-action-icon">✅</span> Tasks
+            <span class="quick-action-icon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg></span> Tasks
           </button>
           <button class="quick-action" onclick="onAction('open')">
-            <span class="quick-action-icon">↗</span> Open
+            <span class="quick-action-icon"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg></span> Open
           </button>
+        </div>
+        <!-- Opacity Slider -->
+        <div class="opacity-control">
+          <span class="opacity-label">투명도</span>
+          <input type="range" class="opacity-slider" id="opacitySlider" min="20" max="100" value="100" />
+          <span class="opacity-value" id="opacityValue">100%</span>
         </div>
       </div>
 
@@ -701,8 +923,8 @@
     </div>
 
     <!-- DND Prompt -->
-    <div class="dnd-prompt" id="dndPrompt">
-      <div class="dnd-prompt-icon">🔕</div>
+    <div class="dnd-prompt glass-float" id="dndPrompt">
+      <div class="dnd-prompt-icon">DND</div>
       <div class="dnd-prompt-text" id="dndPromptText"></div>
       <div class="dnd-buttons">
         <button class="dnd-btn yes" onclick="respondDnd(true)">네</button>
@@ -711,7 +933,7 @@
     </div>
 
     <div class="pet-wrapper" id="petWrapper">
-      <div class="tooltip">뭐 도와줄까요?</div>
+      <div class="tooltip glass-float">뭐 도와줄까요?</div>
       <div class="pet" id="petIcon">
         <img src="../public/logo-dott.png" alt="Dott" />
         <div class="dnd-badge" id="dndBadge"></div>
@@ -812,6 +1034,9 @@
       chatOpen = true;
       const panel = document.getElementById('chatPanel');
       panel.style.display = 'flex';
+      // Force backgrounds on open (Electron transparent window workaround)
+      const isDark = document.documentElement.classList.contains('dark');
+      applyTheme(isDark ? 'dark' : 'light');
       resizeWindow(CHAT_SIZE.width, CHAT_SIZE.height);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -853,7 +1078,7 @@
                 const d = new Date(t.due_date);
                 return d >= todayStart && d < tomorrow;
               });
-              if (pending.length > 0) lines.push(`📝 할 일 ${pending.length}개${todayDue.length > 0 ? `, 오늘 마감 ${todayDue.length}개` : ''}`);
+              if (pending.length > 0) lines.push(`할 일 ${pending.length}개${todayDue.length > 0 ? `, 오늘 마감 ${todayDue.length}개` : ''}`);
             }
           } catch {}
         }
@@ -861,7 +1086,7 @@
         if (window.electronAPI && window.electronAPI.getNextMeeting) {
           try {
             const meeting = await window.electronAPI.getNextMeeting();
-            if (meeting) lines.push(`📅 다음 미팅 ${meeting.time} · ${meeting.summary}`);
+            if (meeting) lines.push(`다음 미팅 ${meeting.time} · ${meeting.summary}`);
           } catch {}
         }
         // Emails
@@ -871,7 +1096,7 @@
             if (data) {
               const emails = Array.isArray(data) ? data : (data.emails || []);
               const unread = emails.filter((e) => e.isUnread);
-              if (unread.length > 0) lines.push(`📧 읽지 않은 메일 ${unread.length}건`);
+              if (unread.length > 0) lines.push(`읽지 않은 메일 ${unread.length}건`);
             }
           } catch {}
         }
@@ -959,11 +1184,11 @@
         }
         const events = data.events || [];
         if (events.length === 0) {
-          addChatMessage('assistant', '📅 오늘 일정이 없어요.\n\n채팅으로 "내일 2시에 미팅 잡아줘" 같이 말하면 일정을 등록할 수 있어요.');
+          addChatMessage('assistant', '오늘 일정이 없어요.\n\n채팅으로 "내일 2시에 미팅 잡아줘" 같이 말하면 일정을 등록할 수 있어요.');
           return;
         }
 
-        let msg = `📅 오늘 ${events.length}건의 일정\n\n`;
+        let msg = `오늘 ${events.length}건의 일정\n\n`;
         events.forEach((evt) => {
           const start = new Date(evt.start?.dateTime || evt.start?.date || evt.start);
           const hh = start.getHours().toString().padStart(2, '0');
@@ -995,11 +1220,11 @@
         const unread = emails.filter((e) => e.isUnread);
 
         if (unread.length === 0) {
-          addChatMessage('assistant', '📧 읽지 않은 메일이 없어요.');
+          addChatMessage('assistant', '읽지 않은 메일이 없어요.');
           return;
         }
 
-        let msg = `📧 읽지 않은 메일 ${unread.length}건\n\n`;
+        let msg = `읽지 않은 메일 ${unread.length}건\n\n`;
         unread.slice(0, 5).forEach((email) => {
           const from = email.from.split('<')[0].trim() || email.from;
           msg += `• ${from}\n  ${email.subject}\n`;
@@ -1047,13 +1272,13 @@
         });
 
         if (pending.length === 0) {
-          addChatMessage('assistant', '✅ 진행 중인 태스크가 없어요!');
+          addChatMessage('assistant', '진행 중인 태스크가 없어요!');
           return;
         }
 
-        let msg = `📝 할 일 ${pending.length}개`;
+        let msg = `할 일 ${pending.length}개`;
         if (todayDue.length > 0) msg += ` | 오늘 마감 ${todayDue.length}개`;
-        if (overdue.length > 0) msg += ` | ⚠️ 지연 ${overdue.length}개`;
+        if (overdue.length > 0) msg += ` | 지연 ${overdue.length}개`;
         msg += '\n';
 
         if (todayDue.length > 0) {
@@ -1186,13 +1411,87 @@
 
     let msgCounter = 0;
 
-    function renderMarkdown(text) {
-      return text
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    function escapeHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function inlineMd(t) {
+      return t
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/`(.+?)`/g, '<code>$1</code>')
-        .replace(/\n/g, '<br>');
+        .replace(/`(.+?)`/g, '<code>$1</code>');
+    }
+    function renderMarkdown(text) {
+      const lines = text.split('\n');
+      let html = '';
+      let inTable = false;
+      let inBq = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Table separator — skip
+        if (/^\s*\|[\s\-:|]+\|\s*$/.test(line)) continue;
+
+        // Table row
+        if (/^\s*\|(.+)\|\s*$/.test(line)) {
+          const cells = line.split('|').filter(c => c.trim() !== '');
+          if (!inTable) {
+            inTable = true;
+            html += '<table class="md-table"><thead><tr>';
+            cells.forEach(c => { html += '<th>' + inlineMd(escapeHtml(c.trim())) + '</th>'; });
+            html += '</tr></thead><tbody>';
+            if (i + 1 < lines.length && /^\s*\|[\s\-:|]+\|\s*$/.test(lines[i + 1])) i++;
+          } else {
+            html += '<tr>';
+            cells.forEach(c => { html += '<td>' + inlineMd(escapeHtml(c.trim())) + '</td>'; });
+            html += '</tr>';
+          }
+          continue;
+        }
+        if (inTable) { html += '</tbody></table>'; inTable = false; }
+
+        // Blockquote
+        if (/^\s*>\s?(.*)$/.test(line)) {
+          const content = line.replace(/^\s*>\s?/, '');
+          if (!inBq) { html += '<blockquote class="md-blockquote">'; inBq = true; }
+          html += inlineMd(escapeHtml(content)) + '<br>';
+          continue;
+        }
+        if (inBq) { html += '</blockquote>'; inBq = false; }
+
+        // Headers
+        if (/^###\s+(.+)$/.test(line)) {
+          html += '<div class="md-h3">' + inlineMd(escapeHtml(line.replace(/^###\s+/, ''))) + '</div>';
+          continue;
+        }
+        if (/^##\s+(.+)$/.test(line)) {
+          html += '<div class="md-h2">' + inlineMd(escapeHtml(line.replace(/^##\s+/, ''))) + '</div>';
+          continue;
+        }
+        if (/^#\s+(.+)$/.test(line)) {
+          html += '<div class="md-h1">' + inlineMd(escapeHtml(line.replace(/^#\s+/, ''))) + '</div>';
+          continue;
+        }
+
+        // Horizontal rule
+        if (/^\s*[-*_]{3,}\s*$/.test(line)) {
+          html += '<hr class="md-hr">';
+          continue;
+        }
+
+        // Empty line
+        if (line.trim() === '') {
+          html += '<br>';
+          continue;
+        }
+
+        // Regular text
+        html += inlineMd(escapeHtml(line)) + '<br>';
+      }
+
+      if (inTable) html += '</tbody></table>';
+      if (inBq) html += '</blockquote>';
+      return html;
     }
 
     function addChatMessage(role, text) {
@@ -1256,31 +1555,31 @@
       const openMain = () => { if (window.electronAPI) window.electronAPI.triggerAction('open'); };
 
       if (actions.taskCreated && actions.taskTitle) {
-        createCard('✅', `${actions.taskTitle} 추가 완료`, 'Tasks에서 보기', openMain);
+        createCard('', `${actions.taskTitle} 추가 완료`, 'Tasks에서 보기', openMain);
       }
       if (actions.calendarEventCreated) {
-        createCard('📅', '일정 등록 완료', 'Calendar에서 보기', openMain);
+        createCard('', '일정 등록 완료', 'Calendar에서 보기', openMain);
       }
       if (actions.emailDraft) {
-        createCard('📧', '이메일 초안 생성됨', 'Gmail에서 보기', openMain);
+        createCard('', '이메일 초안 생성됨', 'Gmail에서 보기', openMain);
       }
       if (actions.bannerId) {
-        createCard('🎨', '배너 생성됨', 'Assets에서 보기', openMain);
+        createCard('', '배너 생성됨', 'Assets에서 보기', openMain);
       }
       if (actions.blogTitle) {
-        createCard('📝', `${actions.blogTitle}`, '블로그 초안 보기', openMain);
+        createCard('', `${actions.blogTitle}`, '블로그 초안 보기', openMain);
       }
       if (actions.memoryCreated) {
-        createCard('💾', '메모 저장됨', '', null);
+        createCard('', '메모 저장됨', '', null);
       }
       if (actions.taskUpdated && actions.taskUpdateTitle) {
-        createCard('✏️', `${actions.taskUpdateTitle} 상태 변경됨`, 'Tasks에서 보기', openMain);
+        createCard('', `${actions.taskUpdateTitle} 상태 변경됨`, 'Tasks에서 보기', openMain);
       }
       if (actions.memoCreated && actions.memoTitle) {
-        createCard('📋', `메모: ${actions.memoTitle}`, '메모 저장됨', openMain);
+        createCard('', `메모: ${actions.memoTitle}`, '메모 저장됨', openMain);
       }
       if (actions.scheduleCreated && actions.scheduleTitle) {
-        createCard('📆', `${actions.scheduleTitle} 예약됨`, '콘텐츠 캘린더에서 보기', openMain);
+        createCard('', `${actions.scheduleTitle} 예약됨`, '콘텐츠 캘린더에서 보기', openMain);
       }
 
       container.scrollTop = container.scrollHeight;
@@ -1360,7 +1659,7 @@
       }
       if (accepted) {
         document.getElementById('dndBadge').classList.add('active');
-        showBubble('집중 모드 켰어요 🔕');
+        showBubble('집중 모드 켰어요 DND');
       }
     }
 
@@ -1370,13 +1669,14 @@
     if (window.electronAPI && window.electronAPI.onDndEnd) {
       window.electronAPI.onDndEnd(() => {
         document.getElementById('dndBadge').classList.remove('active');
-        showBubble('미팅 끝났어요~ 다시 열일하죠 ✨');
+        showBubble('미팅 끝났어요~ 다시 열일하죠');
       });
     }
 
     // ===== Theme sync from main app =====
     function applyTheme(theme) {
-      if (theme === 'dark') {
+      const isDark = theme === 'dark';
+      if (isDark) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
@@ -1391,6 +1691,30 @@
         if (theme) applyTheme(theme);
       });
     }
+
+    // ===== Opacity Slider =====
+    const opacitySlider = document.getElementById('opacitySlider');
+    const opacityValue = document.getElementById('opacityValue');
+
+    // Restore saved opacity
+    const savedOpacity = localStorage.getItem('dott-pet-opacity');
+    if (savedOpacity) {
+      const val = parseInt(savedOpacity, 10);
+      opacitySlider.value = val;
+      opacityValue.textContent = val + '%';
+      if (window.electronAPI && window.electronAPI.setPetOpacity) {
+        window.electronAPI.setPetOpacity(val / 100);
+      }
+    }
+
+    opacitySlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      opacityValue.textContent = val + '%';
+      localStorage.setItem('dott-pet-opacity', String(val));
+      if (window.electronAPI && window.electronAPI.setPetOpacity) {
+        window.electronAPI.setPetOpacity(val / 100);
+      }
+    });
 
     // Pet mood listener
     if (window.electronAPI && window.electronAPI.onPetMood) {

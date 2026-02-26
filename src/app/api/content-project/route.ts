@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { CONTENT_MATERIAL_PROMPT, CONTENT_DRAFT_PROMPT, BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const body = await req.json();
     const { topic, platforms, tone } = body;
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
     const toneLabel = tone || 'professional';
     const userMessage = `주제: "${topic}"\n대상 플랫폼: ${selectedPlatforms.join(', ')}\n톤: ${toneLabel}\n\n이 주제에 대한 콘텐츠 소재를 추천해주세요.`;
     const aiResponse = await withTimeout(
-      generateCompletion(CONTENT_MATERIAL_PROMPT, userMessage),
+      generateCompletion(apiKey, CONTENT_MATERIAL_PROMPT, userMessage),
       60000,
       '콘텐츠 소재 추천 시간 초과'
     );
@@ -105,6 +107,8 @@ export async function PATCH(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const body = await req.json();
     const { id, action, ...updates } = body;
@@ -141,7 +145,7 @@ export async function PATCH(req: NextRequest) {
       }
       draftMsg += `대상 플랫폼: ${project.platforms.join(', ')}\n\n이 소재로 각 플랫폼별 콘텐츠를 작성해주세요.`;
       const draftResponse = await withTimeout(
-        generateCompletion(CONTENT_DRAFT_PROMPT, draftMsg),
+        generateCompletion(apiKey, CONTENT_DRAFT_PROMPT, draftMsg),
         60000,
         '콘텐츠 초안 생성 시간 초과'
       );
@@ -173,7 +177,7 @@ export async function PATCH(req: NextRequest) {
       }
       bannerMsg += `\n위 정보를 바탕으로 배너 HTML을 생성해주세요.`;
       const bannerHtml = await withTimeout(
-        generateCompletion(BANNER_GENERATION_PROMPT, bannerMsg),
+        generateCompletion(apiKey, BANNER_GENERATION_PROMPT, bannerMsg),
         60000,
         '배너 생성 시간 초과'
       );

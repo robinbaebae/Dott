@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { AUTOMATION_PROMPTS } from '@/lib/prompts';
 import { requireAuth } from '@/lib/auth-guard';
 
@@ -23,6 +23,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const userEmail = await requireAuth();
   if (userEmail instanceof NextResponse) return userEmail;
+  const apiKey = await getUserApiKey(userEmail);
+
 
   const body = await req.json();
 
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
       : automation.prompt_template;
 
     try {
-      const result = await generateCompletion(systemPrompt, userPrompt);
+      const result = await generateCompletion(apiKey, systemPrompt, userPrompt);
 
       await supabaseAdmin
         .from('automations')

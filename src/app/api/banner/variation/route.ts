@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletionWithImage } from '@/lib/claude';
+import { generateCompletionWithImage, getUserApiKey } from '@/lib/claude';
 import { BANNER_VARIATION_PROMPT } from '@/lib/prompts';
 import { requireAuth } from '@/lib/auth-guard';
 
@@ -8,6 +8,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+    if (!apiKey) return NextResponse.json({ error: 'API 키가 설정되지 않았습니다. 설정에서 등록해 주세요.' }, { status: 400 });
 
     const { image, targetSize } = await req.json();
 
@@ -30,6 +32,7 @@ export async function POST(req: NextRequest) {
     const base64Data = match[2];
 
     const html = await generateCompletionWithImage(
+      apiKey,
       BANNER_VARIATION_PROMPT,
       userMessage,
       base64Data,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { AD_PERFORMANCE_REPORT_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
@@ -14,6 +14,8 @@ export async function POST(
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { id } = await params;
 
@@ -52,7 +54,7 @@ ${adCopies.map((c: { headline: string; primary_text: string }, i: number) => `${
     `.trim();
 
     const report = await withTimeout(
-      generateCompletion(AD_PERFORMANCE_REPORT_PROMPT, context),
+      generateCompletion(apiKey, AD_PERFORMANCE_REPORT_PROMPT, context),
       60000,
       '성과 리포트 생성 시간 초과'
     );

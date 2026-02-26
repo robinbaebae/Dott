@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { requireAuth } from '@/lib/auth-guard';
 import { getBrandGuideContext } from '@/lib/brand-guide';
 
@@ -123,6 +123,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const brandContext = await getBrandGuideContext(userEmail);
 
@@ -138,7 +140,7 @@ export async function POST(req: NextRequest) {
       .join('\n');
 
     const userMessage = `${brandContext ? brandContext + '\n\n' : ''}${variableText}`;
-    const result = await generateCompletion(template.prompt, userMessage);
+    const result = await generateCompletion(apiKey, template.prompt, userMessage);
 
     return NextResponse.json({ result });
   } catch (error) {

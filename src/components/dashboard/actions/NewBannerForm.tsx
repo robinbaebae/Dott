@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Loader2, ExternalLink } from 'lucide-react';
+import { Loader2, Figma, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { toPng } from 'html-to-image';
 import { SectionTitle, Chip } from './shared';
 
 const SIZES = ['1080x1080', '1200x628', '1080x1920', '600x200', '1920x1080'];
@@ -16,7 +17,9 @@ export default function NewBannerForm({ onResult }: { onResult: (l: string, c: s
   const [previewHtml, setPreviewHtml] = useState('');
   const [bannerId, setBannerId] = useState('');
   const [pushingFigma, setPushingFigma] = useState(false);
+  const [figmaPushed, setFigmaPushed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,18 +60,47 @@ export default function NewBannerForm({ onResult }: { onResult: (l: string, c: s
   };
 
   const handleFigmaPush = async () => {
-    if (!bannerId) return;
+    if (!previewHtml) return;
     setPushingFigma(true);
     try {
-      const res = await fetch('/api/figma/push', {
+      // Render HTML to PNG using a hidden iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:${h}px;border:none;`;
+      document.body.appendChild(iframe);
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error('Cannot access iframe');
+      iframeDoc.open();
+      iframeDoc.write(previewHtml);
+      iframeDoc.close();
+
+      // Wait for content to render
+      await new Promise((r) => setTimeout(r, 500));
+
+      const body = iframeDoc.body;
+      const dataUrl = await toPng(body, { width: w, height: h, pixelRatio: 2 });
+      document.body.removeChild(iframe);
+
+      // Convert data URL to Blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+
+      // Upload to auto-push queue
+      const formData = new FormData();
+      formData.append('image', new File([blob], 'banner.png', { type: 'image/png' }));
+      formData.append('size', size);
+      formData.append('prompt', copy);
+
+      const pushRes = await fetch('/api/figma/auto-push', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bannerId, html: previewHtml, size }),
+        body: formData,
       });
-      if (res.ok) {
-        toast.success('Figma로 전송되었습니다');
+
+      if (pushRes.ok) {
+        setFigmaPushed(true);
+        toast.success('Figma 플러그인으로 전송 대기 중');
       } else {
-        toast.error('Figma 전송에 실패했습니다');
+        const err = await pushRes.json();
+        toast.error(err.error || 'Figma 전송에 실패했습니다');
       }
     } catch {
       toast.error('Figma 전송에 실패했습니다');
@@ -142,13 +174,17 @@ export default function NewBannerForm({ onResult }: { onResult: (l: string, c: s
             <span className="text-xs font-medium text-muted-foreground">배너 미리보기</span>
             <button
               onClick={handleFigmaPush}
-              disabled={pushingFigma}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-xs font-medium cursor-pointer disabled:opacity-40"
+              disabled={pushingFigma || figmaPushed}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs font-medium cursor-pointer disabled:opacity-60 ${
+                figmaPushed ? 'bg-emerald-500/10 text-emerald-600' : 'bg-[#5B4D6E]/10 text-[#5B4D6E] hover:bg-[#5B4D6E]/20'
+              }`}
             >
               {pushingFigma ? (
                 <><Loader2 className="size-3 animate-spin" /> 전송 중...</>
+              ) : figmaPushed ? (
+                <><Check className="size-3" /> Figma 전송됨</>
               ) : (
-                <><ExternalLink className="size-3" /> 피그마로 수정하기</>
+                <><Figma className="size-3" /> Figma로 보내기</>
               )}
             </button>
           </div>
@@ -168,7 +204,7 @@ export default function NewBannerForm({ onResult }: { onResult: (l: string, c: s
                 display: 'block',
               }}
               className="pointer-events-none"
-              sandbox=""
+              sandbox="allow-same-origin"
             />
           </div>
         </div>

@@ -25,14 +25,6 @@ export async function createWatchlistSnapshot(
   const today = new Date().toISOString().split('T')[0];
   const inserted: KeywordTrend[] = [];
 
-  // Delete today's existing watchlist snapshots then re-insert
-  await supabaseAdmin
-    .from('keyword_trends')
-    .delete()
-    .eq('snapshot_date', today)
-    .eq('source', 'watchlist')
-    .in('keyword', watchlistKeywords);
-
   for (const kw of watchlistKeywords) {
     const lower = kw.toLowerCase();
     // Match against title and source
@@ -44,18 +36,21 @@ export async function createWatchlistSnapshot(
 
     const { data, error } = await supabaseAdmin
       .from('keyword_trends')
-      .insert({
-        keyword: kw,
-        count: matched.length,
-        snapshot_date: today,
-        source: 'watchlist',
-        related_article_ids: matched.map((a) => a.id),
-      })
+      .upsert(
+        {
+          keyword: kw,
+          count: matched.length,
+          snapshot_date: today,
+          source: 'watchlist',
+          related_article_ids: matched.map((a) => a.id),
+        },
+        { onConflict: 'keyword,snapshot_date,source' }
+      )
       .select()
       .single();
 
     if (error) {
-      console.error(`[keyword-trends] Insert failed for "${kw}":`, error.message, error.code, error.details);
+      console.error(`[keyword-trends] Upsert failed for "${kw}":`, error.message, error.code, error.details);
     } else if (data) {
       inserted.push(data);
     }

@@ -58,7 +58,7 @@ function DateTimePicker({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-xl shadow-lg p-3 w-[260px] animate-in fade-in zoom-in-95 duration-150"
+      className="absolute top-full left-0 mt-1 z-50 glass-float rounded-xl p-3 w-[260px] animate-in fade-in zoom-in-95 duration-150"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Month nav */}

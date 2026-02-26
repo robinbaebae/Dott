@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { logActivity } from '@/lib/activity';
 import { requireAuth } from '@/lib/auth-guard';
 
@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { campaigns, platform } = await req.json();
 
@@ -62,7 +64,7 @@ Overall CTR: ${totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).t
 Campaign data:
 ${JSON.stringify(summary, null, 2)}`;
 
-    const analysis = await generateCompletion(SYSTEM_PROMPT, userMessage);
+    const analysis = await generateCompletion(apiKey, SYSTEM_PROMPT, userMessage);
 
     await logActivity('ad_analysis_generated', null, {
       platform,

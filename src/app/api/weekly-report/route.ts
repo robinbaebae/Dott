@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { WEEKLY_REPORT_PROMPT } from '@/lib/prompts';
 import { supabaseAdmin } from '@/lib/supabase';
 import { withTimeout } from '@/lib/api-utils';
@@ -8,6 +8,8 @@ import { requireAuth } from '@/lib/auth-guard';
 export async function POST() {
   const userEmail = await requireAuth();
   if (userEmail instanceof NextResponse) return userEmail;
+  const apiKey = await getUserApiKey(userEmail);
+
 
   try {
     const now = new Date();
@@ -80,7 +82,7 @@ ${threadsPosts.length > 0
 `;
 
     const result = await withTimeout(
-      generateCompletion(WEEKLY_REPORT_PROMPT, dataContext),
+      generateCompletion(apiKey, WEEKLY_REPORT_PROMPT, dataContext),
       60000,
       '주간 리포트 생성 시간 초과'
     );

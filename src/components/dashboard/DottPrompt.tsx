@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, KeyboardEvent, CompositionEvent } from 'react';
-import { Send, CheckCircle2, ExternalLink, Image, Loader2, Plus, X, Copy, Check, History, MessageSquarePlus, Trash2, ArrowLeft, CalendarPlus } from 'lucide-react';
+import { Send, CheckCircle2, ExternalLink, Image, Loader2, Plus, X, Copy, Check, History, MessageSquarePlus, Trash2, ArrowLeft, CalendarPlus, Figma } from 'lucide-react';
+import { toPng } from 'html-to-image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
@@ -73,7 +74,7 @@ function SaveToCalendarButton({ content }: { content: string }) {
         <CalendarPlus className="size-3.5 text-muted-foreground" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-xl shadow-lg z-50 p-3 space-y-2 animate-in fade-in duration-150">
+        <div className="absolute right-0 top-full mt-1 w-56 glass-float rounded-xl z-50 p-3 space-y-2 animate-in fade-in duration-150">
           <select
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
@@ -103,6 +104,168 @@ function SaveToCalendarButton({ content }: { content: string }) {
   );
 }
 
+function FigmaDesignPreview({ msg }: { msg: KnowbarMessage }) {
+  const [pushing, setPushing] = useState(false);
+  const [pushed, setPushed] = useState(false);
+  const [figmaUrl, setFigmaUrl] = useState<string | null>(msg.figmaDesign?.figmaUrl || null);
+  const [htmlCopied, setHtmlCopied] = useState(false);
+  const design = msg.figmaDesign;
+  if (!design) return null;
+
+  const [w, h] = (design.size || '1080x1080').split('x').map(Number);
+  const previewW = 480;
+  const scale = previewW / (w || 1080);
+  const previewH = (h || 1080) * scale;
+
+  const designViewUrl = `/api/figma-design?id=${design.designId}`;
+
+  const handleCopyHtml = async () => {
+    await navigator.clipboard.writeText(design.html);
+    setHtmlCopied(true);
+    setTimeout(() => setHtmlCopied(false), 2000);
+  };
+
+  const handleOpenDesign = () => {
+    window.open(designViewUrl, '_blank');
+  };
+
+  const handlePushToFigma = async () => {
+    setPushing(true);
+    try {
+      // Render HTML to PNG via hidden iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:${h}px;border:none;`;
+      document.body.appendChild(iframe);
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error('Cannot access iframe');
+      iframeDoc.open();
+      iframeDoc.write(design.html);
+      iframeDoc.close();
+
+      await new Promise((r) => setTimeout(r, 500));
+
+      const body = iframeDoc.body;
+      const dataUrl = await toPng(body, { width: w, height: h, pixelRatio: 2 });
+      document.body.removeChild(iframe);
+
+      // Convert to blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+
+      // Upload to auto-push queue
+      const formData = new FormData();
+      formData.append('image', new File([blob], 'design.png', { type: 'image/png' }));
+      formData.append('size', design.size || '1080x1080');
+      formData.append('prompt', design.description || '');
+      if (design.figmaFileKey) formData.append('figmaFileKey', design.figmaFileKey);
+
+      const pushRes = await fetch('/api/figma/auto-push', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (pushRes.ok) {
+        setPushed(true);
+      } else {
+        // Fallback: open in new tab
+        handleOpenDesign();
+      }
+    } catch {
+      handleOpenDesign();
+    } finally {
+      setPushing(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="size-6 rounded-md bg-[#5B4D6E]/10 flex items-center justify-center">
+            <Figma className="size-3.5 text-[#5B4D6E]" />
+          </div>
+          <span className="text-xs font-semibold text-foreground">Figma 디자인</span>
+          {design.size && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+              {design.size}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleCopyHtml}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border text-[11px] hover:bg-muted transition-colors cursor-pointer text-muted-foreground"
+        >
+          {htmlCopied ? <><Check className="size-3 text-emerald-500" /> 복사됨</> : <><Copy className="size-3" /> HTML 복사</>}
+        </button>
+      </div>
+
+      {/* Preview */}
+      <div
+        className="rounded-xl border border-border overflow-hidden bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+        style={{ width: previewW, height: previewH }}
+        onClick={handleOpenDesign}
+        title="클릭하면 새 탭에서 열립니다"
+      >
+        <iframe
+          srcDoc={design.html}
+          title="Figma design preview"
+          style={{
+            width: w || 1080,
+            height: h || 1080,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            border: 'none',
+            display: 'block',
+          }}
+          className="pointer-events-none"
+          sandbox="allow-same-origin"
+        />
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 mt-3">
+        {figmaUrl ? (
+          <a
+            href={figmaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#5B4D6E] text-white text-xs font-medium hover:bg-[#6B5B7B] transition-colors"
+          >
+            <Figma className="size-3.5" />
+            Figma에서 열기
+            <ExternalLink className="size-3" />
+          </a>
+        ) : pushed ? (
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-600 text-xs font-medium">
+            <Check className="size-3.5" />
+            Figma 플러그인으로 전송됨
+          </span>
+        ) : (
+          <button
+            onClick={handlePushToFigma}
+            disabled={pushing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#5B4D6E] text-white text-xs font-medium hover:bg-[#6B5B7B] disabled:opacity-50 transition-colors cursor-pointer"
+          >
+            {pushing ? (
+              <><Loader2 className="size-3.5 animate-spin" /> Figma 전송 중...</>
+            ) : (
+              <><Figma className="size-3.5" /> Figma로 보내기</>
+            )}
+          </button>
+        )}
+        <button
+          onClick={handleOpenDesign}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+        >
+          <ExternalLink className="size-3.5" />
+          새 탭에서 보기
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
   const [copied, setCopied] = useState(false);
   const [htmlCopied, setHtmlCopied] = useState(false);
@@ -122,7 +285,7 @@ function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
 
   return (
     <div className="max-w-[85%] animate-in slide-in-from-bottom-2 fade-in duration-300 group/msg">
-      <div className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+      <div className="p-4 rounded-2xl glass-card">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -228,6 +391,9 @@ function AssistantMessage({ msg }: { msg: KnowbarMessage }) {
             <p className="text-xs text-muted-foreground mt-2">수정이 필요하면 말씀하세요.</p>
           </div>
         )}
+
+        {/* Figma Design preview */}
+        {msg.figmaDesign && <FigmaDesignPreview msg={msg} />}
 
         {/* Figma / banner link (no inline HTML) */}
         {msg.bannerId && !msg.bannerHtml && (
@@ -493,7 +659,7 @@ export default function DottPrompt() {
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd,
     placeholder: 'Dott에게 무엇이든 물어보세요...',
-    className: 'w-full rounded-2xl border border-border bg-card px-6 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 shadow-sm resize-none overflow-hidden',
+    className: 'w-full rounded-2xl glass-card px-6 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 resize-none overflow-hidden',
   };
 
   return (
@@ -615,7 +781,7 @@ export default function DottPrompt() {
 
             {isLoading && (
               <div className="flex justify-start animate-in fade-in duration-200">
-                <div className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+                <div className="p-4 rounded-2xl glass-card">
                   <div className="flex items-center gap-2 mb-2">
                     <img src="/logo-dott.png" alt="Dott" className="size-5 rounded-lg" />
                     <span className="text-xs text-muted-foreground">Dott이 생각하는 중...</span>
@@ -679,7 +845,7 @@ export default function DottPrompt() {
 
                 {/* Quick menu popover */}
                 {showQuickMenu && (
-                  <div className="absolute bottom-full left-0 mb-2 w-72 rounded-xl border border-border bg-card shadow-lg p-3 animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
+                  <div className="absolute bottom-full left-0 mb-2 w-72 rounded-xl glass-float p-3 animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
                     <p className="text-xs text-muted-foreground mb-2">Quick Actions</p>
                     <QuickActions onSelect={handleActionSelect} compact />
                   </div>

@@ -257,10 +257,10 @@ function DailyChart({ dailyData }: { dailyData: DailyData[] }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm">일별 추이</CardTitle>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 p-0.5 rounded-xl bg-muted/30">
             {CHART_METRICS.map((m) => (
               <button key={m.key} onClick={() => setMetric(m.key)}
-                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${metric === m.key ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${metric === m.key ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
                 style={metric === m.key ? { backgroundColor: m.color } : undefined}>{m.label}</button>
             ))}
           </div>
@@ -355,10 +355,10 @@ function CreativeBarChart({ creatives }: { creatives: CreativeData[] }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm">소재별 성과 비교</CardTitle>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 p-0.5 rounded-xl bg-muted/30">
             {BAR_METRICS.map((m) => (
               <button key={m.key} onClick={() => setBarMetric(m.key)}
-                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${barMetric === m.key ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${barMetric === m.key ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
                 style={barMetric === m.key ? { backgroundColor: m.color } : undefined}>{m.label}</button>
             ))}
           </div>
@@ -804,38 +804,36 @@ export default function AdsPage() {
   if (!loaded) return null;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-6 pb-12 space-y-6 animate-in fade-in duration-500" onDragOver={suppressDrag} onDrop={suppressDrag}>
+    <div className="max-w-6xl mx-auto px-6 pt-2 pb-12 space-y-4 animate-in fade-in duration-500" onDragOver={suppressDrag} onDrop={suppressDrag}>
 
-      {/* ─── Header ─── */}
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-2">
+      {/* ─── Controls ─── */}
+      <div className="flex items-center gap-2">
           {/* Platform toggle */}
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 p-0.5 rounded-xl bg-muted/30">
             <button onClick={() => setPlatform('meta')}
-              className={`px-3 py-1.5 rounded-md text-xs transition-colors ${platform === 'meta' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>Meta Ads</button>
+              className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${platform === 'meta' ? 'bg-card text-foreground elevation-1' : 'text-muted-foreground hover:text-foreground'}`}>Meta Ads</button>
             <button onClick={() => setPlatform('google')}
-              className={`px-3 py-1.5 rounded-md text-xs transition-colors ${platform === 'google' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>Google Ads</button>
+              className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${platform === 'google' ? 'bg-card text-foreground elevation-1' : 'text-muted-foreground hover:text-foreground'}`}>Google Ads</button>
           </div>
           {/* API Config toggle */}
           <button onClick={() => setShowApiConfig(!showApiConfig)}
-            className={`px-3 py-1.5 rounded-md text-xs transition-colors border border-border ${showApiConfig ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs transition-colors border border-border ${showApiConfig ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
             API 설정
           </button>
           {/* Upload */}
-          <label className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border cursor-pointer overflow-hidden">
+          <label className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border cursor-pointer overflow-hidden">
             <input type="file" accept=".csv" onChange={onFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
             <Upload className="size-3.5" />CSV 업로드
           </label>
-        </div>
       </div>
 
       {/* ─── Date filter ─── */}
       {hasData && (
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 p-0.5 rounded-xl bg-muted/30">
             {DATE_PRESETS.map((p) => (
               <button key={p.label} onClick={() => applyPreset(p.days)}
-                className={`px-2.5 py-1 rounded-md text-[11px] transition-colors ${!dateFrom && !dateTo && p.days === 0 ? 'bg-muted text-foreground font-medium' : 'text-muted-foreground hover:bg-muted/50'}`}>{p.label}</button>
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-colors ${!dateFrom && !dateTo && p.days === 0 ? 'bg-card text-foreground font-medium elevation-1' : 'text-muted-foreground hover:text-foreground'}`}>{p.label}</button>
             ))}
           </div>
           <div className="flex items-center gap-1.5 text-xs">

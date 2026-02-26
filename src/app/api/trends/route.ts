@@ -26,7 +26,7 @@ export async function POST() {
   if (userEmail instanceof NextResponse) return userEmail;
 
   try {
-    const result = await fetchAndStoreArticles();
+    const result = await fetchAndStoreArticles(userEmail);
     await logActivity('trend_refresh', 'research', { inserted: result.inserted }, userEmail);
     return NextResponse.json({
       success: true,

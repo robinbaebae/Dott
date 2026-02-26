@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { BLOG_DRAFT_PROMPT, BANNER_GENERATION_PROMPT } from '@/lib/prompts';
 import { supabaseAdmin } from '@/lib/supabase';
 import { logActivity } from '@/lib/activity';
@@ -10,6 +10,8 @@ import { getBrandGuideContext } from '@/lib/brand-guide';
 export async function POST(req: NextRequest) {
   const userEmail = await requireAuth();
   if (userEmail instanceof NextResponse) return userEmail;
+  const apiKey = await getUserApiKey(userEmail);
+
 
   const brandContext = await getBrandGuideContext(userEmail);
 
@@ -38,9 +40,10 @@ ${existingDraft}
 
     // Generate blog draft + header image in parallel
     const [draftRaw, headerHtml] = await Promise.all([
-      withTimeout(generateCompletion(BLOG_DRAFT_PROMPT, userMessage), 60000, '블로그 초안 생성 시간 초과'),
+      withTimeout(generateCompletion(apiKey, BLOG_DRAFT_PROMPT, userMessage), 60000, '블로그 초안 생성 시간 초과'),
       withTimeout(
         generateCompletion(
+          apiKey,
           BANNER_GENERATION_PROMPT,
           `블로그 헤더이미지를 만들어주세요.\n제목: ${title}\n사이즈: 1200x628\n스타일: 깔끔하고 전문적인 블로그 헤더`
         ),

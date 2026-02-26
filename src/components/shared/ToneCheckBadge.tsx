@@ -48,7 +48,7 @@ export default function ToneCheckBadge({ content }: { content: string }) {
 
       {result && open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setOpen(false)}>
-          <div className="bg-card border border-border rounded-xl p-5 max-w-sm w-full shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="glass-float rounded-xl p-5 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold">톤 검수 결과</h3>
               <span className={`text-2xl font-bold ${scoreColor}`}>{result.score}/10</span>

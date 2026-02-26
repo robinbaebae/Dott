@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, KeyboardEvent } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Link as LinkIcon, Plus, Search, Archive, Tag, CheckSquare, Square } from 'lucide-react';
+import { X, Link as LinkIcon, Plus, Search, Archive, Lightbulb, Tag, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Insight, InsightContentType } from '@/types';
 
@@ -122,15 +122,15 @@ export default function ResearchPage() {
       if (res.ok) {
         setUrl('');
         fetchInsights();
-        toast.success('\uB9C1\uD06C\uAC00 \uC544\uCE74\uC774\uBE0C\uB418\uC5C8\uC2B5\uB2C8\uB2E4');
+        toast.success('링크가 아카이브되었습니다');
       } else {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Insight save error:', err);
-        toast.error(err.error || '\uC544\uCE74\uC774\uBE0C\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4');
+        toast.error(err.error || '아카이브에 실패했습니다');
       }
     } catch (e) {
       console.error('Insight save exception:', e);
-      toast.error('\uC544\uCE74\uC774\uBE0C \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4');
+      toast.error('아카이브 중 오류가 발생했습니다');
     } finally {
       setSaving(false);
     }
@@ -187,7 +187,7 @@ export default function ResearchPage() {
     setSelected(new Set());
     setBulkMode(false);
     fetchInsights();
-    toast.success(`${promises.length}\uAC1C \uC778\uC0AC\uC774\uD2B8\uC5D0 "${tag}" \uD0DC\uADF8 \uCD94\uAC00\uB428`);
+    toast.success(`${promises.length}개 인사이트에 "${tag}" 태그 추가됨`);
   };
 
   // Filter insights by tag (client-side)
@@ -196,7 +196,7 @@ export default function ResearchPage() {
     : insights;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-6 pb-12 space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto px-6 pt-2 pb-12 space-y-4 animate-in fade-in duration-500">
 
       {/* URL input */}
       <div className="space-y-1.5">
@@ -208,7 +208,7 @@ export default function ResearchPage() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="\uBCF4\uAD00\uD558\uACE0 \uC2F6\uC740 \uB9C1\uD06C\uB97C \uB123\uC5B4\uC8FC\uC138\uC694"
+              placeholder="보관하고 싶은 링크를 넣어주세요"
               className={`w-full rounded-xl border bg-background pl-11 pr-4 py-2.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 transition-all duration-200 ${
                 duplicateUrl
                   ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-300/20'
@@ -229,7 +229,7 @@ export default function ResearchPage() {
           </button>
         </div>
         {duplicateUrl && (
-          <p className="text-xs text-amber-500 pl-1">\uC774\uBBF8 \uC800\uC7A5\uB41C \uB9C1\uD06C\uC785\uB2C8\uB2E4</p>
+          <p className="text-xs text-amber-500 pl-1">이미 저장된 링크입니다</p>
         )}
       </div>
 
@@ -243,7 +243,7 @@ export default function ResearchPage() {
           >
             <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${swipeMode ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
-          <span className="text-sm">Swipe File</span>
+          <span className="text-xs">Swipe File</span>
         </label>
         {swipeMode && (
           <Select value={swipeCategory} onValueChange={setSwipeCategory}>
@@ -268,19 +268,22 @@ export default function ResearchPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search insights..."
-            className="rounded-lg border border-border bg-background pl-9 pr-3 py-1.5 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-muted-foreground/50"
+            className="rounded-lg border border-border bg-background pl-9 pr-3 py-1.5 text-xs w-56 focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-muted-foreground/50"
           />
         </div>
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex gap-0.5 p-0.5 rounded-xl bg-muted/30 flex-wrap">
           {FILTER_TABS.map((tab) => (
-            <Button
+            <button
               key={tab.value}
-              variant={filter === tab.value ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setFilter(tab.value)}
+              className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                filter === tab.value
+                  ? 'bg-card text-foreground elevation-1'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
               {tab.label}
-            </Button>
+            </button>
           ))}
         </div>
         {/* #5 Tag filter */}
@@ -290,7 +293,7 @@ export default function ResearchPage() {
             <select
               value={tagFilter}
               onChange={(e) => setTagFilter(e.target.value)}
-              className="text-xs border border-border rounded-md px-2 py-1 bg-background text-foreground"
+              className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground"
             >
               <option value="">All Tags</option>
               {allTags.map((t) => (
@@ -307,7 +310,7 @@ export default function ResearchPage() {
         {/* #6 Bulk mode toggle */}
         <button
           onClick={() => { setBulkMode(!bulkMode); setSelected(new Set()); }}
-          className={`ml-auto flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-colors ${
+          className={`ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-colors ${
             bulkMode ? 'bg-violet-500 text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
@@ -322,7 +325,7 @@ export default function ResearchPage() {
           <button onClick={selectAll} className="text-xs text-violet-600 hover:underline">
             {selected.size === insights.length ? 'Deselect All' : 'Select All'}
           </button>
-          <span className="text-xs text-violet-600">{selected.size}\uAC1C \uC120\uD0DD</span>
+          <span className="text-xs text-violet-600">{selected.size}개 선택</span>
           <div className="flex-1" />
           <input
             value={bulkTagInput}
@@ -351,7 +354,7 @@ export default function ResearchPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {displayedInsights.map((insight) => (
             <InsightCard
               key={insight.id}
@@ -445,7 +448,7 @@ function InsightCard({
         </button>
       )}
       {insight.thumbnail_url && (
-        <div className="h-32 overflow-hidden bg-muted">
+        <div className="h-24 overflow-hidden bg-muted">
           <img
             src={insight.thumbnail_url}
             alt=""
@@ -453,14 +456,14 @@ function InsightCard({
           />
         </div>
       )}
-      <CardContent className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className={TYPE_COLOR[insight.content_type]}>
+      <CardContent className="p-3 space-y-1.5">
+        <div className="flex items-start justify-between gap-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${TYPE_COLOR[insight.content_type]}`}>
               {insight.content_type}
             </Badge>
             {insight.content_type === 'swipe' && insight.swipe_category && (
-              <Badge variant="outline" className="text-[10px] border-violet-300 text-violet-700">
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-violet-300 text-violet-700">
                 {insight.swipe_category}
               </Badge>
             )}
@@ -468,7 +471,7 @@ function InsightCard({
           </div>
           <button
             onClick={() => onDelete(insight.id)}
-            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-muted transition-opacity"
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted transition-opacity shrink-0"
           >
             <X className="size-3" />
           </button>
@@ -480,15 +483,15 @@ function InsightCard({
           rel="noopener noreferrer"
           className="block"
         >
-          <p className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors">
+          <p className="text-xs font-medium line-clamp-2 hover:text-primary transition-colors leading-snug">
             {insight.title || insight.url}
           </p>
           {insight.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+            <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-snug">
               {insight.description}
             </p>
           )}
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-[10px] text-muted-foreground mt-0.5">
             {insight.source_domain}
           </p>
         </a>

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 
 /**
  * Log an activity to the SOT
@@ -95,7 +95,10 @@ ${summaryData}
 
 한국어로, 간결하고 실용적으로 작성해주세요.`;
 
-  const reportText = await generateCompletion('', prompt);
+  const apiKey = await getUserApiKey(userId || '');
+
+
+  const reportText = await generateCompletion(apiKey, '', prompt);
 
   // Save report
   await supabaseAdmin.from('daily_reports').upsert({

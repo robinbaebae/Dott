@@ -123,7 +123,7 @@ function startNextServer() {
 }
 
 function getAppUrl() {
-  return DEV_URL;
+  return isProd ? 'http://localhost:3000' : DEV_URL;
 }
 
 // --- Helper: send message to pet window ---
@@ -1615,6 +1615,12 @@ ipcMain.on('pet-dnd-response', (_event, accepted) => {
 // =========================================================
 // Pet Window Resize Handler
 // =========================================================
+ipcMain.on('pet-set-opacity', (_event, value) => {
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.setOpacity(Math.max(0.2, Math.min(1, value)));
+  }
+});
+
 ipcMain.on('pet-resize', (_event, { width, height }) => {
   if (petWindow && !petWindow.isDestroyed()) {
     const [currentX] = petWindow.getPosition();

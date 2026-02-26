@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { AD_COPY_GENERATION_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
 import { withTimeout } from '@/lib/api-utils';
@@ -14,6 +14,8 @@ export async function POST(
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const { id } = await params;
 
@@ -39,6 +41,7 @@ export async function POST(
 
     const response = await withTimeout(
       generateCompletion(
+        apiKey,
         AD_COPY_GENERATION_PROMPT,
         `다음 ${creatives.length}개 광고 크리에이티브에 대한 카피를 작성해주세요:\n\n${creativeList}\n\n브랜드: 코드앤버터 (노코드 팝업/배너 SaaS)`
       ),

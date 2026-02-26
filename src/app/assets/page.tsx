@@ -198,9 +198,9 @@ export default function AssetsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-6 pb-12 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-end mb-6">
+    <div className="max-w-6xl mx-auto px-6 pt-2 pb-12 space-y-4 animate-in fade-in duration-500">
+      {/* Search */}
+      <div className="flex justify-end">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -210,15 +210,15 @@ export default function AssetsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="inline-flex gap-0.5 p-0.5 rounded-xl bg-muted/30">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
               tab === t.value
-                ? `${t.activeColor} border-transparent`
-                : 'border-border text-muted-foreground hover:bg-muted'
+                ? 'bg-card text-foreground elevation-1'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.icon}
@@ -233,25 +233,27 @@ export default function AssetsPage() {
       {/* #13 Folder filter bar */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <FolderOpen className="size-3.5 text-muted-foreground" />
-        <button
-          onClick={() => setFolderFilter('')}
-          className={`px-2 py-0.5 rounded-md text-xs transition-colors ${
-            !folderFilter ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/50'
-          }`}
-        >
-          All
-        </button>
-        {allFolders.map((f) => (
+        <div className="inline-flex gap-0.5 p-0.5 rounded-xl bg-muted/30">
           <button
-            key={f}
-            onClick={() => setFolderFilter(f)}
-            className={`px-2 py-0.5 rounded-md text-xs transition-colors ${
-              folderFilter === f ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/50'
+            onClick={() => setFolderFilter('')}
+            className={`px-2.5 py-0.5 rounded-lg text-xs transition-colors ${
+              !folderFilter ? 'bg-card elevation-1 font-medium' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {f}
+            All
           </button>
-        ))}
+          {allFolders.map((f) => (
+            <button
+              key={f}
+              onClick={() => setFolderFilter(f)}
+              className={`px-2.5 py-0.5 rounded-lg text-xs transition-colors ${
+                folderFilter === f ? 'bg-card elevation-1 font-medium' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
         {showNewFolder ? (
           <div className="flex items-center gap-1">
             <input
@@ -294,7 +296,7 @@ export default function AssetsPage() {
       {/* Banner preview */}
       {previewBanner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setPreviewBanner(null)}>
-          <div className="bg-card rounded-xl border shadow-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="glass-float rounded-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <div>
                 <p className="text-sm font-medium truncate">{previewBanner.copy}</p>
@@ -351,7 +353,7 @@ function FolderBadge({ assetId, folder, allFolders, onAssign, onRemove, onNew }:
         <FolderOpen className="size-2" />folder
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-card border rounded-md shadow-lg z-20 py-1 min-w-[100px]" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-full left-0 mt-1 glass-float rounded-xl z-20 py-1 min-w-[100px]" onClick={(e) => e.stopPropagation()}>
           {allFolders.map((f) => (
             <button key={f} onClick={() => { onAssign(assetId, f); setOpen(false); }}
               className="block w-full text-left px-3 py-1 text-xs hover:bg-muted">{f}</button>
@@ -378,10 +380,10 @@ function BannerCard({ asset, folder, allFolders, onPreview, onDownload, onDelete
       className="group relative aspect-square rounded-xl border overflow-hidden bg-card transition-all hover:scale-[1.02] hover:border-accent/40 cursor-pointer"
       onClick={() => onPreview(asset)}
     >
-      <Badge className="absolute top-2 right-2 z-10 text-[9px] bg-accent/10 text-accent border-accent/20">
+      <Badge className="absolute top-2 right-2 z-10 text-[10px] bg-accent/10 text-accent border-accent/20">
         {asset.size}
       </Badge>
-      <Badge variant="secondary" className="absolute top-2 left-2 z-10 text-[9px]">Banner</Badge>
+      <Badge variant="secondary" className="absolute top-2 left-2 z-10 text-[10px]">Banner</Badge>
       <iframe
         srcDoc={asset.html}
         className="w-full h-full pointer-events-none"
@@ -393,7 +395,7 @@ function BannerCard({ asset, folder, allFolders, onPreview, onDownload, onDelete
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-white truncate">{asset.copy}</p>
             <div className="flex items-center gap-1 mt-0.5">
-              <p className="text-[9px] text-white/60">{new Date(asset.created_at).toLocaleDateString('ko-KR')}</p>
+              <p className="text-[10px] text-white/60">{new Date(asset.created_at).toLocaleDateString('ko-KR')}</p>
               <FolderBadge assetId={asset.id} folder={folder} allFolders={allFolders} onAssign={onAssignFolder} onRemove={onRemoveFolder} onNew={onNewFolder} />
             </div>
           </div>
@@ -437,9 +439,9 @@ function SwipeCard({ asset, folder, allFolders, onDelete, onAssignFolder, onRemo
             </div>
           )}
           <div className="absolute top-2 left-2 flex gap-1">
-            <Badge variant="secondary" className="text-[9px]">Swipe</Badge>
+            <Badge variant="secondary" className="text-[10px]">Swipe</Badge>
             {asset.swipe_category && (
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${catColor}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${catColor}`}>
                 {asset.swipe_category}
               </span>
             )}
@@ -449,7 +451,7 @@ function SwipeCard({ asset, folder, allFolders, onDelete, onAssignFolder, onRemo
           <p className="text-xs font-medium line-clamp-2 leading-snug">{asset.title || asset.source_domain}</p>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[10px] text-muted-foreground truncate">{asset.source_domain}</p>
-            <p className="text-[9px] text-muted-foreground/60 shrink-0">{new Date(asset.created_at).toLocaleDateString('ko-KR')}</p>
+            <p className="text-[10px] text-muted-foreground/60 shrink-0">{new Date(asset.created_at).toLocaleDateString('ko-KR')}</p>
           </div>
           <div className="mt-1">
             <FolderBadge assetId={asset.id} folder={folder} allFolders={allFolders} onAssign={onAssignFolder} onRemove={onRemoveFolder} onNew={onNewFolder} />
@@ -484,12 +486,12 @@ function CompetitorAdCard({ asset, folder, allFolders, onDelete, onAssignFolder,
             </div>
           )}
           <div className="absolute top-2 left-2 flex gap-1">
-            <Badge variant="secondary" className="text-[9px]">Ad</Badge>
-            <Badge variant="outline" className="text-[9px] bg-background/80">{asset.platform}</Badge>
+            <Badge variant="secondary" className="text-[10px]">Ad</Badge>
+            <Badge variant="outline" className="text-[10px] bg-background/80">{asset.platform}</Badge>
           </div>
           {asset.cta_text && (
             <div className="absolute bottom-2 right-2">
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/80 text-background font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/80 text-background font-medium">
                 {asset.cta_text}
               </span>
             </div>
@@ -500,7 +502,7 @@ function CompetitorAdCard({ asset, folder, allFolders, onDelete, onAssignFolder,
             {asset.copy_text || asset.ad_url}
           </p>
           <div className="flex items-center justify-between mt-1">
-            <p className="text-[9px] text-muted-foreground/60">{new Date(asset.discovered_at).toLocaleDateString('ko-KR')}</p>
+            <p className="text-[10px] text-muted-foreground/60">{new Date(asset.discovered_at).toLocaleDateString('ko-KR')}</p>
             <FolderBadge assetId={asset.id} folder={folder} allFolders={allFolders} onAssign={onAssignFolder} onRemove={onRemoveFolder} onNew={onNewFolder} />
           </div>
         </div>

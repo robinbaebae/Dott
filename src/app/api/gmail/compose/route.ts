@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { generateCompletion } from '@/lib/claude';
+import { generateCompletion, getUserApiKey } from '@/lib/claude';
 import { createDraft } from '@/lib/gmail';
 import { EMAIL_COMPOSE_PROMPT } from '@/lib/prompts';
 import { logActivity } from '@/lib/activity';
@@ -12,6 +12,8 @@ export async function POST(req: NextRequest) {
   try {
     const userEmail = await requireAuth();
     if (userEmail instanceof NextResponse) return userEmail;
+    const apiKey = await getUserApiKey(userEmail);
+
 
     const brandContext = await getBrandGuideContext(userEmail);
 
@@ -30,7 +32,7 @@ ${details ? `상세 내용: ${details}` : ''}
 위 정보를 바탕으로 이메일을 작성해주세요.`;
 
       const raw = await withTimeout(
-        generateCompletion(EMAIL_COMPOSE_PROMPT, userMessage),
+        generateCompletion(apiKey, EMAIL_COMPOSE_PROMPT, userMessage),
         45000,
         '이메일 생성 시간 초과'
       );
