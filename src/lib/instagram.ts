@@ -3,11 +3,19 @@ import { supabaseAdmin } from './supabase';
 const GRAPH_API_BASE = 'https://graph.facebook.com/v21.0';
 const GRAPH_API_IG = 'https://graph.instagram.com';
 
+function getEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 function getConfig() {
   return {
-    appId: process.env.INSTAGRAM_APP_ID!,
-    appSecret: process.env.INSTAGRAM_APP_SECRET!,
-    redirectUri: process.env.INSTAGRAM_REDIRECT_URI!,
+    appId: getEnvVar('INSTAGRAM_APP_ID'),
+    appSecret: getEnvVar('INSTAGRAM_APP_SECRET'),
+    redirectUri: getEnvVar('INSTAGRAM_REDIRECT_URI'),
   };
 }
 

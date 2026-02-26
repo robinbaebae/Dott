@@ -34,13 +34,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
 
-        console.log('[NextAuth] jwt callback - account received:', {
-          hasAccessToken: !!account.access_token,
-          hasRefreshToken: !!account.refresh_token,
-          expiresAt: account.expires_at,
-          provider: account.provider,
-        });
-
         // Auto-connect Google Calendar & Gmail by storing tokens in Supabase
         if (account.access_token && token.email) {
           const payload: Record<string, unknown> = {
@@ -57,9 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const { error } = await supabaseAdmin.from('google_tokens').upsert(payload);
           if (error) {
-            console.error('[NextAuth] Failed to store Google tokens in Supabase:', error);
-          } else {
-            console.log('[NextAuth] Google tokens stored successfully in Supabase');
+            console.error('[NextAuth] Failed to store Google tokens in Supabase');
           }
         }
       }

@@ -2,11 +2,19 @@ import { supabaseAdmin } from './supabase';
 
 const THREADS_API_BASE = 'https://graph.threads.net';
 
+function getEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 function getConfig() {
   return {
-    appId: process.env.THREADS_APP_ID!,
-    appSecret: process.env.THREADS_APP_SECRET!,
-    redirectUri: process.env.THREADS_REDIRECT_URI!,
+    appId: getEnvVar('THREADS_APP_ID'),
+    appSecret: getEnvVar('THREADS_APP_SECRET'),
+    redirectUri: getEnvVar('THREADS_REDIRECT_URI'),
   };
 }
 

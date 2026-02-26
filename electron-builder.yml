@@ -8,11 +8,9 @@ files:
   - "!.next/dev/**"
   - "!.next/cache/**"
   - public/**/*
-  - node_modules/**/*
   - package.json
-extraResources:
-  - from: .env.local
-    to: .env.local
+  - node_modules/electron-updater/**/*
+  - "!node_modules/**/*"
 mac:
   category: public.app-category.productivity
   icon: public/icon-512.png

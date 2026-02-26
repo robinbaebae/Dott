@@ -26,24 +26,8 @@ if (isProd) {
   }
 }
 
-// Load .env.local in production (bundled as extraResource)
-if (isProd) {
-  const envPath = path.join(process.resourcesPath, '.env.local');
-  try {
-    const envContent = require('fs').readFileSync(envPath, 'utf8');
-    for (const line of envContent.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const eqIdx = trimmed.indexOf('=');
-      if (eqIdx === -1) continue;
-      const key = trimmed.slice(0, eqIdx).trim();
-      const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
-      if (!process.env[key]) process.env[key] = val;
-    }
-  } catch {
-    console.warn('.env.local not found in resources');
-  }
-}
+// In production, env vars are provided by the bundled Next.js server (localhost:3000)
+// No .env.local is shipped with the Electron build for security.
 
 // ─── Single Instance Lock ────────────────────────────────
 // Prevent multiple app windows from opening simultaneously
@@ -156,6 +140,8 @@ function createMainWindow() {
     width: 1000,
     height: 700,
     title: 'Dott',
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 16, y: 16 },
     icon: path.join(__dirname, '..', 'public', 'icon-512.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -1620,6 +1606,11 @@ ipcMain.on('pet-set-opacity', (_event, value) => {
     petWindow.setOpacity(Math.max(0.2, Math.min(1, value)));
   }
 });
+
+ipcMain.on('quit-app', () => {
+  app.quit();
+});
+
 
 ipcMain.on('pet-resize', (_event, { width, height }) => {
   if (petWindow && !petWindow.isDestroyed()) {

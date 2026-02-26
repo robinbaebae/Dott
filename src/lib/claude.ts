@@ -78,8 +78,15 @@ async function cliCompletion(systemPrompt: string, userMessage: string): Promise
 
 // ─── API client (for users with API key) ───
 
-function createClient(apiKey: string) {
-  return new Anthropic({ apiKey });
+const clientCache = new Map<string, Anthropic>();
+
+function getClient(apiKey: string): Anthropic {
+  let client = clientCache.get(apiKey);
+  if (!client) {
+    client = new Anthropic({ apiKey });
+    clientCache.set(apiKey, client);
+  }
+  return client;
 }
 
 // ─── Public functions ───
@@ -95,7 +102,7 @@ export async function generateCompletion(
   }
 
   try {
-    const client = createClient(apiKey);
+    const client = getClient(apiKey);
     const response = await client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
@@ -131,7 +138,7 @@ export async function streamChatResponse(
   }
 
   try {
-    const client = createClient(apiKey);
+    const client = getClient(apiKey);
     const response = await client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
@@ -167,7 +174,7 @@ export async function generateCompletionWithImage(
     throw new Error('이미지 분석은 API 키가 필요합니다. 설정에서 Anthropic API 키를 등록해 주세요.');
   }
 
-  const client = createClient(apiKey);
+  const client = getClient(apiKey);
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 4096,
