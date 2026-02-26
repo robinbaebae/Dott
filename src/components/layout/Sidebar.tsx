@@ -34,8 +34,10 @@ export default function Sidebar() {
   const { data: session, status } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const [alwaysCollapsed, setAlwaysCollapsed] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
+    if (sessionStorage.getItem('dott-demo') === 'true') setIsDemo(true);
     const always = localStorage.getItem(ALWAYS_COLLAPSED_KEY) === 'true';
     setAlwaysCollapsed(always);
     if (always) {
@@ -63,7 +65,7 @@ export default function Sidebar() {
     localStorage.setItem(STORAGE_KEY, String(next));
   };
 
-  if (pathname === '/' && status !== 'authenticated') {
+  if (pathname === '/' && status !== 'authenticated' && !isDemo) {
     return null;
   }
 
@@ -161,7 +163,23 @@ export default function Sidebar() {
         <div className={`flex items-center gap-2 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2`}>
           <ThemeToggle />
         </div>
-        {session && (
+        {isDemo ? (
+          <>
+            {!collapsed && (
+              <div className="px-3 py-1.5 text-[11px] text-muted-foreground/60 truncate">
+                데모 사용자
+              </div>
+            )}
+            <button
+              onClick={() => { sessionStorage.removeItem('dott-demo'); localStorage.removeItem('dott_ad_analytics'); localStorage.removeItem('dott-notif-read'); window.location.href = '/'; }}
+              title={collapsed ? '데모 나가기' : undefined}
+              className={`w-full flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-xl text-[13px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer`}
+            >
+              <LogOut className="size-3.5 shrink-0" />
+              {!collapsed && <span>데모 나가기</span>}
+            </button>
+          </>
+        ) : session ? (
           <>
             {!collapsed && session.user?.name && (
               <div className="px-3 py-1.5 text-[11px] text-muted-foreground/60 truncate">
@@ -177,7 +195,7 @@ export default function Sidebar() {
               {!collapsed && <span>로그아웃</span>}
             </button>
           </>
-        )}
+        ) : null}
       </div>
     </aside>
   );

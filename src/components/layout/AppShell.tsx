@@ -6,6 +6,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import FloatingPet from './FloatingPet';
+import DemoBanner from './DemoBanner';
 
 /* ── Lazy-load all tab pages ── */
 const DashboardPage = lazy(() => import('@/app/page.client'));
@@ -54,10 +55,39 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [isElectron, setIsElectron] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).electronAPI) {
-      setIsElectron(true);
+    if (typeof window !== 'undefined') {
+      if ((window as any).electronAPI) setIsElectron(true);
+      if (sessionStorage.getItem('dott-demo') === 'true') {
+        setIsDemo(true);
+        // Install demo fetch interceptor + preload ad analytics
+        import('@/lib/demo-interceptor').then(({ setupDemoInterceptor }) => {
+          setupDemoInterceptor();
+        });
+        import('@/lib/demo-data').then(({ DEMO_AD_CSV, DEMO_AD_ANALYTICS }) => {
+          if (!localStorage.getItem('dott_ad_analytics')) {
+            // Parse CSV into rows for the Ads page
+            const lines = DEMO_AD_CSV.split('\n');
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+              const f = lines[i].split(',');
+              if (f.length < 17) continue;
+              rows.push({
+                date: f[0], campaign: f[1], adSet: f[2], creative: f[3],
+                impressions: +f[4], reach: +f[5], frequency: +f[6],
+                clicks: +f[7], linkClicks: +f[8], ctrAll: +f[9],
+                ctrLink: +f[10], cpc: +f[11], cpm: +f[12],
+                spend: +f[13], conversions: +f[14], convValue: +f[15],
+                roas: +f[16],
+              });
+            }
+            const stored = { ...DEMO_AD_ANALYTICS, meta: { ...DEMO_AD_ANALYTICS.meta, rows } };
+            localStorage.setItem('dott_ad_analytics', JSON.stringify(stored));
+          }
+        });
+      }
     }
   }, []);
 
@@ -88,18 +118,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Not authenticated — render children (landing page) full-screen
-  if (!session) {
+  // Not authenticated and not demo — render children (landing page) full-screen
+  if (!session && !isDemo) {
     return <>{children}</>;
   }
+
+  const showDemo = isDemo;
+
+  const topOffset = isElectron ? 'pt-12' : 'pt-3';
 
   // If pathname is not a known tab (e.g. /banner/[id], /chat), render normally
   if (!currentTab) {
     return (
-      <div className={`flex h-screen ${isElectron ? 'pt-12' : 'pt-3'} px-3 pb-3 gap-3 app-gradient`}>
+      <div className={`flex h-screen ${topOffset} px-3 pb-3 gap-3 app-gradient`}>
         {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
+          {showDemo && <DemoBanner />}
           <TopBar />
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
@@ -108,12 +143,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Authenticated with tab — render all visited tabs, show only active
+  // Authenticated (or demo) with tab — render all visited tabs, show only active
   return (
-    <div className={`flex h-screen ${isElectron ? 'pt-12' : 'pt-3'} px-3 pb-3 gap-3 app-gradient`}>
+    <div className={`flex h-screen ${topOffset} px-3 pb-3 gap-3 app-gradient`}>
       {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        {showDemo && <DemoBanner />}
         <TopBar />
         <main className="flex-1 overflow-hidden relative">
           {TAB_PATHS.map((tabPath) => {
