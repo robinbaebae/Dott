@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, Pin, PinOff, Trash2, Download, FileText, FileDown, Undo2, Trash, X, FileUp } from 'lucide-react';
+import { Search, Plus, Pin, PinOff, Trash2, Download, FileText, FileDown, Undo2, Trash, X, FileUp, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+
 import type { BlockNoteEditor, Block } from '@blocknote/core';
 import DynamicMemoEditor from '@/components/memo/DynamicMemoEditor';
 import {
@@ -50,6 +51,7 @@ export default function MemoPage() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [trashMode, setTrashMode] = useState(false);
   const [pendingMarkdown, setPendingMarkdown] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<BlockNoteEditor | null>(null);
   const latestContentRef = useRef<string>('');
@@ -290,13 +292,22 @@ export default function MemoPage() {
   // Collect all tags for filter
   const allTags = [...new Set(memos.flatMap((m) => m.tags))];
 
-  return (
-    <div className="flex h-full pt-2">
-      {/* Left panel – memo list */}
-      <div className="w-72 flex flex-col shrink-0">
-        {/* Search + trash toggle */}
-        <div className="p-3 pb-2">
-          {trashMode ? (
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Header with collapse button */}
+      <div className="flex items-center justify-between px-3 pt-2 pb-0">
+        <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">메모</span>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-1 rounded text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+          title={sidebarOpen ? '사이드바 닫기' : '사이드바 열기'}
+        >
+          <PanelLeftClose className="size-3.5" />
+        </button>
+      </div>
+      {/* Search + trash toggle */}
+      <div className="p-3 pb-2">
+        {trashMode ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Trash className="size-3.5 text-muted-foreground" />
@@ -454,6 +465,26 @@ export default function MemoPage() {
           )}
         </div>
       </div>
+  );
+
+  return (
+    <div className="flex h-full pt-2">
+      {/* Left panel */}
+      {sidebarOpen ? (
+        <div className="w-72 flex flex-col shrink-0 border-r border-border/30">
+          {sidebarContent}
+        </div>
+      ) : (
+        <div className="flex items-start pt-2 pl-1 shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 rounded text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+            title="사이드바 열기"
+          >
+            <PanelLeftOpen className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Right panel – editor */}
       <div className="flex-1 flex flex-col min-w-0">

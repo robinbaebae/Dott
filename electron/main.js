@@ -155,6 +155,7 @@ function createMainWindow() {
   mainWindow.loadURL(getAppUrl());
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow.webContents.setZoomFactor(0.85);
     mainWindow.show();
   });
 

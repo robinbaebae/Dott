@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/auth-guard';
 
 export async function GET() {
+  const userEmail = await requireAuth();
+  if (userEmail instanceof NextResponse) return userEmail;
+
   // Fetch recent posts (last 30 days) to calculate average engagement rate
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -9,6 +13,7 @@ export async function GET() {
   const { data: posts } = await supabaseAdmin
     .from('instagram_posts')
     .select('like_count, comments_count, impressions, reach, saved, engagement, timestamp')
+    .eq('user_id', userEmail)
     .gte('timestamp', thirtyDaysAgo.toISOString())
     .order('timestamp', { ascending: false });
 

@@ -153,6 +153,8 @@ function parseCsv(text: string): CsvRow[] {
 
 function renderMarkdown(text: string): string {
   let html = text
+    // Escape HTML entities first to prevent XSS
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
     // Headers
     .replace(/^### (.+)$/gm, '<h3 class="text-sm font-semibold mt-4 mb-2">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-base font-semibold mt-4 mb-2">$1</h2>')

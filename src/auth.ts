@@ -16,9 +16,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             'openid',
             'email',
             'profile',
-            'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.compose',
+            ...(process.env.NEXTAUTH_URL?.includes('localhost')
+              ? [
+                  'https://www.googleapis.com/auth/calendar',
+                  'https://www.googleapis.com/auth/gmail.readonly',
+                  'https://www.googleapis.com/auth/gmail.compose',
+                ]
+              : []),
           ].join(' '),
           access_type: 'offline',
           prompt: 'consent',
@@ -35,23 +39,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.expiresAt = account.expires_at;
 
         // Auto-connect Google Calendar & Gmail by storing tokens in Supabase
-        if (account.access_token && token.email) {
-          const payload: Record<string, unknown> = {
-            id: token.email as string,
-            user_id: token.email as string,
-            access_token: account.access_token,
-            expiry_date: (account.expires_at ?? 0) * 1000,
-            updated_at: new Date().toISOString(),
-          };
-          // refresh_token may not always be present
-          if (account.refresh_token) {
-            payload.refresh_token = account.refresh_token;
-          }
+        try {
+          if (account.access_token && token.email) {
+            const payload: Record<string, unknown> = {
+              id: token.email as string,
+              user_id: token.email as string,
+              access_token: account.access_token,
+              expiry_date: (account.expires_at ?? 0) * 1000,
+              updated_at: new Date().toISOString(),
+            };
+            if (account.refresh_token) {
+              payload.refresh_token = account.refresh_token;
+            }
 
-          const { error } = await supabaseAdmin.from('google_tokens').upsert(payload);
-          if (error) {
-            console.error('[NextAuth] Failed to store Google tokens in Supabase');
+            const { error } = await supabaseAdmin.from('google_tokens').upsert(payload);
+            if (error) {
+              console.error('[NextAuth] Token storage error (non-fatal):', error.message);
+            }
           }
+        } catch {
+          // Non-fatal: don't block sign-in if token storage fails
         }
       }
       return token;

@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { execFile } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { supabaseAdmin } from './supabase';
 
 /**
@@ -24,38 +24,70 @@ export async function getUserApiKey(userEmail: string): Promise<string | null> {
 
 // ─── Claude CLI fallback (for Claude Pro subscribers without API key) ───
 
+let _cachedCliPath: string | null = null;
+
 function findClaudeCli(): string {
-  // Common install paths
-  const candidates = [
-    '/usr/local/bin/claude',
-    '/opt/homebrew/bin/claude',
-    `${process.env.HOME}/.npm-global/bin/claude`,
-    `${process.env.HOME}/.local/bin/claude`,
-  ];
+  if (_cachedCliPath) return _cachedCliPath;
 
   const fs = require('fs');
+  const home = process.env.HOME || require('os').homedir();
+
+  const candidates = [
+    `${home}/.npm-global/bin/claude`,
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude',
+    `${home}/.local/bin/claude`,
+    `${home}/.nvm/versions/node/${process.version}/bin/claude`,
+  ];
+
   for (const p of candidates) {
-    try { if (fs.existsSync(p)) return p; } catch { /* skip */ }
+    try { if (fs.existsSync(p)) { _cachedCliPath = p; return p; } } catch { /* skip */ }
   }
-  return 'claude'; // fallback to PATH
+
+  // Last resort: use `which` to find it via shell PATH
+  try {
+    const resolved = execSync('which claude', { encoding: 'utf8', timeout: 3000 }).trim();
+    if (resolved) { _cachedCliPath = resolved; return resolved; }
+  } catch { /* not found */ }
+
+  _cachedCliPath = 'claude';
+  return 'claude';
+}
+
+/**
+ * Shell-escape a string for safe use in shell commands
+ */
+function shellEscape(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
 function runCli(args: string[], timeoutMs = 120000): Promise<string> {
   return new Promise((resolve, reject) => {
     const cliPath = findClaudeCli();
+    console.log('[claude-cli] path:', cliPath);
+
+    // Build shell command with proper escaping
+    const cmd = [cliPath, ...args.map(shellEscape)].join(' ');
 
     // Filter env vars that cause nested session errors
+    const home = process.env.HOME || require('os').homedir();
     const cleanEnv = { ...process.env };
     delete cleanEnv.CLAUDECODE;
     delete cleanEnv.CLAUDE_CODE_ENTRYPOINT;
+    // Ensure common bin paths are in PATH
+    const extraPaths = [`${home}/.npm-global/bin`, '/usr/local/bin', '/opt/homebrew/bin'];
+    cleanEnv.PATH = [...extraPaths, cleanEnv.PATH || ''].join(':');
 
-    const child = execFile(cliPath, args, {
+    // Use exec (shell) instead of execFile — resolves ENOENT issues
+    const child = exec(cmd, {
       encoding: 'utf8',
       maxBuffer: 10 * 1024 * 1024,
       timeout: timeoutMs,
       env: cleanEnv,
+      shell: '/bin/zsh',
     }, (error, stdout, stderr) => {
       if (error) {
+        console.error('[claude-cli] error:', error.message, '| stderr:', stderr?.slice(0, 200));
         reject(new Error(`Claude CLI error: ${stderr || error.message}`));
       } else {
         resolve(stdout.trim());

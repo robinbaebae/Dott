@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -211,7 +212,7 @@ export default function EmailComposer() {
               {showPreview ? (
                 <div
                   className="border rounded-md p-4 bg-white text-sm max-h-80 overflow-y-auto"
-                  dangerouslySetInnerHTML={{ __html: generatedBody }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(generatedBody) }}
                 />
               ) : (
                 <Textarea

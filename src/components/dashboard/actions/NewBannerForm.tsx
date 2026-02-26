@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { Loader2, Figma, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { toPng } from 'html-to-image';
 import { SectionTitle, Chip } from './shared';
 
 const SIZES = ['1080x1080', '1200x628', '1080x1920', '600x200', '1920x1080'];
@@ -77,6 +76,7 @@ export default function NewBannerForm({ onResult }: { onResult: (l: string, c: s
       await new Promise((r) => setTimeout(r, 500));
 
       const body = iframeDoc.body;
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(body, { width: w, height: h, pixelRatio: 2 });
       document.body.removeChild(iframe);
 

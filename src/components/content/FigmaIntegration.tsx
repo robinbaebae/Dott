@@ -68,6 +68,21 @@ export default function FigmaIntegration() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewDataUrlRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state for cleanup on unmount
+  useEffect(() => {
+    previewDataUrlRef.current = previewDataUrl;
+  }, [previewDataUrl]);
+
+  // Revoke blob URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (previewDataUrlRef.current) {
+        URL.revokeObjectURL(previewDataUrlRef.current);
+      }
+    };
+  }, []);
 
   const checkConnection = async () => {
     try {

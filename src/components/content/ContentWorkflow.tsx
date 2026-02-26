@@ -225,7 +225,7 @@ export default function ContentWorkflow({ onResult, initialTopic }: Props) {
     <div className="flex gap-5" style={{ minHeight: 'calc(100vh - 220px)' }}>
 
       {/* ===== LEFT: Platform + AI Assist ===== */}
-      <div className="w-[200px] shrink-0 space-y-5">
+      <div className="w-[180px] shrink-0 space-y-5">
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Platforms</p>
           <div className="space-y-1">
@@ -361,20 +361,30 @@ export default function ContentWorkflow({ onResult, initialTopic }: Props) {
         {/* Toolbar */}
         <div className="px-4 py-2.5 bg-card border border-border rounded-t-xl space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex gap-1">
-              {selectedPlatforms.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setActivePreview(p)}
-                  className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                    activePreview === p
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  {PLATFORMS.find((pl) => pl.value === p)?.label || p}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1">
+              {selectedPlatforms.map((p) => {
+                const pl = PLATFORMS.find((pl) => pl.value === p);
+                const short: Record<string, string> = {
+                  instagram: 'IG',
+                  threads: 'Threads',
+                  blog: 'Blog',
+                  brand_message: '브랜드',
+                  newsletter: '뉴스레터',
+                };
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setActivePreview(p)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                      activePreview === p
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {short[p] || pl?.label || p}
+                  </button>
+                );
+              })}
             </div>
             <div className="flex items-center gap-2">
               {hasDrafts && (
@@ -503,7 +513,7 @@ export default function ContentWorkflow({ onResult, initialTopic }: Props) {
       </div>
 
       {/* ===== RIGHT: Live Preview ===== */}
-      <div className="w-[280px] shrink-0 space-y-4 overflow-y-auto">
+      <div className="w-[240px] shrink-0 space-y-4 overflow-y-auto">
         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</p>
 
         {/* Instagram Preview */}

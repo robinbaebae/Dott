@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback, KeyboardEvent, CompositionEvent } from 'react';
 import { Send, CheckCircle2, ExternalLink, Image, Loader2, Plus, X, Copy, Check, History, MessageSquarePlus, Trash2, ArrowLeft, CalendarPlus, Figma } from 'lucide-react';
-import { toPng } from 'html-to-image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
@@ -145,6 +144,7 @@ function FigmaDesignPreview({ msg }: { msg: KnowbarMessage }) {
       await new Promise((r) => setTimeout(r, 500));
 
       const body = iframeDoc.body;
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(body, { width: w, height: h, pixelRatio: 2 });
       document.body.removeChild(iframe);
 

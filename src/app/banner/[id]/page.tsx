@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { supabaseAdmin } from '@/lib/supabase';
 import { notFound, redirect } from 'next/navigation';
 
@@ -25,7 +26,7 @@ export default async function BannerPage({ params }: Props) {
 
   return (
     <div
-      dangerouslySetInnerHTML={{ __html: banner.html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(banner.html) }}
       style={{ margin: 0, padding: 0 }}
     />
   );

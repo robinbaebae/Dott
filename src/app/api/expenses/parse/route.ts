@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { spawn } from 'child_process';
 import * as XLSX from 'xlsx';
 
-const CLI_PATH = '/Users/sooyoungbae/.npm-global/bin/claude';
+const CLI_PATH = process.env.CLAUDE_CLI_PATH || 'claude';
 
 const SYSTEM_PROMPT = `당신은 법인카드 명세서/가계부 파서입니다. 주어진 텍스트 데이터에서 지출 내역을 추출하여 JSON 배열로 반환하세요.
 

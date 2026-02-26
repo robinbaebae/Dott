@@ -53,6 +53,13 @@ function TabFallback() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const [isElectron, setIsElectron] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      setIsElectron(true);
+    }
+  }, []);
 
   // Track which tabs have been visited (lazy mount)
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(new Set());
@@ -89,8 +96,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // If pathname is not a known tab (e.g. /banner/[id], /chat), render normally
   if (!currentTab) {
     return (
-      <div className="flex h-screen pt-12 px-3 pb-3 gap-3 app-gradient">
-        <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+      <div className={`flex h-screen ${isElectron ? 'pt-12' : 'pt-3'} px-3 pb-3 gap-3 app-gradient`}>
+        {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopBar />
@@ -103,8 +110,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Authenticated with tab — render all visited tabs, show only active
   return (
-    <div className="flex h-screen pt-12 px-3 pb-3 gap-3 app-gradient">
-      <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+    <div className={`flex h-screen ${isElectron ? 'pt-12' : 'pt-3'} px-3 pb-3 gap-3 app-gradient`}>
+      {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar />

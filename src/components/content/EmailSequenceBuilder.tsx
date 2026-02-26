@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -518,7 +519,7 @@ export default function EmailSequenceBuilder() {
               <div
                 className="bg-white text-black rounded"
                 style={{ maxWidth: 600, margin: '0 auto' }}
-                dangerouslySetInnerHTML={{ __html: selectedItem.body_html }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedItem.body_html) }}
               />
             </div>
             <div className="px-4 py-3 border-t border-border space-y-2">

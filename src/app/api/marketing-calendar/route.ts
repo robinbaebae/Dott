@@ -9,73 +9,22 @@ export interface MarketingEvent {
   description: string;
 }
 
-interface IBossAjaxEvent {
-  className: string;
-  title: string;
-  start: string;
-  end: string;
-  url: string;
-  description: string;
-  category: string;
-}
-
 // Simple in-memory cache (key: year-month, TTL: 1 hour)
 const cache = new Map<string, { data: MarketingEvent[]; ts: number }>();
 const CACHE_TTL = 60 * 60 * 1000;
 
-// Session cookie cache (reuse across requests)
-let sessionCookie: { value: string; ts: number } | null = null;
-const SESSION_TTL = 30 * 60 * 1000; // 30 min
-
-async function getSessionCookie(): Promise<string> {
-  if (sessionCookie && Date.now() - sessionCookie.ts < SESSION_TTL) {
-    return sessionCookie.value;
-  }
-
-  const res = await fetch('https://www.i-boss.co.kr/ab-marketing_calendar', {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-      'Accept': 'text/html',
-    },
-    redirect: 'follow',
-  });
-
-  const setCookies = res.headers.getSetCookie?.() || [];
-  const phpSession = setCookies
-    .map((c) => c.split(';')[0])
-    .find((c) => c.startsWith('PHPSESSID='));
-
-  const cookie = phpSession || '';
-  sessionCookie = { value: cookie, ts: Date.now() };
-
-  // Also parse current month events from the initial HTML for caching
-  const html = await res.text();
-  cacheCurrentMonthFromHtml(html);
-
-  return cookie;
-}
-
-function cacheCurrentMonthFromHtml(html: string) {
-  // Parse events from initial page load (current month only)
+function parseEventsFromHtml(html: string): MarketingEvent[] {
   const startIdx = html.indexOf('events: [');
-  if (startIdx === -1) return;
+  if (startIdx === -1) return [];
 
   let bracketDepth = 0, arrayStart = -1, arrayEnd = -1;
   for (let i = startIdx; i < html.length; i++) {
     if (html[i] === '[') { if (!bracketDepth) arrayStart = i; bracketDepth++; }
     else if (html[i] === ']') { bracketDepth--; if (!bracketDepth) { arrayEnd = i; break; } }
   }
-  if (arrayStart === -1 || arrayEnd === -1) return;
+  if (arrayStart === -1 || arrayEnd === -1) return [];
 
-  const events = parseEventsFromRaw(html.slice(arrayStart + 1, arrayEnd));
-  if (events.length === 0) return;
-
-  // Determine month from first event
-  const firstDate = events[0].start;
-  const monthKey = firstDate.slice(0, 7); // e.g. "2026-02"
-  if (!cache.has(monthKey)) {
-    cache.set(monthKey, { data: events, ts: Date.now() });
-  }
+  return parseEventsFromRaw(html.slice(arrayStart + 1, arrayEnd));
 }
 
 function parseEventsFromRaw(content: string): MarketingEvent[] {
@@ -136,78 +85,48 @@ async function fetchIBossEvents(year: number, month: number): Promise<MarketingE
   }
 
   try {
-    // Step 1: Get session cookie (may also cache current month)
-    const cookie = await getSessionCookie();
-
-    // Check if cacheCurrentMonthFromHtml already populated this month
-    const freshCached = cache.get(cacheKey);
-    if (freshCached && Date.now() - freshCached.ts < CACHE_TTL) {
-      return freshCached.data;
-    }
-
-    // Step 2: Call AJAX endpoint for the specific month
-    const monthStr = `${year}년 ${month}월`;
-    const body = `month=${encodeURIComponent(monthStr)}&filter%5B%5D=all&type=calendar`;
-
-    const res = await fetch(
-      'https://www.i-boss.co.kr/template/PLUGIN_utility/program/calendar_keyword.ajax.php',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          'Referer': 'https://www.i-boss.co.kr/ab-marketing_calendar',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cookie': cookie,
-        },
-        body,
-      }
-    );
+    // Fetch the HTML page directly — the AJAX endpoint no longer returns JSON
+    const res = await fetch('https://www.i-boss.co.kr/ab-marketing_calendar', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+      redirect: 'follow',
+    });
 
     if (!res.ok) return [];
 
-    const json = await res.json();
-    if (json.code !== 1 || !json.makeEvents) {
-      // Retry with fresh session
-      sessionCookie = null;
-      const freshCookie = await getSessionCookie();
-      const retryRes = await fetch(
-        'https://www.i-boss.co.kr/template/PLUGIN_utility/program/calendar_keyword.ajax.php',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            'Referer': 'https://www.i-boss.co.kr/ab-marketing_calendar',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Cookie': freshCookie,
-          },
-          body,
-        }
-      );
-      const retryJson = await retryRes.json();
-      if (retryJson.code !== 1 || !retryJson.makeEvents) return [];
-      return processAjaxEvents(retryJson.makeEvents, cacheKey);
+    const html = await res.text();
+    const events = parseEventsFromHtml(html);
+
+    // The initial page always loads the current month's events.
+    // Cache them with the actual month from the event data.
+    if (events.length > 0) {
+      // Determine what month the page returned
+      const firstDate = events[0].start;
+      const pageMonthKey = firstDate.slice(0, 7); // e.g. "2026-02"
+      cache.set(pageMonthKey, { data: events, ts: Date.now() });
+
+      // If the requested month matches, return directly
+      if (pageMonthKey === cacheKey) {
+        return events;
+      }
     }
 
-    return processAjaxEvents(json.makeEvents, cacheKey);
+    // For other months, filter events that fall within the requested month
+    const monthPrefix = cacheKey; // e.g. "2026-03"
+    const monthEvents = events.filter((ev) => ev.start.startsWith(monthPrefix) || ev.end.startsWith(monthPrefix));
+    if (monthEvents.length > 0) {
+      cache.set(cacheKey, { data: monthEvents, ts: Date.now() });
+      return monthEvents;
+    }
+
+    // If the requested month isn't the current month and has no events from the page, return empty
+    return [];
   } catch (err) {
     console.error('[marketing-calendar] fetch error:', err);
     return [];
   }
-}
-
-function processAjaxEvents(makeEvents: IBossAjaxEvent[], cacheKey: string): MarketingEvent[] {
-  const events: MarketingEvent[] = makeEvents.map((e) => ({
-    title: e.title || '',
-    start: (e.start || '').split(' ')[0],
-    end: (e.end || '').split(' ')[0],
-    category: e.category || '',
-    description: e.description || '',
-  }));
-
-  cache.set(cacheKey, { data: events, ts: Date.now() });
-  return events;
 }
 
 export async function GET(req: NextRequest) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 function syncThemeToElectron(theme: string) {
@@ -25,6 +25,7 @@ function getSystemDark(): boolean {
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
+  const themeListenerRegistered = useRef(false);
 
   useEffect(() => {
     // Init: follow system theme
@@ -41,8 +42,10 @@ export default function ThemeToggle() {
     mq.addEventListener('change', mqHandler);
 
     // Listen for Electron native theme changes (OS-level)
+    // Guard with ref to prevent duplicate registrations (e.g. StrictMode double-mount)
     const w = window as any;
-    if (w.electronAPI?.onThemeChange) {
+    if (w.electronAPI?.onThemeChange && !themeListenerRegistered.current) {
+      themeListenerRegistered.current = true;
       w.electronAPI.onThemeChange((theme: string) => {
         const isDark = theme === 'dark';
         setDark(isDark);
