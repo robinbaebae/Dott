@@ -1,0 +1,4 @@
+dist-electron
+*.dmg
+public/downloads/
+figma-plugin
