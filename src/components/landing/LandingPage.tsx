@@ -198,12 +198,28 @@ const BG_CTA = `
 /* ─────────── component ─────────── */
 export default function LandingPage() {
   const [animating, setAnimating] = useState(false);
+  const [isElectron, setIsElectron] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      setIsElectron(true);
+    }
+  }, []);
 
   const handleGetStarted = () => {
     if (animating) return;
     setAnimating(true);
     setTimeout(() => {
       signIn('google', { callbackUrl: '/' });
+    }, 1300);
+  };
+
+  const handleDemo = () => {
+    if (animating) return;
+    setAnimating(true);
+    sessionStorage.setItem('dott-demo', 'true');
+    setTimeout(() => {
+      window.location.reload();
     }, 1300);
   };
 
@@ -235,12 +251,22 @@ export default function LandingPage() {
             <img src="/logo-dott.png" alt="Dott" className="w-8 h-8 rounded-lg" />
             <span className="text-base font-semibold text-[#5B4D6E]">Dott</span>
           </div>
-          <button
-            onClick={handleGetStarted}
-            className="glass-card rounded-full px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover-lift cursor-pointer hover:elevation-2 transition-all"
-          >
-            시작하기
-          </button>
+          {isElectron ? (
+            <button
+              onClick={handleGetStarted}
+              className="glass-card rounded-full px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover-lift cursor-pointer hover:elevation-2 transition-all"
+            >
+              시작하기
+            </button>
+          ) : (
+            <a
+              href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
+              className="glass-card rounded-full px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover-lift cursor-pointer hover:elevation-2 transition-all flex items-center gap-2"
+            >
+              <Download className="size-4" />
+              앱 다운로드
+            </a>
+          )}
         </div>
       </nav>
 
@@ -251,9 +277,7 @@ export default function LandingPage() {
       >
         <Section variant="scale">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
-            <div className="glass-float rounded-3xl p-1.5 mb-12 elevation-3">
-              <img src="/logo-dott.png" alt="Dott" className="w-28 h-28 rounded-2xl" />
-            </div>
+            <img src="/logo-dott.png" alt="Dott" className="w-28 h-28 rounded-2xl mb-12" />
 
             <div className="inline-flex items-center gap-2 glass-card rounded-full px-5 py-2 mb-8">
               <Sparkles className="size-4 text-[#7B5B8B]" />
@@ -271,31 +295,46 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <button
-                onClick={handleGetStarted}
-                className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-[#5B4D6E] text-white hover:bg-[#6B5B7B] active:scale-[0.97] transition-all elevation-3 cursor-pointer"
-              >
-                <Globe className="size-5" />
-                웹에서 시작하기
-                <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-              <a
-                href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
-                className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white/70 backdrop-blur-sm text-[#5B4D6E] border border-[#5B4D6E]/15 hover:bg-white/90 active:scale-[0.97] transition-all elevation-1 cursor-pointer"
-              >
-                <Monitor className="size-5" />
-                macOS 앱 다운로드
-                <Download className="size-4 group-hover:translate-y-0.5 transition-transform" />
-              </a>
+              {isElectron ? (
+                <button
+                  onClick={handleGetStarted}
+                  className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-[#5B4D6E] text-white hover:bg-[#6B5B7B] active:scale-[0.97] transition-all elevation-3 cursor-pointer"
+                >
+                  <LogIn className="size-5" />
+                  Google로 시작하기
+                  <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              ) : (
+                <>
+                  <a
+                    href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
+                    className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-[#5B4D6E] text-white hover:bg-[#6B5B7B] active:scale-[0.97] transition-all elevation-3 cursor-pointer"
+                  >
+                    <Monitor className="size-5" />
+                    macOS 앱 다운로드
+                    <Download className="size-4 group-hover:translate-y-0.5 transition-transform" />
+                  </a>
+                  <button
+                    onClick={handleDemo}
+                    className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white/70 backdrop-blur-sm text-[#5B4D6E] border border-[#5B4D6E]/15 hover:bg-white/90 active:scale-[0.97] transition-all elevation-1 cursor-pointer"
+                  >
+                    <Globe className="size-5" />
+                    데모 체험하기
+                    <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="mt-6 flex items-center gap-6 text-sm text-[#8B82A0]">
               <span className="flex items-center gap-1.5">
-                <Globe className="size-3.5" /> 웹 브라우저
+                <Monitor className="size-3.5" /> macOS 데스크톱 앱
               </span>
-              <span className="flex items-center gap-1.5">
-                <Monitor className="size-3.5" /> macOS 데스크톱
-              </span>
+              {!isElectron && (
+                <span className="flex items-center gap-1.5">
+                  <Globe className="size-3.5" /> 웹 데모
+                </span>
+              )}
             </div>
           </div>
         </Section>
@@ -499,7 +538,7 @@ export default function LandingPage() {
               Dott은 <span className="text-[#5B4D6E]">AI 브랜드 비서</span>입니다
             </h2>
             <p className="text-base text-[#4A3D55] text-center max-w-xl mx-auto mb-16">
-              마케팅에 필요한 모든 것을 웹과 macOS 앱 하나에.<br />
+              마케팅에 필요한 모든 것을 macOS 앱 하나에.<br />
               AI가 당신의 브랜드를 학습하고, 4명의 전문가처럼 일합니다.
             </p>
           </Section>
@@ -655,12 +694,14 @@ export default function LandingPage() {
           <Section variant="up">
             <p className="text-sm text-white/50 mb-3">Available on</p>
             <div className="flex items-center justify-center gap-8 mb-8">
-              <span className="flex items-center gap-2 text-base font-medium text-white/80">
-                <Globe className="size-5" /> Web
+              <span className="flex items-center gap-2 text-base font-medium text-white">
+                <Monitor className="size-5" /> macOS 데스크톱
               </span>
-              <span className="flex items-center gap-2 text-base font-medium text-white/80">
-                <Monitor className="size-5" /> macOS
-              </span>
+              {!isElectron && (
+                <span className="flex items-center gap-2 text-base font-medium text-white/50">
+                  <Globe className="size-5" /> 웹 데모
+                </span>
+              )}
             </div>
             <p className="text-sm text-white/50 mb-6">Built with</p>
             <div className="flex items-center justify-center gap-10 flex-wrap">
@@ -683,24 +724,37 @@ export default function LandingPage() {
                 당신의 브랜드를 이해하는 AI가 기다리고 있습니다.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button
-                  onClick={handleGetStarted}
-                  className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white text-[#5B4D6E] hover:bg-white/90 active:scale-[0.97] transition-all shadow-lg cursor-pointer"
-                >
-                  <Globe className="size-5" />
-                  웹에서 시작하기
-                  <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-                <a
-                  href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
-                  className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/15 active:scale-[0.97] transition-all cursor-pointer"
-                >
-                  <Monitor className="size-5" />
-                  macOS 다운로드
-                  <Download className="size-4 group-hover:translate-y-0.5 transition-transform" />
-                </a>
+                {isElectron ? (
+                  <button
+                    onClick={handleGetStarted}
+                    className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white text-[#5B4D6E] hover:bg-white/90 active:scale-[0.97] transition-all shadow-lg cursor-pointer"
+                  >
+                    <LogIn className="size-5" />
+                    Google로 시작하기
+                    <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                ) : (
+                  <>
+                    <a
+                      href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
+                      className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white text-[#5B4D6E] hover:bg-white/90 active:scale-[0.97] transition-all shadow-lg cursor-pointer"
+                    >
+                      <Monitor className="size-5" />
+                      macOS 앱 다운로드
+                      <Download className="size-4 group-hover:translate-y-0.5 transition-transform" />
+                    </a>
+                    <button
+                      onClick={handleDemo}
+                      className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/15 active:scale-[0.97] transition-all cursor-pointer"
+                    >
+                      <Globe className="size-5" />
+                      데모 체험하기
+                      <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  </>
+                )}
               </div>
-              <p className="mt-5 text-sm text-white/50">웹 브라우저 · macOS 데스크톱 · 설치 후 바로 사용 가능</p>
+              <p className="mt-5 text-sm text-white/50">macOS 데스크톱 전용 · 설치 후 바로 사용 가능</p>
             </div>
           </Section>
         </div>

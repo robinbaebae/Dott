@@ -83,6 +83,11 @@ let notificationSettingsCache = null;
 let notificationSettingsCacheTime = 0;
 const SETTINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Claude plan usage cache
+let claudePlanCache = null;
+let claudePlanCacheTime = 0;
+const PLAN_CACHE_TTL = 60 * 1000; // 1 minute
+
 // Theme sync
 let currentTheme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 
@@ -687,7 +692,103 @@ async function updatePetMood() {
   } catch { /* skip */ }
 }
 
-// 3. Token Usage Check (hourly)
+// 3. Claude Plan & Usage Info
+// =========================================================
+function getClaudePlanInfo() {
+  if (claudePlanCache && Date.now() - claudePlanCacheTime < PLAN_CACHE_TTL) {
+    return claudePlanCache;
+  }
+  try {
+    const { execSync } = require('child_process');
+    const fs = require('fs');
+    const os = require('os');
+
+    // Get auth status
+    let authInfo = null;
+    try {
+      const claudePath = process.env.CLAUDE_CLI_PATH ||
+        (() => { try { return execSync('which claude').toString().trim(); } catch { return 'claude'; } })();
+      const env = { ...process.env };
+      delete env.CLAUDECODE;
+      delete env.CLAUDE_CODE_ENTRYPOINT;
+      const raw = execSync(`${claudePath} auth status --json`, { env, timeout: 5000 }).toString().trim();
+      authInfo = JSON.parse(raw);
+    } catch { /* skip */ }
+
+    // Read stats cache
+    let stats = null;
+    try {
+      const statsPath = path.join(os.homedir(), '.claude', 'stats-cache.json');
+      if (fs.existsSync(statsPath)) {
+        stats = JSON.parse(fs.readFileSync(statsPath, 'utf-8'));
+      }
+    } catch { /* skip */ }
+
+    // Calculate weekly usage from dailyModelTokens
+    let weekTokens = 0;
+    let todayTokens = 0;
+    let weekMessages = 0;
+    let todayMessages = 0;
+    if (stats) {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      // Week start = last Monday (or today if Monday)
+      const dayOfWeek = now.getDay();
+      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - mondayOffset);
+      const weekStartStr = weekStart.toISOString().slice(0, 10);
+
+      if (stats.dailyModelTokens) {
+        for (const entry of stats.dailyModelTokens) {
+          if (entry.date >= weekStartStr) {
+            const dayTotal = Object.values(entry.tokensByModel).reduce((s, v) => s + v, 0);
+            weekTokens += dayTotal;
+            if (entry.date === today) todayTokens = dayTotal;
+          }
+        }
+      }
+      if (stats.dailyActivity) {
+        for (const entry of stats.dailyActivity) {
+          if (entry.date >= weekStartStr) {
+            weekMessages += entry.messageCount || 0;
+            if (entry.date === today) todayMessages = entry.messageCount || 0;
+          }
+        }
+      }
+    }
+
+    // Calculate reset time (next Monday 00:00)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysUntilMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 7 : 8 - dayOfWeek;
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysUntilMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+    const hoursUntilReset = Math.ceil((nextMonday - now) / (1000 * 60 * 60));
+
+    const result = {
+      plan: authInfo?.subscriptionType || 'unknown',
+      email: authInfo?.email || '',
+      loggedIn: authInfo?.loggedIn || false,
+      weekTokens,
+      todayTokens,
+      weekMessages,
+      todayMessages,
+      totalSessions: stats?.totalSessions || 0,
+      hoursUntilReset,
+      resetDay: `${nextMonday.getMonth() + 1}/${nextMonday.getDate()} (월)`,
+    };
+
+    claudePlanCache = result;
+    claudePlanCacheTime = Date.now();
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+// Token Usage Check (hourly)
 // =========================================================
 async function checkTokenUsage() {
   try {
@@ -869,8 +970,28 @@ function rebuildTrayMenu() {
       click: () => sendDailyBriefing(),
     },
     {
-      label: '💰 Token Usage',
-      click: () => checkTokenUsage(),
+      label: '💰 Claude Usage',
+      click: () => {
+        try {
+          const info = getClaudePlanInfo();
+          if (!info || !info.loggedIn) {
+            showNotification('Claude Usage', 'Claude CLI 미연결 — 터미널에서 claude 로그인 필요');
+            return;
+          }
+          const formatK = (n) => (n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`);
+          const planLabel = { max: 'Max', pro: 'Pro', free: 'Free', unknown: '-' }[info.plan] || info.plan;
+          const lines = [
+            `📌 플랜: ${planLabel}`,
+            `오늘: ${formatK(info.todayTokens)} 토큰 / ${info.todayMessages}건`,
+            `주간: ${formatK(info.weekTokens)} 토큰 / ${info.weekMessages}건`,
+            `⏳ 재설정: ${info.resetDay} (${info.hoursUntilReset}시간 후)`,
+          ].join('\n');
+          showNotification('💰 Claude Usage', lines);
+          sendPetMessage(lines);
+        } catch {
+          showNotification('Claude Usage', '사용량 정보를 가져올 수 없습니다');
+        }
+      },
     },
     {
       label: `⏱ Work Time: ${formatWorkTime(workMinutes)}`,
@@ -1020,6 +1141,13 @@ ipcMain.on('show-notification', (_, { title, body }) => {
 ipcMain.on('content-step-notification', (_, { step, message }) => {
   sendPetMessage(message);
   showNotification('Dott 콘텐츠', message);
+});
+
+// =========================================================
+// Claude Plan Info Handler
+// =========================================================
+ipcMain.handle('claude-plan-info', () => {
+  return getClaudePlanInfo();
 });
 
 // =========================================================

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startDrag: () => ipcRenderer.send('pet-start-drag'),
   dragMove: (x, y) => ipcRenderer.send('pet-drag-move', { x, y }),
   getTokenUsage: () => ipcRenderer.invoke('pet-token-usage'),
+  getClaudePlan: () => ipcRenderer.invoke('claude-plan-info'),
   getNextMeeting: () => ipcRenderer.invoke('pet-next-meeting'),
   getCalendarEvents: () => ipcRenderer.invoke('pet-calendar-events'),
   createCalendarEvent: (data) => ipcRenderer.invoke('pet-create-event', data),

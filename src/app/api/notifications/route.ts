@@ -10,7 +10,7 @@ export async function GET() {
     .from('activity_logs')
     .select('id, action_type, agent_id, details, created_at')
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(50);
 
   if (error) {
     console.error('[notifications/GET] DB error:', error);

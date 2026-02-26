@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface DailyReport {
   report_date: string;
@@ -155,9 +156,21 @@ export default function YesterdayWork() {
         )}
 
         {/* AI summary text */}
-        <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
-          {expanded ? report.report_text : previewText}
-          {!expanded && hasMore && '...'}
+        <div className="text-sm leading-relaxed text-foreground/90">
+          <ReactMarkdown
+            components={{
+              h2: ({ children }) => <h2 className="text-sm font-semibold mt-3 mb-1">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-xs font-semibold mt-2 mb-0.5 text-foreground/80">{children}</h3>,
+              p: ({ children }) => <p className="mb-1.5">{children}</p>,
+              strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+              ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5">{children}</ol>,
+              li: ({ children }) => <li className="text-foreground/80">{children}</li>,
+            }}
+          >
+            {expanded ? report.report_text : previewText}
+          </ReactMarkdown>
+          {!expanded && hasMore && <span className="text-muted-foreground">...</span>}
         </div>
 
         {hasMore && (

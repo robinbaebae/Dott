@@ -2,7 +2,7 @@
 
 import { Bell, Search, X, Target, Layers, PenTool, Users, Lightbulb, Calendar, TrendingUp, BarChart3, CreditCard, Megaphone, Wrench, Settings, FileText, Home } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 
 interface Notification {
@@ -13,15 +13,21 @@ interface Notification {
   created_at: string;
 }
 
-const ACTION_META: Record<string, { label: string; color: string }> = {
-  task_create: { label: '새 태스크', color: 'blue' },
-  task_complete: { label: '태스크 완료', color: 'green' },
-  banner_generate: { label: '배너 생성', color: 'peach' },
-  ad_creatives_generated: { label: '광고 크리에이티브', color: 'amber' },
-  content_materials_generated: { label: '콘텐츠 소재', color: 'pink' },
-  content_drafts_generated: { label: '초안 생성', color: 'blue' },
-  content_project_create: { label: '프로젝트 생성', color: 'green' },
-  daily_report: { label: '데일리 리포트', color: 'amber' },
+const ACTION_META: Record<string, { label: string; color: string; path: string }> = {
+  task_create: { label: '새 태스크', color: 'blue', path: '/tasks' },
+  task_complete: { label: '태스크 완료', color: 'green', path: '/tasks' },
+  banner_generate: { label: '배너 생성', color: 'peach', path: '/content' },
+  ad_creatives_generated: { label: '광고 크리에이티브', color: 'amber', path: '/content' },
+  content_materials_generated: { label: '콘텐츠 소재', color: 'pink', path: '/content' },
+  content_drafts_generated: { label: '초안 생성', color: 'blue', path: '/content' },
+  content_project_create: { label: '프로젝트 생성', color: 'green', path: '/content' },
+  daily_report: { label: '데일리 리포트', color: 'amber', path: '/' },
+  insight_generated: { label: '인사이트', color: 'blue', path: '/insight' },
+  trend_report: { label: '트렌드', color: 'pink', path: '/trends' },
+  influencer_search: { label: '인플루언서', color: 'green', path: '/influencer' },
+  ad_report: { label: '광고 리포트', color: 'amber', path: '/ads' },
+  memo_create: { label: '메모', color: 'blue', path: '/memo' },
+  promotion_create: { label: '프로모션', color: 'peach', path: '/promotion' },
 };
 
 const PAGE_META: Record<string, { icon: LucideIcon; title: string }> = {
@@ -42,8 +48,10 @@ const PAGE_META: Record<string, { icon: LucideIcon; title: string }> = {
 };
 
 function getActionMeta(type: string) {
-  return ACTION_META[type] || { label: type.replace(/_/g, ' '), color: 'blue' };
+  return ACTION_META[type] || { label: type.replace(/_/g, ' '), color: 'blue', path: '/' };
 }
+
+const READ_KEY = 'dott-notif-read';
 
 function colorClasses(color: string) {
   const map: Record<string, string> = {
@@ -69,10 +77,20 @@ function timeAgo(dateStr: string) {
 
 export default function TopBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load read IDs from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(READ_KEY);
+      if (stored) setReadIds(new Set(JSON.parse(stored)));
+    } catch { /* ignore */ }
+  }, []);
 
   // Find matching page meta
   const pageMeta = PAGE_META[pathname] || Object.entries(PAGE_META).find(
@@ -86,12 +104,12 @@ export default function TopBar() {
       const res = await fetch('/api/notifications');
       if (!res.ok) return;
       const data = await res.json();
-      setNotifications(data.notifications || []);
-      // Consider items from the last hour as "unread"
-      const oneHourAgo = Date.now() - 3600000;
-      const count = (data.notifications || []).filter(
-        (n: Notification) => new Date(n.created_at).getTime() > oneHourAgo
-      ).length;
+      const items: Notification[] = data.notifications || [];
+      setNotifications(items);
+      // Unread = not in readIds set
+      const stored = localStorage.getItem(READ_KEY);
+      const readSet = stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+      const count = items.filter((n) => !readSet.has(n.id)).length;
       setUnread(count);
     } catch {
       // silent
@@ -134,7 +152,15 @@ export default function TopBar() {
           <button
             onClick={() => {
               setOpen(!open);
-              if (!open) setUnread(0);
+              if (!open) {
+                // Mark all current notifications as read
+                const allIds = new Set([...readIds, ...notifications.map((n) => n.id)]);
+                setReadIds(allIds);
+                setUnread(0);
+                // Keep only last 200 IDs to prevent localStorage bloat
+                const arr = [...allIds].slice(-200);
+                localStorage.setItem(READ_KEY, JSON.stringify(arr));
+              }
             }}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer relative"
           >
@@ -162,12 +188,20 @@ export default function TopBar() {
                 ) : (
                   notifications.map((n) => {
                     const meta = getActionMeta(n.action_type);
+                    const isRead = readIds.has(n.id);
                     return (
-                      <div
+                      <button
                         key={n.id}
-                        className="px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
+                        onClick={() => {
+                          router.push(meta.path);
+                          setOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0 cursor-pointer ${isRead ? 'opacity-50' : ''}`}
                       >
                         <div className="flex items-start gap-3">
+                          {!isRead && (
+                            <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
+                          )}
                           <span
                             className={`shrink-0 mt-0.5 px-2 py-0.5 rounded-lg text-[10px] font-semibold ${colorClasses(meta.color)}`}
                           >
@@ -184,7 +218,7 @@ export default function TopBar() {
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })
                 )}

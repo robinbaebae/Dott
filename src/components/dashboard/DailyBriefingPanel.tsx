@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, RefreshCw, ChevronDown, ChevronUp, TrendingUp, FileText, Target, Zap } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface BriefingData {
   report_text: string;
@@ -198,9 +199,21 @@ export default function DailyBriefingPanel() {
         {/* AI Report text */}
         {reportLines.length > 0 ? (
           <>
-            <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
-              {expanded ? reportLines.join('\n') : previewLines.join('\n')}
-              {!expanded && hasMore && '...'}
+            <div className="briefing-prose text-sm leading-relaxed text-foreground/90">
+              <ReactMarkdown
+                components={{
+                  h2: ({ children }) => <h2 className="text-sm font-semibold mt-3 mb-1">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-xs font-semibold mt-2 mb-0.5 text-foreground/80">{children}</h3>,
+                  p: ({ children }) => <p className="mb-1.5">{children}</p>,
+                  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                  ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5">{children}</ol>,
+                  li: ({ children }) => <li className="text-foreground/80">{children}</li>,
+                }}
+              >
+                {expanded ? reportLines.join('\n') : previewLines.join('\n')}
+              </ReactMarkdown>
+              {!expanded && hasMore && <span className="text-muted-foreground">...</span>}
             </div>
             {hasMore && (
               <button onClick={() => setExpanded(!expanded)}
