@@ -1,7 +1,9 @@
 'use client';
 
-import { Bell, Search, X } from 'lucide-react';
+import { Bell, Search, X, Target, Layers, PenTool, Users, Lightbulb, Calendar, TrendingUp, BarChart3, CreditCard, Megaphone, Wrench, Settings, FileText, Home } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -20,6 +22,23 @@ const ACTION_META: Record<string, { label: string; color: string }> = {
   content_drafts_generated: { label: '초안 생성', color: 'blue' },
   content_project_create: { label: '프로젝트 생성', color: 'green' },
   daily_report: { label: '데일리 리포트', color: 'amber' },
+};
+
+const PAGE_META: Record<string, { icon: LucideIcon; title: string }> = {
+  '/': { icon: Home, title: 'Dashboard' },
+  '/ads': { icon: Target, title: '광고 성과' },
+  '/assets': { icon: Layers, title: '에셋 라이브러리' },
+  '/content': { icon: PenTool, title: '콘텐츠' },
+  '/influencer': { icon: Users, title: '인플루언서' },
+  '/insight': { icon: Lightbulb, title: '인사이트' },
+  '/memo': { icon: FileText, title: '메모' },
+  '/tasks': { icon: Calendar, title: '태스크' },
+  '/trends': { icon: TrendingUp, title: '트렌드' },
+  '/analytics': { icon: BarChart3, title: '애널리틱스' },
+  '/ledger': { icon: CreditCard, title: '법인카드 가계부' },
+  '/promotion': { icon: Megaphone, title: '프로모션 설계' },
+  '/tools': { icon: Wrench, title: '마케팅 도구' },
+  '/settings': { icon: Settings, title: '설정' },
 };
 
 function getActionMeta(type: string) {
@@ -49,10 +68,18 @@ function timeAgo(dateStr: string) {
 }
 
 export default function TopBar() {
+  const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Find matching page meta
+  const pageMeta = PAGE_META[pathname] || Object.entries(PAGE_META).find(
+    ([path]) => path !== '/' && pathname.startsWith(path)
+  )?.[1];
+
+  const PageIcon = pageMeta?.icon;
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -89,74 +116,82 @@ export default function TopBar() {
   }, [open]);
 
   return (
-    <div className="h-12 border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-end px-4 gap-2 shrink-0 relative z-10">
-      {/* Search (placeholder) */}
-      <button className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer">
-        <Search className="size-4" />
-      </button>
+    <div className="h-10 flex items-center justify-between px-5 shrink-0 relative z-10 mx-1 mt-1 rounded-xl backdrop-blur-[8px] backdrop-saturate-[1.3] bg-white/8 dark:bg-white/3 border border-white/20 dark:border-white/6 shadow-sm">
+      {/* Page title */}
+      <div className="flex items-center gap-2.5">
+        {PageIcon && <PageIcon className="size-4 text-accent" />}
+        {pageMeta && <h1 className="text-sm font-semibold">{pageMeta.title}</h1>}
+      </div>
 
-      {/* Notifications */}
-      <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => {
-            setOpen(!open);
-            if (!open) setUnread(0);
-          }}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer relative"
-        >
-          <Bell className="size-4" />
-          {unread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-              {unread > 9 ? '9+' : unread}
-            </span>
-          )}
+      {/* Right side: Search + Notifications */}
+      <div className="flex items-center gap-1">
+        <button className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer">
+          <Search className="size-4" />
         </button>
 
-        {open && (
-          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-sm font-semibold text-foreground">알림</span>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  알림이 없습니다
-                </div>
-              ) : (
-                notifications.map((n) => {
-                  const meta = getActionMeta(n.action_type);
-                  return (
-                    <div
-                      key={n.id}
-                      className="px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`shrink-0 mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-semibold ${colorClasses(meta.color)}`}
-                        >
-                          {meta.label}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-foreground truncate">
-                            {(n.details as Record<string, string>)?.title ||
-                              (n.details as Record<string, string>)?.description ||
-                              meta.label}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {timeAgo(n.created_at)}
-                          </p>
+        {/* Notifications */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => {
+              setOpen(!open);
+              if (!open) setUnread(0);
+            }}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer relative"
+          >
+            <Bell className="size-4" />
+            {unread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
+
+          {open && (
+            <div className="absolute right-0 top-full mt-2 w-80 glass-float rounded-xl z-50 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <span className="text-sm font-semibold text-foreground">알림</span>
+                <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    알림이 없습니다
+                  </div>
+                ) : (
+                  notifications.map((n) => {
+                    const meta = getActionMeta(n.action_type);
+                    return (
+                      <div
+                        key={n.id}
+                        className="px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={`shrink-0 mt-0.5 px-2 py-0.5 rounded-lg text-[10px] font-semibold ${colorClasses(meta.color)}`}
+                          >
+                            {meta.label}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-foreground truncate">
+                              {(n.details as Record<string, string>)?.title ||
+                                (n.details as Record<string, string>)?.description ||
+                                meta.label}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {timeAgo(n.created_at)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

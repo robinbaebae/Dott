@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Sidebar from "@/components/layout/Sidebar";
-import TopBar from "@/components/layout/TopBar";
+import AppShell from "@/components/layout/AppShell";
 
 import SessionProvider from "@/components/SessionProvider";
 import { Toaster } from "@/components/ui/sonner";
@@ -47,16 +46,15 @@ export default function RootLayout({
             __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('dott-glass-effect')==='false')document.documentElement.classList.add('no-glass')}catch(e){}`,
+          }}
+        />
       </head>
       <body>
         <SessionProvider>
-          <div className="flex h-screen">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <TopBar />
-              <main className="flex-1 overflow-auto">{children}</main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
           <Toaster position="top-right" richColors closeButton duration={3000} />
         </SessionProvider>
       </body>

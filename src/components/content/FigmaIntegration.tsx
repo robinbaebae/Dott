@@ -26,6 +26,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Zap,
 } from 'lucide-react';
 import type { FigmaPush } from '@/types';
 
@@ -35,14 +36,17 @@ const SIZES = [
   { value: '1080x1920', label: 'Story/Reels (1080x1920)' },
 ];
 
-type PushStatus = 'idle' | 'generating' | 'previewing' | 'pushing' | 'done' | 'failed';
+type PushStatus = 'idle' | 'generating' | 'previewing' | 'pushing' | 'done' | 'done-local' | 'failed';
+type SetupStep = 'token' | 'plugin' | 'complete';
 
 export default function FigmaIntegration() {
-  // Connection
+  // Connection & setup
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
   const [connecting, setConnecting] = useState(false);
+  const [setupStep, setSetupStep] = useState<SetupStep>('token');
+  const [pluginConfirmed, setPluginConfirmed] = useState(false);
 
   // Banner inputs
   const [copy, setCopy] = useState('');
@@ -255,8 +259,8 @@ export default function FigmaIntegration() {
           setError('Figma push 실패. 이미지를 클립보드에 복사할 수 있습니다.');
         }
       } else {
-        // No Electron or no file key — show preview only
-        setPushStatus('done');
+        // No Electron or no file key — show preview only (not pushed to Figma)
+        setPushStatus('done-local');
       }
 
       fetchRecent();
@@ -286,7 +290,8 @@ export default function FigmaIntegration() {
     generating: 'AI 배너 생성 중...',
     previewing: '미리보기 렌더링 중...',
     pushing: 'Figma에 Push 중...',
-    done: '완료',
+    done: 'Figma Push 완료',
+    'done-local': '배너 생성 완료',
     failed: '실패',
   };
 
@@ -306,14 +311,69 @@ export default function FigmaIntegration() {
       <CardContent className="space-y-4">
         {/* Connection */}
         {!connected ? (
-          <div className="space-y-3">
+          <div className="space-y-5">
+            {/* Step-by-step guide */}
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-5 space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Figma className="size-4" />
+                Figma 연동 가이드
+              </h3>
+
+              <div className="space-y-3">
+                {/* Step 1 */}
+                <div className="flex gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mt-0.5">1</span>
+                  <div>
+                    <p className="text-sm font-medium">Figma 계정 로그인</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      <a href="https://www.figma.com/login" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                        figma.com <ExternalLink className="size-3" />
+                      </a>
+                      에 접속하여 로그인하세요. 계정이 없다면 무료로 가입할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mt-0.5">2</span>
+                  <div>
+                    <p className="text-sm font-medium">Personal Access Token 생성</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Figma 좌측 상단 프로필 아이콘 →{' '}
+                      <span className="font-medium text-foreground/80">Settings</span> →{' '}
+                      <span className="font-medium text-foreground/80">Security</span> 탭 →{' '}
+                      <span className="font-medium text-foreground/80">Personal access tokens</span> →{' '}
+                      <span className="font-medium text-foreground/80">Generate new token</span>
+                    </p>
+                    <div className="mt-2 p-2.5 rounded-lg bg-muted/50 border border-border/40">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        💡 토큰 생성 시 <span className="font-medium text-foreground/70">File content</span> 권한을{' '}
+                        <span className="font-medium text-foreground/70">Read and write</span>로 설정하세요.
+                        토큰은 <code className="px-1 py-0.5 rounded bg-muted text-[11px]">figd_</code>로 시작합니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mt-0.5">3</span>
+                  <div>
+                    <p className="text-sm font-medium">아래에 토큰 입력 후 연결</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      생성된 토큰을 복사하여 아래에 붙여넣고 Connect 버튼을 누르세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Token input */}
             <div>
               <label className="text-sm font-medium mb-1.5 block">
                 Personal Access Token
               </label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Figma &gt; Settings &gt; Personal access tokens에서 생성
-              </p>
               <div className="flex gap-2">
                 <Input
                   type="password"
@@ -328,13 +388,48 @@ export default function FigmaIntegration() {
                 </Button>
               </div>
             </div>
+
+            {/* Auto-push plugin guide */}
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-5 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Zap className="size-4" />
+                자동 Push 플러그인 (선택)
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Figma 플러그인을 설치하면, Dott에서 생성한 배너가 Figma 파일에 자동으로 배치됩니다.
+              </p>
+              <div className="space-y-2">
+                <div className="flex gap-2.5 items-start">
+                  <span className="text-xs text-muted-foreground mt-0.5 shrink-0">1.</span>
+                  <p className="text-xs text-muted-foreground">
+                    Figma 상단 메뉴 →{' '}
+                    <span className="font-medium text-foreground/80">Plugins</span> →{' '}
+                    <span className="font-medium text-foreground/80">Development</span> →{' '}
+                    <span className="font-medium text-foreground/80">Import plugin from manifest</span>
+                  </p>
+                </div>
+                <div className="flex gap-2.5 items-start">
+                  <span className="text-xs text-muted-foreground mt-0.5 shrink-0">2.</span>
+                  <p className="text-xs text-muted-foreground">
+                    프로젝트 폴더 내{' '}
+                    <code className="px-1 py-0.5 rounded bg-muted text-[11px]">figma-plugin/manifest.json</code> 선택
+                  </p>
+                </div>
+                <div className="flex gap-2.5 items-start">
+                  <span className="text-xs text-muted-foreground mt-0.5 shrink-0">3.</span>
+                  <p className="text-xs text-muted-foreground">
+                    플러그인 실행 후 서버 URL과 이메일을 입력하면 자동 Push가 활성화됩니다
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Connected header */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-green-600 font-medium flex items-center gap-1.5">
-                <span className="size-2 bg-green-500 rounded-full" />
+                <span className="size-2 bg-green-500 rounded-full animate-pulse" />
                 Figma 연결됨
               </span>
               <Button variant="ghost" size="sm" onClick={disconnect} className="text-xs h-7 gap-1">
@@ -342,6 +437,78 @@ export default function FigmaIntegration() {
                 연결 해제
               </Button>
             </div>
+
+            {/* Plugin setup reminder (collapsible) */}
+            {!pluginConfirmed && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-medium flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                    <Zap className="size-4" />
+                    자동 Push 플러그인을 설치하셨나요?
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPluginConfirmed(true)}
+                    className="h-6 w-6 p-0 shrink-0"
+                  >
+                    <X className="size-3" />
+                  </Button>
+                </div>
+                <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                  Figma 플러그인을 설치하면 배너를 생성할 때 Figma 파일에 자동 배치됩니다. 미설치 시 이미지 다운로드/복사만 가능합니다.
+                </p>
+                <details className="group">
+                  <summary className="text-xs font-medium text-amber-800 dark:text-amber-300 cursor-pointer select-none flex items-center gap-1">
+                    <ChevronDown className="size-3 group-open:rotate-180 transition-transform" />
+                    플러그인 설치 방법 보기
+                  </summary>
+                  <div className="mt-2.5 space-y-2 pl-4 border-l-2 border-amber-200 dark:border-amber-800">
+                    <div className="flex gap-2.5 items-start">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-[10px] font-bold flex items-center justify-center mt-0.5">1</span>
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Figma 데스크톱 앱에서 파일을 열고, 상단 메뉴 →{' '}
+                        <span className="font-semibold">Plugins</span> →{' '}
+                        <span className="font-semibold">Development</span> →{' '}
+                        <span className="font-semibold">Import plugin from manifest...</span>
+                      </p>
+                    </div>
+                    <div className="flex gap-2.5 items-start">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-[10px] font-bold flex items-center justify-center mt-0.5">2</span>
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Dott 프로젝트 폴더 →{' '}
+                        <code className="px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-[11px] font-mono">figma-plugin/manifest.json</code>{' '}
+                        파일을 선택
+                      </p>
+                    </div>
+                    <div className="flex gap-2.5 items-start">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-[10px] font-bold flex items-center justify-center mt-0.5">3</span>
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Plugins → Development →{' '}
+                        <span className="font-semibold">Dott Auto Push</span> 실행
+                      </p>
+                    </div>
+                    <div className="flex gap-2.5 items-start">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-[10px] font-bold flex items-center justify-center mt-0.5">4</span>
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Server URL에{' '}
+                        <code className="px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-[11px] font-mono">http://localhost:3000</code>,{' '}
+                        Email에 로그인한 이메일 입력 → <span className="font-semibold">Connect</span>
+                      </p>
+                    </div>
+                  </div>
+                </details>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPluginConfirmed(true)}
+                  className="text-xs h-7 gap-1"
+                >
+                  <CheckCircle2 className="size-3" />
+                  설치 완료 / 나중에 하기
+                </Button>
+              </div>
+            )}
 
             {/* Copy text (required) */}
             <div>
@@ -437,10 +604,15 @@ export default function FigmaIntegration() {
               className="w-full gap-2"
             >
               <Upload className="size-4" />
-              {pushStatus === 'idle' || pushStatus === 'done' || pushStatus === 'failed'
-                ? 'Generate & Push to Figma'
+              {pushStatus === 'idle' || pushStatus === 'done' || pushStatus === 'done-local' || pushStatus === 'failed'
+                ? (figmaFileUrl.trim() ? 'Generate & Push to Figma' : '배너 생성하기')
                 : statusLabel[pushStatus]}
             </Button>
+            {!figmaFileUrl.trim() && (
+              <p className="text-xs text-muted-foreground text-center">
+                Figma 파일 URL을 입력하면 자동으로 Figma에 Push됩니다
+              </p>
+            )}
           </div>
         )}
 
@@ -453,7 +625,7 @@ export default function FigmaIntegration() {
         )}
 
         {/* Status indicator */}
-        {pushStatus !== 'idle' && pushStatus !== 'done' && pushStatus !== 'failed' && (
+        {pushStatus !== 'idle' && pushStatus !== 'done' && pushStatus !== 'done-local' && pushStatus !== 'failed' && (
           <div className="flex items-center gap-2 py-3 justify-center">
             <Loader2 className="size-4 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">{statusLabel[pushStatus]}</span>
@@ -524,7 +696,20 @@ export default function FigmaIntegration() {
         {pushStatus === 'done' && !figmaScreenshot && bannerId && (
           <div className="flex items-center gap-2 p-3 border rounded-lg bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
             <CheckCircle2 className="size-4 text-green-500" />
-            <p className="text-sm text-green-700 dark:text-green-400">배너가 생성되었습니다</p>
+            <p className="text-sm text-green-700 dark:text-green-400">Figma에 Push 완료되었습니다</p>
+          </div>
+        )}
+
+        {/* Local-only success (no Figma push) */}
+        {pushStatus === 'done-local' && bannerId && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+              <CheckCircle2 className="size-4 text-blue-500" />
+              <p className="text-sm text-blue-700 dark:text-blue-400">배너가 생성되었습니다 (Figma Push 안 됨)</p>
+            </div>
+            <p className="text-xs text-muted-foreground px-1">
+              Figma에 자동 Push하려면 위 Figma 파일 URL을 입력하거나, 자동 Push 플러그인을 설치하세요.
+            </p>
           </div>
         )}
 

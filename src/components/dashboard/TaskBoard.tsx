@@ -208,7 +208,7 @@ export default function TaskBoard() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5">
+            <Button variant="outline" size="sm" className="text-xs gap-1.5">
               <Plus className="size-3.5" />
               새 태스크
             </Button>

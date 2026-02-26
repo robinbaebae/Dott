@@ -1,73 +1,548 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
+import {
+  MessageSquare, BarChart3, TrendingUp, FileText,
+  Bookmark, PenTool, Megaphone, Zap, ArrowRight, Figma,
+  CheckCircle2, Sparkles, ChevronDown, Monitor, Globe, Download,
+} from 'lucide-react';
 
+/* ─────────── scroll-reveal hook ─────────── */
+type RevealVariant = 'up' | 'left' | 'right' | 'scale' | 'blur';
+
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) setVisible(true); },
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return { ref, visible };
+}
+
+const hiddenStyles: Record<RevealVariant, string> = {
+  up: 'opacity-0 translate-y-12',
+  left: 'opacity-0 -translate-x-10',
+  right: 'opacity-0 translate-x-10',
+  scale: 'opacity-0 scale-90',
+  blur: 'opacity-0 blur-sm scale-95',
+};
+
+const visibleStyle = 'opacity-100 translate-y-0 translate-x-0 scale-100 blur-0';
+
+function Section({
+  children,
+  className = '',
+  delay = 0,
+  variant = 'up',
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  variant?: RevealVariant;
+}) {
+  const { ref, visible } = useReveal();
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-800 ease-out ${visible ? visibleStyle : hiddenStyles[variant]} ${className}`}
+      style={{ transitionDelay: `${delay}ms`, transitionDuration: '800ms' }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─────────── data ─────────── */
+const AGENTS = [
+  { icon: Megaphone, label: '마케팅 전문가', desc: '카피라이팅, 캠페인 기획, SNS 전략, 이메일 시퀀스', color: '#C87DA0' },
+  { icon: PenTool, label: '디자인 전문가', desc: '배너 제작, Figma 자동 Push, 크리에이티브 디렉션', color: '#9E7BAA' },
+  { icon: TrendingUp, label: '리서치 전문가', desc: '트렌드 분석, 경쟁사 모니터링, SEO 키워드 리서치', color: '#D4A06B' },
+  { icon: Zap, label: '서비스 빌더', desc: '기능 기획, 시스템 설계, 기술 전략 수립', color: '#E8A88E' },
+];
+
+const FEATURES = [
+  {
+    icon: MessageSquare,
+    title: 'AI 대화',
+    subtitle: '물어보기만 하세요. Dott이 알아서 판단합니다.',
+    desc: '인스타 성과를 물으면 자동으로 데이터를 불러와 분석하고, 광고 카피를 요청하면 브랜드 톤에 맞춰 작성합니다.',
+  },
+  {
+    icon: FileText,
+    title: '콘텐츠 워크스페이스',
+    subtitle: '기획부터 발행까지, 한 곳에서.',
+    desc: '콘텐츠 작성, SEO 브리프, 이메일 시퀀스 빌더, 콘텐츠 캘린더까지 탭 하나로 전환합니다.',
+  },
+  {
+    icon: BarChart3,
+    title: '광고 분석',
+    subtitle: '메타 광고 데이터, AI가 읽어줍니다.',
+    desc: 'ROAS, 지출, 노출 등 핵심 지표를 시각화하고 AI가 인사이트를 제공합니다.',
+  },
+  {
+    icon: TrendingUp,
+    title: '트렌드 & 리서치',
+    subtitle: '시장이 어디로 가는지, 경쟁사가 뭘 하는지.',
+    desc: 'RSS 피드, 경쟁사 모니터링, 트렌드 요약을 자동으로 수집하고 분석합니다.',
+  },
+  {
+    icon: Bookmark,
+    title: '인사이트 & 메모',
+    subtitle: '영감이 떠오를 때, 바로 저장.',
+    desc: '링크, 아티클, 영상 스크랩과 메모를 저장하면 AI 대화에서 자동으로 참조합니다.',
+  },
+  {
+    icon: Megaphone,
+    title: '프로모션 빌더',
+    subtitle: '캠페인을 뚝딱 만들어 보세요.',
+    desc: '할인, 쿠폰, 번들 등 프로모션 유형 선택부터 타겟 설정, AI 카피 생성까지.',
+  },
+  {
+    icon: Figma,
+    title: 'Figma 자동 Push',
+    subtitle: '배너 만들면, Figma에 바로 들어갑니다.',
+    desc: 'AI가 생성한 배너를 Figma 플러그인이 자동으로 캔버스에 배치합니다. 디자인 툴 왔다갔다 할 필요 없이.',
+  },
+];
+
+const COMPARISONS = [
+  { label: '사용 툴', before: '5~10개 왔다갔다', after: '1개 앱에 전부' },
+  { label: 'AI 활용', before: '범용 챗봇 (맥락 없음)', after: '브랜드를 학습한 전문 AI' },
+  { label: '데이터 분석', before: '직접 엑셀 정리', after: '자동 수집 + AI 분석' },
+  { label: '비용', before: '마케터 1명 월 300만원+', after: '월 구독료만' },
+  { label: '컨텍스트', before: '매번 처음부터 설명', after: '히스토리 자동 참조' },
+  { label: '디자인 전달', before: '이미지 저장 → Figma 수동 배치', after: 'AI 생성 → Figma 자동 Push' },
+];
+
+const STEPS = [
+  { num: '01', title: '말하세요', desc: '자연어로 원하는 걸 말하면' },
+  { num: '02', title: 'Dott이 판단합니다', desc: 'AI 오케스트레이터가 최적의 전문가를 자동 배정' },
+  { num: '03', title: '결과를 받으세요', desc: '브랜드 맥락을 이해한 결과물이 나옵니다' },
+];
+
+/* ─────────── section backgrounds ─────────── */
+const BG_HERO = `
+  radial-gradient(ellipse 80% 65% at 3% 10%, rgba(170, 110, 220, 0.75) 0%, transparent 55%),
+  radial-gradient(ellipse 65% 55% at 95% 5%, rgba(100, 110, 235, 0.65) 0%, transparent 50%),
+  radial-gradient(ellipse 55% 50% at 50% 40%, rgba(230, 130, 195, 0.45) 0%, transparent 48%),
+  radial-gradient(ellipse 50% 45% at 65% 25%, rgba(190, 155, 245, 0.5) 0%, transparent 42%),
+  linear-gradient(180deg, #F5EFF3 0%, #EDE4EA 100%)
+`;
+
+const BG_PAIN = `
+  radial-gradient(ellipse 70% 50% at 80% 30%, rgba(190, 155, 245, 0.4) 0%, transparent 50%),
+  radial-gradient(ellipse 60% 50% at 20% 60%, rgba(230, 130, 195, 0.35) 0%, transparent 50%),
+  linear-gradient(180deg, #EDE4EA 0%, #E0D5DE 100%)
+`;
+
+const BG_SOLUTION = `
+  radial-gradient(ellipse 70% 55% at 15% 40%, rgba(155, 130, 168, 0.5) 0%, transparent 55%),
+  radial-gradient(ellipse 60% 50% at 85% 50%, rgba(170, 110, 220, 0.4) 0%, transparent 50%),
+  linear-gradient(180deg, #E0D5DE 0%, #C8B8D0 100%)
+`;
+
+const BG_HOWITWORKS = `
+  radial-gradient(ellipse 65% 50% at 50% 30%, rgba(100, 110, 235, 0.3) 0%, transparent 50%),
+  radial-gradient(ellipse 55% 45% at 75% 70%, rgba(190, 155, 245, 0.35) 0%, transparent 48%),
+  linear-gradient(180deg, #C8B8D0 0%, #A898B8 100%)
+`;
+
+const BG_FEATURES = `
+  radial-gradient(ellipse 70% 55% at 20% 35%, rgba(170, 110, 220, 0.35) 0%, transparent 50%),
+  radial-gradient(ellipse 60% 50% at 80% 65%, rgba(100, 110, 235, 0.3) 0%, transparent 48%),
+  radial-gradient(ellipse 50% 40% at 50% 50%, rgba(230, 130, 195, 0.25) 0%, transparent 45%),
+  linear-gradient(180deg, #A898B8 0%, #8B7AA0 100%)
+`;
+
+const BG_COMPARISON = `
+  radial-gradient(ellipse 65% 50% at 70% 40%, rgba(190, 155, 245, 0.3) 0%, transparent 48%),
+  radial-gradient(ellipse 55% 45% at 30% 60%, rgba(80, 200, 175, 0.2) 0%, transparent 45%),
+  linear-gradient(180deg, #8B7AA0 0%, #6B5B80 100%)
+`;
+
+const BG_USECASES = `
+  radial-gradient(ellipse 70% 55% at 50% 40%, rgba(100, 110, 235, 0.25) 0%, transparent 48%),
+  radial-gradient(ellipse 55% 45% at 20% 70%, rgba(240, 130, 110, 0.2) 0%, transparent 45%),
+  linear-gradient(180deg, #6B5B80 0%, #5B4D6E 100%)
+`;
+
+const BG_CTA = `
+  radial-gradient(ellipse 80% 60% at 50% 40%, rgba(155, 130, 168, 0.35) 0%, transparent 55%),
+  radial-gradient(ellipse 60% 50% at 20% 30%, rgba(170, 110, 220, 0.25) 0%, transparent 48%),
+  radial-gradient(ellipse 50% 45% at 80% 70%, rgba(100, 110, 235, 0.2) 0%, transparent 45%),
+  linear-gradient(180deg, #5B4D6E 0%, #3D3350 100%)
+`;
+
+/* ─────────── component ─────────── */
 export default function LandingPage() {
   const [animating, setAnimating] = useState(false);
-  const circleRef = useRef<HTMLDivElement>(null);
 
   const handleGetStarted = () => {
     if (animating) return;
     setAnimating(true);
     setTimeout(() => {
       signIn('google', { callbackUrl: '/' });
-    }, 1000);
+    }, 1300);
   };
 
   return (
-    <div
-      className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
-      style={{
-        background: `
-          radial-gradient(ellipse 80% 70% at 15% 50%, rgba(230, 190, 100, 0.4) 0%, transparent 60%),
-          radial-gradient(ellipse 70% 60% at 50% 40%, rgba(220, 160, 180, 0.5) 0%, transparent 55%),
-          radial-gradient(ellipse 80% 70% at 85% 50%, rgba(180, 160, 220, 0.5) 0%, transparent 60%),
-          radial-gradient(ellipse 60% 50% at 60% 70%, rgba(200, 170, 200, 0.3) 0%, transparent 50%),
-          linear-gradient(135deg, #f0e4d8 0%, #e8d0d8 30%, #dcc8e0 60%, #d4c4e8 100%)
-        `,
-      }}
-    >
-      {/* Circle expand animation */}
+    <div className="relative min-h-screen overflow-x-hidden">
+
+      {/* ── Gradient circle expand on CTA ── */}
       {animating && (
         <div
-          ref={circleRef}
-          className="absolute rounded-full landing-circle-expand"
+          className="fixed rounded-full landing-circle-expand z-50"
           style={{
-            background: 'radial-gradient(circle, #E0D5DE 0%, #8B82A0 40%, #5B4D6E 100%)',
+            background: `
+              radial-gradient(circle at 30% 35%, rgba(170, 110, 220, 0.7) 0%, transparent 50%),
+              radial-gradient(circle at 70% 25%, rgba(100, 110, 235, 0.6) 0%, transparent 45%),
+              radial-gradient(circle at 55% 65%, rgba(230, 130, 195, 0.55) 0%, transparent 50%),
+              radial-gradient(circle at 25% 70%, rgba(80, 200, 175, 0.5) 0%, transparent 45%),
+              radial-gradient(circle at 75% 70%, rgba(240, 130, 110, 0.5) 0%, transparent 45%),
+              radial-gradient(circle at 45% 45%, rgba(190, 155, 245, 0.6) 0%, transparent 55%),
+              radial-gradient(circle, #F0EAEE 0%, #EDE4E9 100%)
+            `,
           }}
         />
       )}
 
-      {/* Content */}
-      <div className={`relative z-10 flex flex-col items-center transition-colors duration-500 ${animating ? 'text-white' : ''}`}>
-        {/* Logo */}
-        <div className="mb-10">
-          <img src="/logo-dott.png" alt="Dott" className="w-28 h-28 rounded-3xl" />
+      {/* ═══════════════ NAV ═══════════════ */}
+      <nav className="fixed top-0 inset-x-0 z-40">
+        <div className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3 glass-card rounded-full px-5 py-2.5">
+            <img src="/logo-dott.png" alt="Dott" className="w-8 h-8 rounded-lg" />
+            <span className="text-base font-semibold text-[#5B4D6E]">Dott</span>
+          </div>
+          <button
+            onClick={handleGetStarted}
+            className="glass-card rounded-full px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover-lift cursor-pointer hover:elevation-2 transition-all"
+          >
+            시작하기
+          </button>
+        </div>
+      </nav>
+
+      {/* ═══════════════ HERO — 밝은 배경 ═══════════════ */}
+      <section
+        className="min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 relative"
+        style={{ background: BG_HERO }}
+      >
+        <Section variant="scale">
+          <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+            <div className="glass-float rounded-3xl p-1.5 mb-12 elevation-3">
+              <img src="/logo-dott.png" alt="Dott" className="w-28 h-28 rounded-2xl" />
+            </div>
+
+            <div className="inline-flex items-center gap-2 glass-card rounded-full px-5 py-2 mb-8">
+              <Sparkles className="size-4 text-[#7B5B8B]" />
+              <span className="text-sm font-medium text-[#7B5B8B]">AI 브랜드 비서</span>
+            </div>
+
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-[#2D2D30] leading-[1.15] tracking-tight mb-8">
+              마케팅,<br />
+              <span className="text-[#7B5B8B]">혼자 다 하고 있잖아.</span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-[#7E6E78] leading-relaxed max-w-xl mb-12">
+              콘텐츠 기획, 광고 분석, 트렌드 리서치, 디자인까지.<br />
+              Dott이 당신 옆에 앉은 4명의 전문가가 됩니다.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <button
+                onClick={handleGetStarted}
+                className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-[#5B4D6E] text-white hover:bg-[#6B5B7B] active:scale-[0.97] transition-all elevation-3 cursor-pointer"
+              >
+                <Globe className="size-5" />
+                웹에서 시작하기
+                <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+              <a
+                href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
+                className="group flex items-center justify-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white/70 backdrop-blur-sm text-[#5B4D6E] border border-[#5B4D6E]/15 hover:bg-white/90 active:scale-[0.97] transition-all elevation-1 cursor-pointer"
+              >
+                <Monitor className="size-5" />
+                macOS 앱 다운로드
+                <Download className="size-4 group-hover:translate-y-0.5 transition-transform" />
+              </a>
+            </div>
+
+            <div className="mt-6 flex items-center gap-6 text-sm text-[#8B82A0]">
+              <span className="flex items-center gap-1.5">
+                <Globe className="size-3.5" /> 웹 브라우저
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Monitor className="size-3.5" /> macOS 데스크톱
+              </span>
+            </div>
+          </div>
+        </Section>
+
+        <div className="mt-20 animate-bounce">
+          <ChevronDown className="size-6 text-[#8B82A0]" />
+        </div>
+      </section>
+
+      {/* ═══════════════ PAIN POINTS — 밝은 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_PAIN }}>
+        <div className="max-w-5xl mx-auto">
+          <Section variant="blur">
+            <p className="text-sm font-medium text-[#7B5B8B] tracking-widest uppercase mb-4 text-center">Problem</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#2D2D30] text-center mb-5">
+              이거 다 당신 얘기 아닌가요?
+            </h2>
+            <p className="text-base text-[#7E6E78] text-center max-w-lg mx-auto mb-16">
+              혼자서 마케팅의 모든 것을 감당하고 있다면, 당신만 그런 게 아닙니다.
+            </p>
+          </Section>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {[
+              { emoji: '😵‍💫', text: '콘텐츠 쓰려고 ChatGPT, 일정은 노션, 광고는 메타 대시보드, 트렌드는 구글링...' },
+              { emoji: '⏰', text: '매일 5개 이상의 툴을 왔다갔다 하면서 시간을 쏟고 있다' },
+              { emoji: '💸', text: '마케터를 뽑고 싶지만 아직 그럴 여유가 없다' },
+              { emoji: '📊', text: '데이터는 쌓이는데 분석할 시간이 없다' },
+            ].map((item, i) => (
+              <Section key={i} delay={i * 120} variant={i % 2 === 0 ? 'left' : 'right'}>
+                <div className="glass-card rounded-2xl p-7 hover-lift cursor-default">
+                  <span className="text-3xl mb-4 block">{item.emoji}</span>
+                  <p className="text-base text-[#5a4a60] leading-relaxed">{item.text}</p>
+                </div>
+              </Section>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ SOLUTION — 중간 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_SOLUTION }}>
+        <div className="max-w-5xl mx-auto">
+          <Section variant="blur">
+            <p className="text-sm font-medium text-[#7B5B8B] tracking-widest uppercase mb-4 text-center">Solution</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#2D2235] text-center mb-5">
+              Dott은 <span className="text-[#5B4D6E]">AI 브랜드 비서</span>입니다
+            </h2>
+            <p className="text-base text-[#4A3D55] text-center max-w-xl mx-auto mb-16">
+              마케팅에 필요한 모든 것을 웹과 macOS 앱 하나에.<br />
+              AI가 당신의 브랜드를 학습하고, 4명의 전문가처럼 일합니다.
+            </p>
+          </Section>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {AGENTS.map((agent, i) => (
+              <Section key={i} delay={i * 120} variant="scale">
+                <div className="rounded-2xl p-7 hover-lift cursor-default h-full backdrop-blur-[16px] bg-white/20 border border-white/30 shadow-lg">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                    style={{ background: `${agent.color}25` }}
+                  >
+                    <agent.icon className="size-6" style={{ color: agent.color }} />
+                  </div>
+                  <h3 className="text-base font-semibold text-[#2D2235] mb-2">{agent.label}</h3>
+                  <p className="text-sm text-[#4A3D55] leading-relaxed">{agent.desc}</p>
+                </div>
+              </Section>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ HOW IT WORKS — 진해지는 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_HOWITWORKS }}>
+        <div className="max-w-4xl mx-auto">
+          <Section variant="up">
+            <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">How it works</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-16">
+              3단계로 끝나는 워크플로우
+            </h2>
+          </Section>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {STEPS.map((step, i) => (
+              <Section key={i} delay={i * 180} variant="left">
+                <div className="rounded-2xl p-8 text-center hover-lift cursor-default backdrop-blur-[16px] bg-white/15 border border-white/20 shadow-lg">
+                  <span className="text-5xl font-bold text-white/20 block mb-4">{step.num}</span>
+                  <h3 className="text-base font-semibold text-white mb-3">{step.title}</h3>
+                  <p className="text-sm text-white/80 leading-relaxed">{step.desc}</p>
+                </div>
+              </Section>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ FEATURES — 딥 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_FEATURES }}>
+        <div className="max-w-5xl mx-auto">
+          <Section variant="blur">
+            <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Features</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-5">
+              하나의 앱, 모든 마케팅
+            </h2>
+            <p className="text-base text-white/80 text-center max-w-xl mx-auto mb-16">
+              각 기능이 유기적으로 연결되어, 데이터가 흐르고 AI가 맥락을 이해합니다.
+            </p>
+          </Section>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURES.map((feat, i) => (
+              <Section key={i} delay={i * 100} variant="scale">
+                <div className="rounded-2xl p-7 hover-lift cursor-default h-full backdrop-blur-[16px] bg-white/10 border border-white/15 shadow-lg">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 bg-white/10">
+                    <feat.icon className="size-5 text-[#E8DCE8]" />
+                  </div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">{feat.title}</h3>
+                  <p className="text-sm font-medium text-[#E8DCE8] mb-3">{feat.subtitle}</p>
+                  <p className="text-sm text-white/75 leading-relaxed">{feat.desc}</p>
+                </div>
+              </Section>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ COMPARISON — 어두운 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_COMPARISON }}>
+        <div className="max-w-3xl mx-auto">
+          <Section variant="up">
+            <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Comparison</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-16">
+              왜 Dott인가요?
+            </h2>
+          </Section>
+
+          <Section delay={100} variant="scale">
+            <div className="rounded-2xl overflow-hidden backdrop-blur-[20px] bg-white/10 border border-white/15 shadow-xl">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left px-6 py-5 text-sm font-semibold text-white/70"></th>
+                    <th className="text-left px-6 py-5 text-sm font-semibold text-white/60">기존 방식</th>
+                    <th className="text-left px-6 py-5 text-sm font-semibold text-[#E8DCE8]">Dott</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISONS.map((row, i) => (
+                    <tr key={i} className="border-b border-white/5 last:border-b-0">
+                      <td className="px-6 py-4 text-sm font-medium text-white/90">{row.label}</td>
+                      <td className="px-6 py-4 text-sm text-white/60">{row.before}</td>
+                      <td className="px-6 py-4 text-sm text-white font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          <CheckCircle2 className="size-4 text-[#E8DCE8]" />
+                          {row.after}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        </div>
+      </section>
+
+      {/* ═══════════════ USE CASES — 다크 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_USECASES }}>
+        <div className="max-w-4xl mx-auto">
+          <Section variant="blur">
+            <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Use cases</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-16">
+              이런 분들이 쓰고 있어요
+            </h2>
+          </Section>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              { role: '1인 쇼핑몰 운영자', quote: '상품 설명, 인스타 카피, 광고 세팅까지 Dott 하나로 끝납니다.' },
+              { role: '스타트업 마케터', quote: '5개 툴 구독료 아끼고, 리서치 시간 70% 줄었어요.' },
+              { role: '프리랜서 마케터', quote: '클라이언트마다 브랜드 톤이 다른데, Dott이 다 기억해줘요.' },
+            ].map((item, i) => (
+              <Section key={i} delay={i * 150} variant="right">
+                <div className="rounded-2xl p-7 hover-lift cursor-default h-full backdrop-blur-[16px] bg-white/8 border border-white/12 shadow-lg">
+                  <p className="text-sm font-semibold text-[#E8DCE8] mb-4">{item.role}</p>
+                  <p className="text-base text-white/85 leading-relaxed italic">&ldquo;{item.quote}&rdquo;</p>
+                </div>
+              </Section>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ TECH + FINAL CTA — 가장 어두운 퍼플 ═══════════════ */}
+      <section className="py-28 px-6 relative" style={{ background: BG_CTA }}>
+        <div className="max-w-3xl mx-auto text-center mb-20">
+          <Section variant="up">
+            <p className="text-sm text-white/50 mb-3">Available on</p>
+            <div className="flex items-center justify-center gap-8 mb-8">
+              <span className="flex items-center gap-2 text-base font-medium text-white/80">
+                <Globe className="size-5" /> Web
+              </span>
+              <span className="flex items-center gap-2 text-base font-medium text-white/80">
+                <Monitor className="size-5" /> macOS
+              </span>
+            </div>
+            <p className="text-sm text-white/50 mb-6">Built with</p>
+            <div className="flex items-center justify-center gap-10 flex-wrap">
+              {['Claude AI', 'Electron', 'Next.js', 'Supabase'].map((tech) => (
+                <span key={tech} className="text-base font-medium text-white/45">{tech}</span>
+              ))}
+            </div>
+          </Section>
         </div>
 
-        {/* Copy */}
-        <p className={`text-base sm:text-lg tracking-wide text-center max-w-sm transition-colors duration-500 ${animating ? 'text-white/70' : 'text-[#5a4a60]'}`}>
-          Your brand assistant,<br />powered by your business DNA.
-        </p>
+        <div className="max-w-2xl mx-auto text-center">
+          <Section variant="scale">
+            <div className="rounded-3xl p-14 backdrop-blur-[24px] bg-white/8 border border-white/12 shadow-2xl">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5">
+                마케팅팀이 필요한 순간,<br />
+                <span className="text-[#E8DCE8]">Dott을 열어보세요.</span>
+              </h2>
+              <p className="text-base text-white/75 mb-10 leading-relaxed">
+                더 이상 여러 툴을 오가지 마세요.<br />
+                당신의 브랜드를 이해하는 AI가 기다리고 있습니다.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button
+                  onClick={handleGetStarted}
+                  className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white text-[#5B4D6E] hover:bg-white/90 active:scale-[0.97] transition-all shadow-lg cursor-pointer"
+                >
+                  <Globe className="size-5" />
+                  웹에서 시작하기
+                  <ArrowRight className="size-5 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+                <a
+                  href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
+                  className="group inline-flex items-center gap-2.5 px-10 py-4 rounded-full text-base font-semibold bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/15 active:scale-[0.97] transition-all cursor-pointer"
+                >
+                  <Monitor className="size-5" />
+                  macOS 다운로드
+                  <Download className="size-4 group-hover:translate-y-0.5 transition-transform" />
+                </a>
+              </div>
+              <p className="mt-5 text-sm text-white/50">웹 브라우저 · macOS 데스크톱 · 설치 후 바로 사용 가능</p>
+            </div>
+          </Section>
+        </div>
+      </section>
 
-        {/* CTA Button */}
-        <button
-          onClick={handleGetStarted}
-          className={`mt-10 px-8 py-3.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer ${
-            animating
-              ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-[#2a2030] text-white hover:bg-[#3a3040] active:scale-[0.97]'
-          }`}
-        >
-          Get started &rarr;
-        </button>
-
-        {/* Footer */}
-        <p className={`mt-4 text-xs tracking-wide transition-colors duration-500 ${animating ? 'text-white/40' : 'text-[#8a7a90]'}`}>
-          Built by Bae
-        </p>
-      </div>
+      {/* ═══════════════ FOOTER ═══════════════ */}
+      <footer className="py-12 px-6 border-t border-white/8" style={{ background: '#332B42' }}>
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo-dott.png" alt="Dott" className="w-6 h-6 rounded-md" />
+            <span className="text-sm font-medium text-white/70">Dott</span>
+          </div>
+          <p className="text-sm text-white/45">Built by Bae</p>
+        </div>
+      </footer>
     </div>
   );
 }

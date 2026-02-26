@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const summary = await generateTrendSummary(body.category);
+    const summary = await generateTrendSummary(body.category, userEmail, body.force);
     await logActivity('summary_generate', 'research', { category: body.category }, userEmail);
     return NextResponse.json(summary);
   } catch (error) {

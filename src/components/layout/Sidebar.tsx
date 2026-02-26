@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import ThemeToggle from '@/components/shared/ThemeToggle';
 
 const STORAGE_KEY = 'dott-sidebar-collapsed';
+const ALWAYS_COLLAPSED_KEY = 'dott-sidebar-always-collapsed';
 
 const navItems = [
   { href: '/', label: 'Dashboard', symbol: '~', color: '', bold: true },
@@ -22,6 +23,9 @@ const navItems = [
 ];
 
 const toolItems = [
+  { href: '/ledger', label: 'Ledger', symbol: '₩' },
+  { href: '/promotion', label: 'Promotion', symbol: '◆' },
+  { href: '/tools', label: 'Utilities', symbol: '⚙' },
   { href: '/settings', label: 'Settings', symbol: '*' },
 ];
 
@@ -29,13 +33,31 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [collapsed, setCollapsed] = useState(false);
+  const [alwaysCollapsed, setAlwaysCollapsed] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'true') setCollapsed(true);
+    const always = localStorage.getItem(ALWAYS_COLLAPSED_KEY) === 'true';
+    setAlwaysCollapsed(always);
+    if (always) {
+      setCollapsed(true);
+    } else {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'true') setCollapsed(true);
+    }
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ALWAYS_COLLAPSED_KEY) {
+        const v = e.newValue === 'true';
+        setAlwaysCollapsed(v);
+        if (v) setCollapsed(true);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const toggleCollapsed = () => {
+    if (alwaysCollapsed) return;
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem(STORAGE_KEY, String(next));
@@ -49,7 +71,7 @@ export default function Sidebar() {
     <aside
       className={`${
         collapsed ? 'w-14' : 'w-56'
-      } h-screen border-r border-border bg-sidebar flex flex-col shrink-0 transition-all duration-200 overflow-hidden`}
+      } h-full rounded-2xl glass-panel flex flex-col shrink-0 transition-all duration-300 ease-out overflow-hidden`}
     >
       {/* Logo + Toggle */}
       <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-5'} py-5`}>
@@ -61,17 +83,24 @@ export default function Sidebar() {
             </span>
           </Link>
         )}
-        <button
-          onClick={toggleCollapsed}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-          title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
-        >
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </button>
+        {!alwaysCollapsed && (
+          <button
+            onClick={toggleCollapsed}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+            title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          >
+            {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 pt-2">
+      <nav className="flex-1 px-2.5 pt-1">
+        {!collapsed && (
+          <p className="px-3 mb-1.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+            Menu
+          </p>
+        )}
         <div className="space-y-0.5">
           {navItems.map((item) => {
             const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -80,10 +109,10 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-lg text-[13px] transition-colors ${
+                className={`flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-xl text-[13px] transition-colors ${
                   active
-                    ? 'bg-accent/15 text-accent font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    ? 'bg-accent/12 text-accent font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
               >
                 <span className={`w-4 text-center font-mono text-sm shrink-0 ${active ? 'text-accent' : (item.color || 'text-muted-foreground/60')}`}>
@@ -96,9 +125,9 @@ export default function Sidebar() {
         </div>
 
         {/* Tools section */}
-        <div className="mt-6">
+        <div className="mt-5">
           {!collapsed && (
-            <p className="px-3 mb-2 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+            <p className="px-3 mb-1.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
               Tools
             </p>
           )}
@@ -110,10 +139,10 @@ export default function Sidebar() {
                   key={item.href}
                   href={item.href}
                   title={collapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-lg text-[13px] transition-colors ${
+                  className={`flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-xl text-[13px] transition-colors ${
                     active
-                      ? 'bg-accent/15 text-accent font-medium'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      ? 'bg-accent/12 text-accent font-medium'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                   }`}
                 >
                   <span className={`w-4 text-center font-mono text-sm shrink-0 ${active ? 'text-accent' : 'text-muted-foreground/60'}`}>
@@ -127,20 +156,27 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* Bottom: Theme toggle + User */}
-      <div className="px-2 pb-4 space-y-1">
+      {/* Bottom: Theme toggle + User + Logout */}
+      <div className="px-2.5 pb-4 space-y-1">
         <div className={`flex items-center gap-2 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2`}>
           <ThemeToggle />
         </div>
         {session && (
-          <button
-            onClick={() => signOut()}
-            title={collapsed ? (session.user?.name ?? '로그아웃') : undefined}
-            className={`w-full flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer`}
-          >
-            <LogOut className="size-3.5 shrink-0" />
-            {!collapsed && <span className="truncate">{session.user?.name ?? '로그아웃'}</span>}
-          </button>
+          <>
+            {!collapsed && session.user?.name && (
+              <div className="px-3 py-1.5 text-[11px] text-muted-foreground/60 truncate">
+                {session.user.name}
+              </div>
+            )}
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              title={collapsed ? '로그아웃' : undefined}
+              className={`w-full flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-xl text-[13px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer`}
+            >
+              <LogOut className="size-3.5 shrink-0" />
+              {!collapsed && <span>로그아웃</span>}
+            </button>
+          </>
         )}
       </div>
     </aside>

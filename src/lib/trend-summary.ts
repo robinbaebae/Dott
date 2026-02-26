@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabase';
-import { generateCompletion } from './claude';
+import { generateCompletion, getUserApiKey } from './claude';
 import { TREND_SUMMARY_PROMPT } from './prompts';
 import { TrendArticle, TrendSummary } from '@/types';
 
@@ -15,12 +15,14 @@ export async function getTodaySummary(): Promise<TrendSummary | null> {
 }
 
 /** Generate an AI summary for today's articles and cache it */
-export async function generateTrendSummary(category?: string): Promise<TrendSummary> {
+export async function generateTrendSummary(category?: string, userEmail?: string, force?: boolean): Promise<TrendSummary> {
   const today = new Date().toISOString().split('T')[0];
 
-  // Check cache first
-  const existing = await getTodaySummary();
-  if (existing) return existing;
+  // Check cache first (skip if force regeneration)
+  if (!force) {
+    const existing = await getTodaySummary();
+    if (existing) return existing;
+  }
 
   // Fetch recent articles (last 7 days)
   const dayAgo = new Date();
@@ -50,7 +52,10 @@ export async function generateTrendSummary(category?: string): Promise<TrendSumm
 
   const userMessage = `오늘 수집된 기사 목록:\n\n${articleList}\n\n이 기사들을 바탕으로 오늘의 IT 마케팅/기획 트렌드 요약을 작성해주세요.`;
 
-  const summaryText = await generateCompletion(TREND_SUMMARY_PROMPT, userMessage);
+  const apiKey = await getUserApiKey(userEmail || '');
+
+
+  const summaryText = await generateCompletion(apiKey, TREND_SUMMARY_PROMPT, userMessage);
   const articleIds = articles.map((a) => a.id);
 
   const { data, error } = await supabaseAdmin
