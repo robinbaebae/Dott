@@ -24,6 +24,12 @@ import {
   DEMO_TREND_FEEDS,
   DEMO_AD_CSV,
   DEMO_AD_ANALYTICS,
+  DEMO_INSTAGRAM_POSTS,
+  DEMO_INSTAGRAM_INSIGHTS,
+  DEMO_INSTAGRAM_PERFORMANCE,
+  DEMO_THREADS_POSTS,
+  DEMO_WEEKLY_GOALS,
+  DEMO_WEEKLY_REPORT,
 } from './demo-data';
 
 let _installed = false;
@@ -47,7 +53,11 @@ function matchKnowbarResponse(message: string) {
   if (/배너|디자인|이미지|banner|design/.test(lower)) return DEMO_KNOWBAR_RESPONSES.banner;
   if (/카피|광고.?문구|copy|ad.?copy|문구/.test(lower)) return DEMO_KNOWBAR_RESPONSES.copy;
   if (/트렌드|분석|리서치|trend|analy/.test(lower)) return DEMO_KNOWBAR_RESPONSES.trend;
-  if (/태스크|할.?일|task|todo|일정.?추가/.test(lower)) return DEMO_KNOWBAR_RESPONSES.task;
+  if (/태스크|할.?일|task|todo/.test(lower)) return DEMO_KNOWBAR_RESPONSES.task;
+  if (/블로그|포스트|글.?써|seo|blog/.test(lower)) return DEMO_KNOWBAR_RESPONSES.blog;
+  if (/이메일|뉴스레터|메일|구독|email|newsletter/.test(lower)) return DEMO_KNOWBAR_RESPONSES.email;
+  if (/일정|캘린더|미팅|회의|스케줄|calendar|schedule/.test(lower)) return DEMO_KNOWBAR_RESPONSES.schedule;
+  if (/인스타|쓰레드|sns|소셜|피드|릴스|instagram|threads/.test(lower)) return DEMO_KNOWBAR_RESPONSES.sns;
   return DEMO_KNOWBAR_RESPONSES.default;
 }
 
@@ -325,19 +335,45 @@ export function setupDemoInterceptor() {
       return json({ url: '#demo-google-auth' });
     }
 
-    // Instagram / Threads
-    if (pathname === '/api/instagram' || pathname === '/api/threads') {
-      return json([]);
+    // Instagram
+    if (pathname === '/api/instagram/posts') {
+      if (method === 'GET') return json({ connected: true, posts: DEMO_INSTAGRAM_POSTS });
+      if (method === 'POST') return json({ connected: true, posts: DEMO_INSTAGRAM_POSTS }); // refresh
+      if (method === 'DELETE') return json({ success: true }); // disconnect
+    }
+    if (pathname === '/api/instagram/insights') {
+      return json(DEMO_INSTAGRAM_INSIGHTS);
+    }
+    if (pathname === '/api/instagram/performance') {
+      return json(DEMO_INSTAGRAM_PERFORMANCE);
+    }
+    if (pathname === '/api/instagram' || pathname.startsWith('/api/instagram/')) {
+      return json({ connected: true });
+    }
+
+    // Threads
+    if (pathname === '/api/threads/posts') {
+      if (method === 'GET') return json({ connected: true, posts: DEMO_THREADS_POSTS });
+      if (method === 'POST') return json({ connected: true, posts: DEMO_THREADS_POSTS }); // refresh
+      if (method === 'DELETE') return json({ success: true }); // disconnect
+    }
+    if (pathname === '/api/threads' || pathname.startsWith('/api/threads/')) {
+      return json({ connected: true });
     }
 
     // Weekly goals
     if (pathname === '/api/weekly-goals') {
-      return json({ goals: [] });
+      if (method === 'GET') return json(DEMO_WEEKLY_GOALS);
+      if (method === 'POST') {
+        const body = await getBody(input, init);
+        return json({ platform: body.platform, target_count: body.target_count, user_id: 'demo', updated_at: new Date().toISOString() });
+      }
     }
 
     // Weekly report
     if (pathname === '/api/weekly-report') {
-      return json({ report: null });
+      if (method === 'POST') return json(DEMO_WEEKLY_REPORT);
+      return json(DEMO_WEEKLY_REPORT);
     }
 
     // Performance insights
@@ -395,5 +431,6 @@ export function teardownDemoInterceptor() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('dott_ad_analytics');
   localStorage.removeItem('dott-notif-read');
+  localStorage.removeItem('dott_weekly_report');
   _installed = false;
 }

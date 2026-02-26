@@ -12,6 +12,7 @@ export default function DemoBanner() {
     sessionStorage.removeItem('dott-demo');
     localStorage.removeItem('dott_ad_analytics');
     localStorage.removeItem('dott-notif-read');
+    localStorage.removeItem('dott_weekly_report');
     window.location.href = '/';
   };
 

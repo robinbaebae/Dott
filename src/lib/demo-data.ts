@@ -437,6 +437,118 @@ AI 에이전트가 콘텐츠 기획 → 제작 → 배포까지 자동화하는 
     taskCreated: true,
     taskTitle: '인스타그램 릴스 콘텐츠 기획안 작성',
   },
+  blog: {
+    response: `블로그 포스트 초안을 작성했어요! 📝
+
+## "2026 AI 마케팅 자동화 — 실전 가이드"
+
+### 구성
+1. **인트로** — AI 마케팅이 왜 지금 중요한가
+2. **핵심 트렌드 3가지** — 에이전트 자동화, 숏폼 크로스플랫폼, 개인화
+3. **실전 활용법** — 우리 팀의 실제 사례 (ROAS 3.2x 달성기)
+4. **시작하기** — 바로 적용할 수 있는 3단계 가이드
+5. **CTA** — 뉴스레터 구독 유도
+
+### SEO 최적화
+- **메인 키워드:** AI마케팅 (검색량 2,840, +145%)
+- **서브 키워드:** 마케팅자동화, AI콘텐츠, 숏폼전략
+- **예상 분량:** 2,200자 / 읽기 시간 약 5분
+
+---
+
+초안이 마음에 드시면 전체 본문을 작성해드릴게요! 톤이나 구성을 수정하고 싶으시면 말씀해주세요.`,
+    agentId: 'marketing',
+    agentName: '마케팅 전문가',
+    agentIcon: '📝',
+    skill: 'blog_draft',
+  },
+  email: {
+    response: `이메일/뉴스레터 시퀀스를 설계했어요! 📧
+
+## 3월 뉴스레터 + 웰컴 시퀀스
+
+### 📬 3월호 뉴스레터 (구독자 1,200명)
+
+**제목:** "AI가 바꾸는 마케팅의 미래 — 3월 트렌드 큐레이션"
+
+**구성:**
+1. 에디터 노트 — 봄 시즌 인사
+2. 🔥 이달의 트렌드 TOP 3 (AI 에이전트, 숏폼, SGE)
+3. 📊 우리 팀 성과 공유 (ROAS 3.2x 달성기)
+4. 💡 실전 팁 — 릴스 콘텐츠 기획 체크리스트
+5. 🎁 봄 프로모션 20% 할인 안내
+
+### 🔄 신규 구독자 웰컴 시퀀스 (5통)
+
+| Day | 제목 | 목적 |
+|-----|------|------|
+| D+0 | 환영합니다! 리드마그넷 전달 | 가치 전달 |
+| D+2 | 우리 팀이 일하는 방식 | 브랜드 소개 |
+| D+5 | 가장 인기 있는 콘텐츠 3선 | 인게이지먼트 |
+| D+7 | 독자 전용 혜택 안내 | 전환 유도 |
+| D+14 | 피드백 요청 + 추천 콘텐츠 | 리텐션 |
+
+---
+
+**예상 효과:** 웰컴 시퀀스 도입 시 구독 유지율 +25%, 첫 구매 전환율 +12%`,
+    agentId: 'marketing',
+    agentName: '마케팅 전문가',
+    agentIcon: '📝',
+    skill: 'email_sequence',
+  },
+  schedule: {
+    response: `일정을 확인하고 추천 드릴게요! 📅
+
+## 이번 주 마케팅 캘린더
+
+| 일시 | 일정 | 담당 |
+|------|------|------|
+| 오늘 10:00 | 마케팅 주간 미팅 | 전체 |
+| 내일 14:00 | 콘텐츠 리뷰 미팅 | 디자인팀 |
+| ${d(3)} 16:00 | 인플루언서 미팅 (@lifestyle_mina) | 마케팅 |
+
+### ✅ 이번 주 마감 태스크
+- **오늘** — 뉴스레터 3월호 초안 완성
+- **내일** — 인스타그램 릴스 콘텐츠 기획안
+- **${d(2)}** — 봄 프로모션 광고 카피 A/B 테스트
+
+### 💡 추천 일정 추가
+- 릴스 촬영 일정 (${d(2)} 오전 추천)
+- 주간 광고 성과 리뷰 (${d(4)} 오후 추천)
+
+새로운 일정을 추가하시려면 **"내일 2시에 콘텐츠 리뷰 미팅 잡아줘"** 처럼 말씀해주세요!`,
+    agentId: 'orchestrator',
+    agentName: '오케스트레이터',
+    agentIcon: '🎯',
+    skill: 'calendar_manage',
+  },
+  sns: {
+    response: `SNS 콘텐츠 전략을 분석했어요! 📱
+
+## 인스타그램 + 쓰레드 성과 분석
+
+### 📸 인스타그램 (최근 7일)
+- **총 도달:** 122.2K
+- **총 노출:** 165K
+- **평균 참여율:** 4.8% (업계 평균 3.2% 대비 +50%)
+- **베스트 콘텐츠:** 릴스 챌린지 (조회 45.6K, 참여율 6.0%)
+
+### 🧵 쓰레드 (최근 7일)
+- **평균 좋아요:** 330회
+- **평균 리포스트:** 70회
+- **베스트 콘텐츠:** 2026 트렌드 리스트 (좋아요 567, 리포스트 134)
+
+### 💡 콘텐츠 추천
+1. **릴스:** 챌린지/튜토리얼 포맷이 참여율 2배 → 봄 시리즈 계속 추천
+2. **카드뉴스:** 혜택 정리형이 저장 수 높음 → 프로모션 콘텐츠에 활용
+3. **쓰레드:** 리스트/팁 형식이 리포스트 많음 → 주 3회 인사이트 공유
+
+이번 주 콘텐츠 일정을 확인하시려면 Content 페이지에서 캘린더를 확인해보세요!`,
+    agentId: 'research',
+    agentName: '리서치 전문가',
+    agentIcon: '🔍',
+    skill: 'sns_analysis',
+  },
   default: {
     response: `안녕하세요! Dott AI 마케팅 어시스턴트입니다 👋
 
@@ -446,7 +558,10 @@ AI 에이전트가 콘텐츠 기획 → 제작 → 배포까지 자동화하는 
 - 📝 **"광고 카피 작성해줘"** — A/B 테스트용 카피 3안
 - 🔍 **"트렌드 분석해줘"** — 주간 마케팅 트렌드 리포트
 - ✅ **"릴스 기획안 작성 태스크 추가해줘"** — 태스크 생성
-- 📅 **"내일 2시에 콘텐츠 리뷰 미팅 잡아줘"** — 캘린더 일정
+- 📅 **"이번 주 일정 알려줘"** — 캘린더 확인
+- 📱 **"인스타 성과 분석해줘"** — SNS 분석 리포트
+- 📧 **"뉴스레터 기획해줘"** — 이메일 시퀀스 설계
+- 📝 **"블로그 글 써줘"** — SEO 최적화 포스트 초안
 
 어떤 작업이든 말씀해주세요! AI 에이전트가 바로 처리해드립니다.`,
     agentId: 'marketing',
@@ -454,6 +569,100 @@ AI 에이전트가 콘텐츠 기획 → 제작 → 배포까지 자동화하는 
     agentIcon: '📝',
     skill: 'general',
   },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INSTAGRAM POSTS (Content 페이지)
+// ═══════════════════════════════════════════════════════════════
+export const DEMO_INSTAGRAM_POSTS = [
+  { id: uuid(1400), ig_id: 'ig_001', caption: '봄 신제품 언박싱 🌸 새로운 시즌, 새로운 시작!\n#봄신상 #언박싱 #뷰티', media_type: 'VIDEO' as const, media_url: '', permalink: 'https://instagram.com/p/demo1', timestamp: ago(60), like_count: 847, comments_count: 62, impressions: 12400, reach: 8900, saved: 156, engagement: 1065, fetched_at: ago(5) },
+  { id: uuid(1401), ig_id: 'ig_002', caption: '오늘의 OOTD ✨ 봄 컬렉션 코디 추천\n#ootd #봄코디 #패션', media_type: 'CAROUSEL_ALBUM' as const, media_url: '', permalink: 'https://instagram.com/p/demo2', timestamp: ago(2880), like_count: 1203, comments_count: 89, impressions: 18500, reach: 14200, saved: 234, engagement: 1526, fetched_at: ago(5) },
+  { id: uuid(1402), ig_id: 'ig_003', caption: '봄맞이 20% 할인 이벤트 🎉\n전 제품 20% OFF + 신규 가입 5% 추가 쿠폰!\n#프로모션 #할인', media_type: 'IMAGE' as const, media_url: '', permalink: 'https://instagram.com/p/demo3', timestamp: ago(4320), like_count: 634, comments_count: 45, impressions: 9800, reach: 7100, saved: 89, engagement: 768, fetched_at: ago(5) },
+  { id: uuid(1403), ig_id: 'ig_004', caption: '고객 리뷰 모음 💜 진짜 사용자들의 솔직 후기\n#리뷰 #고객후기 #리얼리뷰', media_type: 'CAROUSEL_ALBUM' as const, media_url: '', permalink: 'https://instagram.com/p/demo4', timestamp: ago(7200), like_count: 956, comments_count: 71, impressions: 15200, reach: 11800, saved: 198, engagement: 1225, fetched_at: ago(5) },
+  { id: uuid(1404), ig_id: 'ig_005', caption: '릴스 챌린지 🎬 나만의 봄 루틴 공유하기\n#릴스챌린지 #봄루틴 #일상', media_type: 'VIDEO' as const, media_url: '', permalink: 'https://instagram.com/p/demo5', timestamp: ago(10080), like_count: 2134, comments_count: 178, impressions: 45600, reach: 32100, saved: 412, engagement: 2724, fetched_at: ago(5) },
+  { id: uuid(1405), ig_id: 'ig_006', caption: '브랜드 스토리 📖 우리가 만드는 이유\n#브랜드스토리 #비하인드 #팀', media_type: 'IMAGE' as const, media_url: '', permalink: 'https://instagram.com/p/demo6', timestamp: ago(14400), like_count: 523, comments_count: 34, impressions: 7600, reach: 5800, saved: 67, engagement: 624, fetched_at: ago(5) },
+  { id: uuid(1406), ig_id: 'ig_007', caption: '주간 베스트 아이템 TOP 3 🏆\n1위. 봄 에디션 세트\n2위. 데일리 케어\n3위. 미니 키트', media_type: 'CAROUSEL_ALBUM' as const, media_url: '', permalink: 'https://instagram.com/p/demo7', timestamp: ago(17280), like_count: 789, comments_count: 56, impressions: 11200, reach: 8400, saved: 145, engagement: 990, fetched_at: ago(5) },
+  { id: uuid(1407), ig_id: 'ig_008', caption: '인플루언서 콜라보 💫 @lifestyle_mina 와 함께한 촬영 현장\n#콜라보 #인플루언서 #비하인드', media_type: 'VIDEO' as const, media_url: '', permalink: 'https://instagram.com/p/demo8', timestamp: ago(20160), like_count: 1567, comments_count: 123, impressions: 28900, reach: 21400, saved: 289, engagement: 1979, fetched_at: ago(5) },
+  { id: uuid(1408), ig_id: 'ig_009', caption: '2월 한 달 돌아보기 📊 감사합니다!\n팔로워 +2,400 | 릴스 조회 +180K\n#월간리뷰 #감사', media_type: 'IMAGE' as const, media_url: '', permalink: 'https://instagram.com/p/demo9', timestamp: ago(23040), like_count: 1089, comments_count: 94, impressions: 16800, reach: 12500, saved: 178, engagement: 1361, fetched_at: ago(5) },
+];
+
+export const DEMO_INSTAGRAM_INSIGHTS = {
+  impressions: 165000,
+  reach: 122200,
+  saved: 1768,
+  engagement: 12162,
+};
+
+export const DEMO_INSTAGRAM_PERFORMANCE = {
+  avg_engagement_rate: 4.8,
+  post_count: 9,
+  recent_posts: DEMO_INSTAGRAM_POSTS.slice(0, 5).map(p => ({
+    id: p.id, caption: p.caption.split('\n')[0], like_count: p.like_count,
+    comments_count: p.comments_count, impressions: p.impressions, reach: p.reach,
+  })),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// THREADS POSTS (Content 페이지)
+// ═══════════════════════════════════════════════════════════════
+export const DEMO_THREADS_POSTS = [
+  { id: uuid(1500), text: 'AI 마케팅의 미래는 에이전트 기반 자동화입니다. 콘텐츠 기획부터 실행까지, 사람의 판단 + AI의 속도를 결합하면 마케팅 효율이 3배 이상 올라갑니다.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo1', timestamp: ago(120), like_count: 234, reply_count: 45, repost_count: 67, quote_count: 12, fetched_at: ago(5) },
+  { id: uuid(1501), text: '오늘 봄 프로모션 광고 성과 리포트를 봤는데, ROAS 3.2x 달성 🎉 목표 2.5x를 넘겼어요. AI 카피 A/B 테스트가 큰 역할을 했습니다.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo2', timestamp: ago(1440), like_count: 189, reply_count: 32, repost_count: 41, quote_count: 8, fetched_at: ago(5) },
+  { id: uuid(1502), text: '마케터라면 반드시 알아야 할 2026 트렌드:\n1. AI 에이전트 자동화\n2. 숏폼 크로스플랫폼\n3. SGE 대응 SEO\n4. 이메일 마케팅 리바이벌\n5. 데이터 기반 콘텐츠 기획', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo3', timestamp: ago(2880), like_count: 567, reply_count: 89, repost_count: 134, quote_count: 28, fetched_at: ago(5) },
+  { id: uuid(1503), text: '릴스 vs 쇼츠 vs 틱톡 — 결론은 "셋 다"입니다. 하나의 콘텐츠를 세 플랫폼에 최적화하는 리퍼포징 전략이 2026년의 정답.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo4', timestamp: ago(4320), like_count: 312, reply_count: 56, repost_count: 78, quote_count: 15, fetched_at: ago(5) },
+  { id: uuid(1504), text: '인플루언서 마케팅 팁: 팔로워 수보다 인게이지먼트율을 보세요. 마이크로 인플루언서(1만~5만)의 평균 참여율이 메가 인플루언서의 2배입니다.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo5', timestamp: ago(5760), like_count: 445, reply_count: 67, repost_count: 92, quote_count: 21, fetched_at: ago(5) },
+  { id: uuid(1505), text: '우리 팀이 콘텐츠 생산 속도를 3배 높인 비결? AI가 초안을 만들고, 사람이 브랜드 톤으로 다듬는 워크플로우. 품질은 유지하면서 속도만 올렸습니다.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo6', timestamp: ago(7200), like_count: 278, reply_count: 41, repost_count: 53, quote_count: 9, fetched_at: ago(5) },
+  { id: uuid(1506), text: '광고 카피 작성의 핵심은 "문제 → 공감 → 솔루션 → CTA" 구조입니다. 이 4단계만 기억하면 전환율이 확 올라요.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo7', timestamp: ago(8640), like_count: 389, reply_count: 54, repost_count: 71, quote_count: 16, fetched_at: ago(5) },
+  { id: uuid(1507), text: '뉴스레터 구독자 1,200명 돌파! 🎉 핵심은 리드마그넷(무료 PDF 가이드)이었어요. 블로그 → 리드마그넷 → 구독 퍼널로 전환율 +35% 달성.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo8', timestamp: ago(10080), like_count: 198, reply_count: 28, repost_count: 34, quote_count: 7, fetched_at: ago(5) },
+  { id: uuid(1508), text: 'SEO의 미래는 토픽 클러스터입니다. 단일 키워드 최적화는 끝났어요. 하나의 주제를 중심으로 10-15개의 관련 콘텐츠를 만드는 게 Google SGE 시대의 전략.', media_type: 'TEXT', permalink: 'https://threads.net/@dott/post/demo9', timestamp: ago(11520), like_count: 356, reply_count: 49, repost_count: 63, quote_count: 14, fetched_at: ago(5) },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// WEEKLY GOALS & REPORT (Dashboard)
+// ═══════════════════════════════════════════════════════════════
+export const DEMO_WEEKLY_GOALS = [
+  { platform: 'instagram', target_count: 5, user_id: 'demo', updated_at: ago(1440) },
+  { platform: 'threads', target_count: 7, user_id: 'demo', updated_at: ago(1440) },
+  { platform: 'blog', target_count: 2, user_id: 'demo', updated_at: ago(1440) },
+  { platform: 'newsletter', target_count: 1, user_id: 'demo', updated_at: ago(1440) },
+];
+
+export const DEMO_WEEKLY_REPORT = {
+  report: `## 📊 주간 마케팅 리포트
+
+### 이번 주 성과 요약
+
+이번 주는 **봄 프로모션 캠페인**을 중심으로 활발한 마케팅 활동이 이루어졌습니다.
+
+### 📈 핵심 지표
+- **태스크 완료율:** 62.5% (5/8건 완료)
+- **인스타그램:** 9개 포스트 발행, 평균 참여율 4.8%
+- **쓰레드:** 9개 포스트 발행, 평균 좋아요 330회
+- **인사이트:** 5건 신규 저장
+
+### 🎯 주요 성과
+1. **봄 프로모션 ROAS 3.2x** — 목표(2.5x) 대비 128% 달성
+2. **릴스 챌린지 콘텐츠** — 조회수 45.6K, 역대 최고 기록
+3. **인플루언서 협업** — @lifestyle_mina 콜라보 콘텐츠 참여율 6.1%
+
+### ⚠️ 개선 포인트
+- 블로그 포스트 발행이 목표 대비 부족 (1/2건)
+- 뉴스레터 발송 지연 — 3월호 초안 완성 필요
+- Google 광고 캠페인 ROAS가 Meta 대비 낮음 (1.8x vs 3.2x)
+
+### 💡 다음 주 추천 액션
+1. "AI마케팅" 키워드 급상승 — 관련 블로그 포스트 우선 발행
+2. 릴스 시리즈 2편 추가 기획 (성과 좋은 포맷 반복)
+3. 뉴스레터 3월호 최종 검토 및 발송
+4. Google 광고 크리에이티브 리프레시`,
+  stats: {
+    totalTasks: 8,
+    doneTasks: 5,
+    insightsCount: 5,
+    igPostsCount: 9,
+    threadsPostsCount: 9,
+  },
+  generatedAt: ago(60),
 };
 
 // ═══════════════════════════════════════════════════════════════
