@@ -10,6 +10,7 @@ import { parseContent } from '@/lib/memo-utils';
 
 interface MemoEditorProps {
   initialContent: string;
+  initialMarkdown?: string;
   onChange: (blocks: Block[]) => void;
   editorRef?: React.MutableRefObject<BlockNoteEditor | null>;
 }
@@ -19,7 +20,7 @@ function getTheme(): 'light' | 'dark' {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 }
 
-export default function MemoEditor({ initialContent, onChange, editorRef }: MemoEditorProps) {
+export default function MemoEditor({ initialContent, initialMarkdown, onChange, editorRef }: MemoEditorProps) {
   const initialBlocks = useMemo(() => parseContent(initialContent), [initialContent]);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(getTheme);
 
@@ -53,6 +54,17 @@ export default function MemoEditor({ initialContent, onChange, editorRef }: Memo
   useEffect(() => {
     if (editorRef) editorRef.current = editor;
   }, [editor, editorRef]);
+
+  // Parse markdown and replace editor content when initialMarkdown is provided
+  useEffect(() => {
+    if (!initialMarkdown || !editor) return;
+    try {
+      const blocks = editor.tryParseMarkdownToBlocks(initialMarkdown);
+      editor.replaceBlocks(editor.document, blocks);
+    } catch {
+      // fallback: leave editor empty
+    }
+  }, [initialMarkdown, editor]);
 
   // Watch for dark mode changes
   useEffect(() => {

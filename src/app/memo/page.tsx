@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, Pin, PinOff, Trash2, Download, FileText, FileDown, Undo2, Trash, X } from 'lucide-react';
+import { Search, Plus, Pin, PinOff, Trash2, Download, FileText, FileDown, Undo2, Trash, X, FileUp } from 'lucide-react';
 import type { BlockNoteEditor, Block } from '@blocknote/core';
 import DynamicMemoEditor from '@/components/memo/DynamicMemoEditor';
 import {
@@ -49,9 +49,11 @@ export default function MemoPage() {
   const [editTitle, setEditTitle] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [trashMode, setTrashMode] = useState(false);
+  const [pendingMarkdown, setPendingMarkdown] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<BlockNoteEditor | null>(null);
   const latestContentRef = useRef<string>('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchMemos = useCallback(async () => {
     const params = new URLSearchParams();
@@ -141,6 +143,39 @@ export default function MemoPage() {
     } catch {
       // silent
     }
+  };
+
+  // Import .md file as a new memo
+  const importMarkdownFile = async (file: File) => {
+    const text = await file.text();
+    const fileName = file.name.replace(/\.md$/i, '');
+    // Extract title: first # heading or filename
+    const headingMatch = text.match(/^#\s+(.+)$/m);
+    const title = headingMatch ? headingMatch[1].trim() : fileName;
+
+    try {
+      const res = await fetch('/api/memos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content: '' }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setPendingMarkdown(text);
+      setMemos((prev) => [data.memo, ...prev]);
+      setSelected(data.memo);
+    } catch {
+      // silent
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.name.endsWith('.md')) {
+      importMarkdownFile(file);
+    }
+    // Reset input so re-uploading same file works
+    e.target.value = '';
   };
 
   const togglePin = async (memo: Memo) => {
@@ -395,6 +430,20 @@ export default function MemoPage() {
                 <Plus className="size-3.5" /> 새 메모
               </button>
               <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+                title="MD 파일 가져오기"
+              >
+                <FileUp className="size-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".md"
+                onChange={handleFileInput}
+                className="hidden"
+              />
+              <button
                 onClick={() => setTrashMode(true)}
                 className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
                 title="휴지통"
@@ -494,7 +543,11 @@ export default function MemoPage() {
                 <DynamicMemoEditor
                   key={selected.id}
                   initialContent={selected.content}
-                  onChange={handleEditorChange}
+                  initialMarkdown={pendingMarkdown && selected ? pendingMarkdown : undefined}
+                  onChange={(blocks: Block[]) => {
+                    if (pendingMarkdown) setPendingMarkdown(null);
+                    handleEditorChange(blocks);
+                  }}
                   editorRef={editorRef}
                 />
               </div>
