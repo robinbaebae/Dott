@@ -141,7 +141,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // If pathname is not a known tab (e.g. /banner/[id], /chat), render normally
   if (!currentTab) {
     return (
-      <div className={`flex h-screen ${topOffset} px-3 pb-3 gap-3 app-gradient`}>
+      <div className={`flex h-screen ${topOffset} px-3 gap-3 app-gradient`}>
         {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -157,7 +157,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Authenticated (or demo) with tab — render all visited tabs, show only active
   return (
-    <div className={`flex h-screen ${topOffset} px-3 pb-3 gap-3 app-gradient`}>
+    <div className={`flex h-screen ${topOffset} px-3 gap-3 app-gradient`}>
       {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">

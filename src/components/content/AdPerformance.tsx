@@ -51,125 +51,7 @@ type Platform = 'google' | 'meta';
 type Period = 'daily' | 'weekly' | 'monthly';
 type ChartMetric = 'spend' | 'conversions' | 'roas' | 'clicks';
 
-// ─── Mock Campaign Data ──────────────────────────────────
-
-const GOOGLE_CAMPAIGNS: Campaign[] = [
-  { id: 'g1', name: '봄 시즌 브랜드 캠페인', status: 'Active', impressions: 124500, clicks: 3120, ctr: 2.51, cpc: 420, cpm: 10530, spend: 1310400, conversions: 87, convRate: 2.79, roas: 3.2, costPerConv: 15063 },
-  { id: 'g2', name: '신규 고객 리타겟팅', status: 'Active', impressions: 89200, clicks: 2450, ctr: 2.75, cpc: 380, cpm: 10449, spend: 931000, conversions: 64, convRate: 2.61, roas: 2.8, costPerConv: 14547 },
-  { id: 'g3', name: '검색 — 핵심 키워드', status: 'Active', impressions: 56800, clicks: 4260, ctr: 7.50, cpc: 520, cpm: 38986, spend: 2215200, conversions: 142, convRate: 3.33, roas: 4.1, costPerConv: 15600 },
-  { id: 'g4', name: '디스플레이 — 관심사 타겟', status: 'Paused', impressions: 210000, clicks: 1890, ctr: 0.90, cpc: 280, cpm: 2520, spend: 529200, conversions: 23, convRate: 1.22, roas: 1.5, costPerConv: 23009 },
-  { id: 'g5', name: '유튜브 인스트림 광고', status: 'Ended', impressions: 340000, clicks: 5100, ctr: 1.50, cpc: 150, cpm: 2250, spend: 765000, conversions: 51, convRate: 1.00, roas: 2.1, costPerConv: 15000 },
-  { id: 'g6', name: 'Performance Max — 전체', status: 'Active', impressions: 478000, clicks: 8604, ctr: 1.80, cpc: 340, cpm: 6120, spend: 2925360, conversions: 203, convRate: 2.36, roas: 3.6, costPerConv: 14411 },
-  { id: 'g7', name: '검색 — 경쟁사 키워드', status: 'Active', impressions: 32400, clicks: 1944, ctr: 6.00, cpc: 680, cpm: 40800, spend: 1321920, conversions: 58, convRate: 2.98, roas: 2.4, costPerConv: 22792 },
-  { id: 'g8', name: '앱 설치 캠페인', status: 'Paused', impressions: 156000, clicks: 4680, ctr: 3.00, cpc: 250, cpm: 7500, spend: 1170000, conversions: 312, convRate: 6.67, roas: 1.8, costPerConv: 3750 },
-  { id: 'g9', name: '쇼핑 — 인기 상품', status: 'Active', impressions: 95600, clicks: 5736, ctr: 6.00, cpc: 390, cpm: 23400, spend: 2237040, conversions: 167, convRate: 2.91, roas: 4.5, costPerConv: 13389 },
-  { id: 'g10', name: '디스커버리 — 신규 유입', status: 'Ended', impressions: 267000, clicks: 3738, ctr: 1.40, cpc: 200, cpm: 2800, spend: 747600, conversions: 41, convRate: 1.10, roas: 1.9, costPerConv: 18234 },
-];
-
-const META_CAMPAIGNS: Campaign[] = [
-  { id: 'm1', name: '인스타 스토리 — 프로모션', status: 'Active', impressions: 185000, clicks: 5550, ctr: 3.00, cpc: 310, cpm: 9297, spend: 1719500, conversions: 156, convRate: 2.81, roas: 3.8, costPerConv: 11022 },
-  { id: 'm2', name: '피드 — 신제품 런칭', status: 'Active', impressions: 142000, clicks: 3834, ctr: 2.70, cpc: 350, cpm: 9451, spend: 1341900, conversions: 98, convRate: 2.56, roas: 3.1, costPerConv: 13693 },
-  { id: 'm3', name: '릴스 — 브랜드 인지도', status: 'Active', impressions: 520000, clicks: 7800, ctr: 1.50, cpc: 180, cpm: 2700, spend: 1404000, conversions: 72, convRate: 0.92, roas: 2.0, costPerConv: 19500 },
-  { id: 'm4', name: '리타겟팅 — 장바구니 이탈', status: 'Paused', impressions: 67000, clicks: 2680, ctr: 4.00, cpc: 290, cpm: 11600, spend: 777200, conversions: 112, convRate: 4.18, roas: 5.2, costPerConv: 6939 },
-  { id: 'm5', name: 'Advantage+ 쇼핑', status: 'Active', impressions: 298000, clicks: 6556, ctr: 2.20, cpc: 260, cpm: 5720, spend: 1704560, conversions: 134, convRate: 2.04, roas: 3.5, costPerConv: 12720 },
-  { id: 'm6', name: '페이스북 피드 — 시즌 세일', status: 'Active', impressions: 231000, clicks: 6468, ctr: 2.80, cpc: 270, cpm: 7560, spend: 1746360, conversions: 189, convRate: 2.92, roas: 4.1, costPerConv: 9240 },
-  { id: 'm7', name: '인스타 탐색탭 광고', status: 'Active', impressions: 412000, clicks: 8240, ctr: 2.00, cpc: 220, cpm: 4400, spend: 1812800, conversions: 95, convRate: 1.15, roas: 2.3, costPerConv: 19082 },
-  { id: 'm8', name: '메신저 — 문의 유도', status: 'Paused', impressions: 54000, clicks: 2160, ctr: 4.00, cpc: 350, cpm: 14000, spend: 756000, conversions: 78, convRate: 3.61, roas: 3.9, costPerConv: 9692 },
-  { id: 'm9', name: '룩어라이크 — 고가치 고객', status: 'Active', impressions: 167000, clicks: 5010, ctr: 3.00, cpc: 300, cpm: 9000, spend: 1503000, conversions: 121, convRate: 2.42, roas: 3.7, costPerConv: 12421 },
-  { id: 'm10', name: '다이나믹 리타겟팅 — 상품뷰', status: 'Ended', impressions: 89000, clicks: 3560, ctr: 4.00, cpc: 240, cpm: 9600, spend: 854400, conversions: 145, convRate: 4.07, roas: 5.8, costPerConv: 5893 },
-];
-
-// ─── Mock Time Series Data ───────────────────────────────
-
-function generateDailyData(platform: Platform): TimeData[] {
-  const base = platform === 'google'
-    ? { spend: 180000, conv: 18, clicks: 520, imp: 18000, roas: 3.0 }
-    : { spend: 220000, conv: 22, clicks: 680, imp: 24000, roas: 3.2 };
-
-  const days: TimeData[] = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const variance = 0.7 + Math.random() * 0.6;
-    const weekendDip = (d.getDay() === 0 || d.getDay() === 6) ? 0.65 : 1;
-    const trend = 1 + (14 - i) * 0.015;
-    const m = variance * weekendDip * trend;
-    const spend = Math.round(base.spend * m);
-    const conversions = Math.round(base.conv * m);
-    const clicks = Math.round(base.clicks * m);
-    const impressions = Math.round(base.imp * m);
-    days.push({
-      label: `${d.getMonth() + 1}/${d.getDate()}`,
-      spend,
-      conversions,
-      clicks,
-      impressions,
-      roas: +(base.roas * (0.8 + Math.random() * 0.4)).toFixed(1),
-      ctr: +((clicks / impressions) * 100).toFixed(2),
-    });
-  }
-  return days;
-}
-
-function generateWeeklyData(platform: Platform): TimeData[] {
-  const base = platform === 'google'
-    ? { spend: 1200000, conv: 120, clicks: 3500, imp: 120000, roas: 3.1 }
-    : { spend: 1500000, conv: 150, clicks: 4500, imp: 160000, roas: 3.3 };
-
-  const weeks: TimeData[] = [];
-  for (let i = 7; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i * 7);
-    const end = new Date(d);
-    end.setDate(end.getDate() + 6);
-    const variance = 0.8 + Math.random() * 0.4;
-    const trend = 1 + (8 - i) * 0.03;
-    const m = variance * trend;
-    const spend = Math.round(base.spend * m);
-    const conversions = Math.round(base.conv * m);
-    const clicks = Math.round(base.clicks * m);
-    const impressions = Math.round(base.imp * m);
-    weeks.push({
-      label: `${d.getMonth() + 1}/${d.getDate()}~${end.getMonth() + 1}/${end.getDate()}`,
-      spend,
-      conversions,
-      clicks,
-      impressions,
-      roas: +(base.roas * (0.85 + Math.random() * 0.3)).toFixed(1),
-      ctr: +((clicks / impressions) * 100).toFixed(2),
-    });
-  }
-  return weeks;
-}
-
-function generateMonthlyData(platform: Platform): TimeData[] {
-  const base = platform === 'google'
-    ? { spend: 5200000, conv: 480, clicks: 14000, imp: 500000, roas: 3.0 }
-    : { spend: 6400000, conv: 580, clicks: 18000, imp: 650000, roas: 3.2 };
-
-  const months: TimeData[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    const variance = 0.85 + Math.random() * 0.3;
-    const trend = 1 + (6 - i) * 0.04;
-    const m = variance * trend;
-    const spend = Math.round(base.spend * m);
-    const conversions = Math.round(base.conv * m);
-    const clicks = Math.round(base.clicks * m);
-    const impressions = Math.round(base.imp * m);
-    months.push({
-      label: `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
-      spend,
-      conversions,
-      clicks,
-      impressions,
-      roas: +(base.roas * (0.85 + Math.random() * 0.3)).toFixed(1),
-      ctr: +((clicks / impressions) * 100).toFixed(2),
-    });
-  }
-  return months;
-}
+// No mock data — campaigns come from live API connections only
 
 // ─── Helpers ─────────────────────────────────────────────
 
@@ -205,7 +87,8 @@ const PERIOD_OPTIONS: { key: Period; label: string }[] = [
 // ─── Sub Components ──────────────────────────────────────
 
 function WeeklySummary({ platform, timeData }: { platform: Platform; timeData?: TimeData[] }) {
-  const data = timeData ? timeData.slice(-7) : generateDailyData(platform).slice(-7);
+  if (!timeData || timeData.length === 0) return null;
+  const data = timeData.slice(-7);
   const totalSpend = data.reduce((s, d) => s + d.spend, 0);
   const totalConv = data.reduce((s, d) => s + d.conversions, 0);
   const totalClicks = data.reduce((s, d) => s + d.clicks, 0);
@@ -278,12 +161,8 @@ function PerformanceCharts({
 }) {
   const [metric, setMetric] = useState<ChartMetric>('spend');
 
-  const data = timeData ??
-    (period === 'daily'
-      ? generateDailyData(platform)
-      : period === 'weekly'
-        ? generateWeeklyData(platform)
-        : generateMonthlyData(platform));
+  if (!timeData || timeData.length === 0) return null;
+  const data = timeData;
 
   const activeMetric = CHART_METRICS.find((m) => m.key === metric)!;
 

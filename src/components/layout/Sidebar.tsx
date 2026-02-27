@@ -75,7 +75,7 @@ export default function Sidebar() {
     <aside
       className={`${
         collapsed ? 'w-14' : 'w-56'
-      } h-full mb-3 rounded-2xl glass-panel flex flex-col shrink-0 transition-all duration-300 ease-out overflow-hidden`}
+      } h-[calc(100%-12px)] rounded-2xl glass-panel flex flex-col shrink-0 transition-all duration-300 ease-out overflow-hidden`}
     >
       {/* Logo + Toggle */}
       <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-5'} py-5`}>

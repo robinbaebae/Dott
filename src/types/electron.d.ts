@@ -23,6 +23,11 @@ interface ElectronAPI {
   contentStepNotification: (step: string, message: string) => void;
   getTokenUsage: () => Promise<unknown>;
   getNextMeeting: () => Promise<{ summary: string; time: string } | null>;
+  readChromeBookmarks?: (profileName?: string) => Promise<{
+    profiles?: { dirName: string; displayName: string }[];
+    roots?: Record<string, unknown>;
+    error?: string;
+  }>;
   platform: string;
 }
 

@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState, KeyboardEvent } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Link as LinkIcon, Plus, Search, Archive, Lightbulb, Tag, CheckSquare, Square } from 'lucide-react';
+import { X, Link as LinkIcon, Plus, Search, Archive, Lightbulb, Tag, CheckSquare, Square, LayoutGrid, List } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Insight, InsightContentType } from '@/types';
+import { BookmarkImportDialog } from '@/components/insight/BookmarkImportDialog';
 
 import {
   Select,
@@ -66,6 +67,12 @@ export default function ResearchPage() {
   // #5 Tag filter
   const [tagFilter, setTagFilter] = useState('');
   const [allTags, setAllTags] = useState<string[]>([]);
+
+  // View mode
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Electron detection
+  const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.readChromeBookmarks;
 
   // #6 Bulk selection
   const [bulkMode, setBulkMode] = useState(false);
@@ -196,7 +203,7 @@ export default function ResearchPage() {
     : insights;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-2 pb-12 space-y-4 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto px-6 pt-2 pb-0 space-y-4 animate-in fade-in duration-500">
 
       {/* URL input */}
       <div className="space-y-1.5">
@@ -233,34 +240,8 @@ export default function ResearchPage() {
         )}
       </div>
 
-      {/* Swipe mode toggle */}
-      <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <button
-            type="button"
-            onClick={() => setSwipeMode(!swipeMode)}
-            className={`w-10 h-5 rounded-full transition-colors ${swipeMode ? 'bg-violet-500' : 'bg-gray-200'}`}
-          >
-            <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${swipeMode ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
-          <span className="text-xs">Swipe File</span>
-        </label>
-        {swipeMode && (
-          <Select value={swipeCategory} onValueChange={setSwipeCategory}>
-            <SelectTrigger className="w-40 h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SWIPE_CATEGORIES.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-
-      {/* Search + Filter tabs + Tag filter */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* Search + Filter tabs + Tag filter + View toggle */}
+      <div className="flex items-center gap-3 flex-wrap pb-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60" />
           <input
@@ -307,10 +288,27 @@ export default function ResearchPage() {
             )}
           </div>
         )}
+        {/* Chrome bookmark import (Electron only) */}
+        {isElectron && <BookmarkImportDialog onImported={fetchInsights} />}
+        {/* View mode toggle */}
+        <div className="ml-auto flex gap-1 p-1 rounded-xl bg-muted/50 border border-border/50">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <LayoutGrid className="size-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <List className="size-4" />
+          </button>
+        </div>
         {/* #6 Bulk mode toggle */}
         <button
           onClick={() => { setBulkMode(!bulkMode); setSelected(new Set()); }}
-          className={`ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-colors ${
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-colors ${
             bulkMode ? 'bg-violet-500 text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
@@ -353,10 +351,24 @@ export default function ResearchPage() {
             </p>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {displayedInsights.map((insight) => (
             <InsightCard
+              key={insight.id}
+              insight={insight}
+              onDelete={deleteInsight}
+              onUpdate={updateInsight}
+              bulkMode={bulkMode}
+              isSelected={selected.has(insight.id)}
+              onToggleSelect={toggleSelect}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {displayedInsights.map((insight) => (
+            <InsightRow
               key={insight.id}
               insight={insight}
               onDelete={deleteInsight}
@@ -550,5 +562,101 @@ function InsightCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function InsightRow({
+  insight,
+  onDelete,
+  onUpdate,
+  bulkMode,
+  isSelected,
+  onToggleSelect,
+}: {
+  insight: Insight;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: { memo?: string; tags?: string[] }) => void;
+  bulkMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
+}) {
+  const [tags, setTags] = useState<string[]>(insight.tags || []);
+  const [tagInput, setTagInput] = useState('');
+  const [showTagInput, setShowTagInput] = useState(false);
+
+  const addTag = () => {
+    const trimmed = tagInput.trim();
+    if (!trimmed || tags.includes(trimmed)) { setTagInput(''); return; }
+    const updated = [...tags, trimmed];
+    setTags(updated);
+    setTagInput('');
+    setShowTagInput(false);
+    onUpdate(insight.id, { tags: updated });
+  };
+
+  const removeTag = (tag: string) => {
+    const updated = tags.filter((t) => t !== tag);
+    setTags(updated);
+    onUpdate(insight.id, { tags: updated });
+  };
+
+  const savedDate = new Date(insight.created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return (
+    <div className={`group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors ${isSelected ? 'ring-2 ring-violet-500 bg-muted/30' : ''}`}>
+      {bulkMode && (
+        <button onClick={() => onToggleSelect(insight.id)} className="shrink-0">
+          {isSelected ? <CheckSquare className="size-4 text-violet-500" /> : <Square className="size-4 text-muted-foreground/40" />}
+        </button>
+      )}
+      {insight.thumbnail_url && (
+        <img src={insight.thumbnail_url} alt="" className="size-10 rounded object-cover shrink-0 bg-muted" />
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <a href={insight.url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium truncate hover:text-primary transition-colors">
+            {insight.title || insight.url}
+          </a>
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${TYPE_COLOR[insight.content_type]}`}>
+            {insight.content_type}
+          </Badge>
+          <span className="text-[10px] text-muted-foreground">{insight.source_domain}</span>
+          {tags.map((tag) => (
+            <span key={tag} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[10px] ${getInsightTagColor(tag)}`}>
+              #{tag}
+              <button onClick={() => removeTag(tag)} className="hover:text-destructive"><X className="size-2" /></button>
+            </span>
+          ))}
+          {showTagInput ? (
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } else if (e.key === 'Escape') { setShowTagInput(false); setTagInput(''); } }}
+              onBlur={() => { if (tagInput.trim()) addTag(); else setShowTagInput(false); }}
+              placeholder="tag"
+              className="text-[10px] bg-transparent border-b border-accent/30 outline-none w-14 px-1"
+              autoFocus
+            />
+          ) : (
+            <button onClick={() => setShowTagInput(true)} className="text-[10px] text-muted-foreground hover:text-accent transition-colors">
+              <Plus className="size-2.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      <span className="text-[10px] text-muted-foreground shrink-0">{savedDate}</span>
+      <button
+        onClick={() => onDelete(insight.id)}
+        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-muted transition-opacity shrink-0"
+      >
+        <X className="size-3" />
+      </button>
+    </div>
   );
 }

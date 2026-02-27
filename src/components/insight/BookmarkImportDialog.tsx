@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Download, ChevronRight, ChevronDown, Folder, Globe, Loader2 } from 'lucide-react';
+import { Download, ChevronRight, ChevronDown, Folder, Globe, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ChromeProfile {
@@ -269,6 +269,15 @@ export function BookmarkImportDialog({ onImported }: { onImported: () => void })
         {!loading && roots && (
           <>
             <div className="flex items-center justify-between">
+              {profiles.length > 1 && (
+                <button
+                  onClick={() => { setRoots(null); setSelectedProfile(''); setSelectedUrls(new Set()); setAllBookmarks([]); }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="size-3" />
+                  프로필 선택
+                </button>
+              )}
               <button onClick={selectAll} className="text-xs text-violet-600 hover:underline">
                 {selectedUrls.size === allBookmarks.length ? '전체 해제' : '전체 선택'}
               </button>

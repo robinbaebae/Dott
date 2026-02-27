@@ -32,5 +32,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitApp: () => ipcRenderer.send('quit-app'),
   onShowExitSummary: (cb) => ipcRenderer.on('show-exit-summary', (_e, data) => cb(data)),
   confirmExitSummary: () => ipcRenderer.send('exit-summary-confirmed'),
+  readChromeBookmarks: (profileName) => ipcRenderer.invoke('read-chrome-bookmarks', profileName),
   platform: process.platform,
 });
