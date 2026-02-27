@@ -52,7 +52,7 @@ export default function ActivityHeatmap() {
 
   // Organize days into weeks (columns)
   const { weeks, monthMarkers } = useMemo(() => {
-    if (!data?.days.length) return { weeks: [], monthMarkers: [] };
+    if (!data?.days?.length) return { weeks: [], monthMarkers: [] };
 
     // Group into weeks (7-day columns, Mon=0 .. Sun=6)
     const cols: HeatmapDay[][] = [];
