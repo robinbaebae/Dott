@@ -472,27 +472,30 @@ export default function LandingPage() {
       {/* ═══════════════ SETUP GUIDE (토글) ═══════════════ */}
       <section className="py-16 px-6 relative" style={{ background: BG_GUIDE }}>
         <div className="max-w-4xl mx-auto">
-          <Section variant="blur">
+          <div className="text-center">
             <button
               onClick={() => setSetupOpen((v) => !v)}
-              className="w-full flex items-center justify-center gap-3 cursor-pointer group"
+              className="inline-flex flex-col items-center gap-2 cursor-pointer group"
             >
               <p className="text-sm font-medium text-[#7B5B8B] tracking-widest uppercase">Getting Started</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#2D2235]">
-                시작하기 전에 준비할 것들
-              </h2>
-              <ChevronDown className={`size-5 text-[#7B5B8B] transition-transform duration-300 ${setupOpen ? 'rotate-180' : ''}`} />
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#2D2235]">
+                  시작하기 전에 준비할 것들
+                </h2>
+                <ChevronDown className={`size-5 text-[#7B5B8B] transition-transform duration-300 ${setupOpen ? 'rotate-180' : ''}`} />
+              </div>
             </button>
-            <p className="text-sm text-[#4A3D55] text-center max-w-xl mx-auto mt-3">
+            <p className="text-sm text-[#4A3D55] max-w-xl mx-auto mt-3">
               Google 계정 + Claude 계정 + Node.js만 준비하면 됩니다.{' '}
-              {!setupOpen && <span className="text-[#7B5B8B] font-medium">자세히 보기 ↓</span>}
+              {!setupOpen && <span className="text-[#7B5B8B] font-medium cursor-pointer" onClick={() => setSetupOpen(true)}>자세히 보기 ↓</span>}
             </p>
-          </Section>
+          </div>
 
           <div
-            className="overflow-hidden transition-all duration-500 ease-out"
-            style={{ maxHeight: setupOpen ? '2000px' : '0px', opacity: setupOpen ? 1 : 0 }}
+            className="grid transition-[grid-template-rows] duration-500 ease-out"
+            style={{ gridTemplateRows: setupOpen ? '1fr' : '0fr' }}
           >
+            <div className="overflow-hidden">
             <div className="pt-8">
               {/* 필요한 계정 요약 */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -622,6 +625,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </section>
