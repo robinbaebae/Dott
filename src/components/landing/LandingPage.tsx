@@ -6,7 +6,8 @@ import {
   MessageSquare, BarChart3, TrendingUp, FileText,
   Bookmark, PenTool, Megaphone, Zap, ArrowRight, Figma,
   CheckCircle2, Sparkles, ChevronDown, Monitor, Globe, Download,
-  Shield, Terminal, LogIn,
+  Shield, Terminal, LogIn, ListTodo, Image, Calendar, Mail, Search,
+  Lightbulb, MousePointerClick, Flame, Activity, BookOpen, Target, Palette,
 } from 'lucide-react';
 
 /* ─────────── scroll-reveal hook ─────────── */
@@ -121,6 +122,128 @@ const FEATURES = [
   },
 ];
 
+/* ─────────── feature guide data ─────────── */
+const FEATURE_GUIDE = [
+  {
+    icon: BookOpen,
+    tab: '브랜드 가이드',
+    title: '당신의 브랜드를 학습한 AI, 그래서 다릅니다',
+    color: '#7B5B8B',
+    desc: 'Dott은 범용 챗봇이 아닙니다. Settings에서 브랜드명, 타겟 고객, 말투, 핵심 키워드, 경쟁사, USP를 한 번만 입력하면 — 이후 모든 AI 결과물이 당신의 브랜드에 맞춰 나옵니다. 캡션, 배너, 블로그, 이메일, 광고 카피까지 전부.',
+    tips: [
+      { icon: Target, text: '타겟 고객과 고객 페인포인트를 구체적으로 적을수록, AI가 더 정확한 카피를 씁니다' },
+      { icon: Palette, text: '톤 설정(프로페셔널/캐주얼/친근/발랄)에 따라 AI의 글 스타일이 완전히 바뀝니다' },
+      { icon: Lightbulb, text: '피해야 할 키워드를 등록하면 경쟁사 브랜드명이나 금기어가 결과물에 절대 포함되지 않아요' },
+    ],
+    tryIt: '사이드바 Settings(*) → Brand Guide 섹션에서 브랜드 정보 입력',
+  },
+  {
+    icon: MessageSquare,
+    tab: 'AI 대화',
+    title: 'AI에게 말하듯이, 뭐든 시켜보세요',
+    color: '#C87DA0',
+    desc: 'Dott의 핵심은 대화입니다. "인스타 캡션 써줘", "이번 달 광고 성과 분석해줘" — 자연어로 말하면 AI 오케스트레이터가 최적의 전문가를 자동 배정합니다.',
+    tips: [
+      { icon: Lightbulb, text: '"이번 주 인스타 3개 올릴 건데 캡션 미리 만들어줘" 처럼 구체적으로 요청할수록 좋아요' },
+      { icon: MousePointerClick, text: '대화 중 생성된 배너는 바로 Figma로 Push, 일정은 캘린더에 자동 등록됩니다' },
+      { icon: Calendar, text: '여러 대화 탭을 동시에 열어 프로젝트별로 관리할 수 있어요' },
+    ],
+    tryIt: '대시보드 → 채팅창에 "이번 주 마케팅 할 일 정리해줘" 입력',
+  },
+  {
+    icon: FileText,
+    tab: '콘텐츠',
+    title: '기획부터 발행까지, 콘텐츠 워크스페이스',
+    color: '#9E7BAA',
+    desc: '블로그, 뉴스레터, SNS 캡션, 이메일 시퀀스까지. 탭 하나로 전환하며 콘텐츠를 만들고, 캘린더로 발행 일정을 관리하세요.',
+    tips: [
+      { icon: Lightbulb, text: 'SEO 브리프 탭에서 키워드를 넣으면 AI가 제목, 메타 설명, 본문 구조를 제안합니다' },
+      { icon: Mail, text: '이메일 시퀀스 빌더로 3-5통짜리 자동 이메일 캠페인을 뚝딱 만들 수 있어요' },
+      { icon: Calendar, text: '콘텐츠 캘린더에서 인스타/블로그/뉴스레터 발행 일정을 한눈에 확인하세요' },
+    ],
+    tryIt: '사이드바 Content(+) → Compose 탭에서 글쓰기 시작',
+  },
+  {
+    icon: BarChart3,
+    tab: '광고 분석',
+    title: '메타 광고 데이터, AI가 읽어줍니다',
+    color: '#D4A06B',
+    desc: 'CSV 파일 하나만 올리면 ROAS, 지출, CTR, 전환율 등 핵심 지표를 자동으로 시각화합니다. 크리에이티브별 성과 비교, 기간별 트렌드까지.',
+    tips: [
+      { icon: Lightbulb, text: '메타 광고 관리자에서 CSV 내보내기 → Dott에 드래그 앤 드롭하면 끝' },
+      { icon: BarChart3, text: '크리에이티브별 성과를 정렬해서 어떤 소재가 잘 되는지 바로 파악하세요' },
+      { icon: Search, text: '대화창에서 "광고 성과 분석해줘"라고 하면 AI가 인사이트를 정리해줍니다' },
+    ],
+    tryIt: '사이드바 Ad Analytics($) → CSV 파일 업로드',
+  },
+  {
+    icon: TrendingUp,
+    tab: '트렌드',
+    title: '시장 흐름과 경쟁사, 놓치지 마세요',
+    color: '#E8A88E',
+    desc: '키워드 워치리스트, RSS 피드, 경쟁사 모니터링을 한 곳에서. AI가 트렌드 변화율을 추적하고, 콘텐츠 아이디어까지 제안합니다.',
+    tips: [
+      { icon: Lightbulb, text: '키워드 추가 시 변화율 ≥20%인 항목은 자동으로 데일리 브리핑에 포함됩니다' },
+      { icon: TrendingUp, text: '경쟁사 URL을 등록하면 주기적으로 변화를 모니터링해요' },
+      { icon: Sparkles, text: 'AI가 트렌드 기반 콘텐츠 아이디어(훅, 플랫폼, 설명)를 생성합니다' },
+    ],
+    tryIt: '사이드바 Trends(#) → 키워드 추가하기',
+  },
+  {
+    icon: ListTodo,
+    tab: '태스크',
+    title: '할 일을 캘린더 위에 올려놓으세요',
+    color: '#7B9BAA',
+    desc: '마케팅 태스크를 캘린더 뷰로 관리합니다. 드래그 앤 드롭으로 일정 조정, 긴급/중요도 필터링, 미완료 태스크는 대시보드에 자동 서페이싱.',
+    tips: [
+      { icon: Lightbulb, text: '미배정 태스크를 캘린더의 날짜로 끌어다 놓으면 자동으로 일정이 잡혀요' },
+      { icon: Flame, text: '긴급+중요 태스크는 대시보드 "이어서 하기" 패널에 자동 표시됩니다' },
+      { icon: Activity, text: '활동 히트맵에서 꾸준히 일한 날을 확인하고 streak을 유지해보세요' },
+    ],
+    tryIt: '사이드바 Tasks(!) → 태스크 추가 후 캘린더에 드래그',
+  },
+  {
+    icon: Bookmark,
+    tab: '인사이트',
+    title: '영감이 떠오를 때, 바로 저장',
+    color: '#9B82A8',
+    desc: '레퍼런스 링크, 아티클, 영상을 저장하면 자동으로 제목/설명/썸네일을 가져옵니다. 태그와 스와이프 파일로 분류하고, AI 대화에서 자동 참조.',
+    tips: [
+      { icon: Lightbulb, text: 'URL을 붙여넣으면 OG 메타 정보를 자동 수집합니다' },
+      { icon: Search, text: '콘텐츠 유형(Article, Video, Tweet)과 태그로 필터링하세요' },
+      { icon: PenTool, text: '각 인사이트에 메모를 남기면 나중에 대화에서 AI가 참조합니다' },
+    ],
+    tryIt: '사이드바 Insight(@) → 링크 붙여넣기',
+  },
+  {
+    icon: Image,
+    tab: '배너 & Figma',
+    title: 'AI 배너 → Figma 자동 Push',
+    color: '#C87DA0',
+    desc: '"배너 만들어줘"라고 말하면 AI가 HTML 배너를 생성하고, Figma 플러그인이 자동으로 캔버스에 배치합니다. 디자인 툴 왔다갔다 없이.',
+    tips: [
+      { icon: Lightbulb, text: '"1080x1080 인스타 배너, 봄 세일 테마로" 처럼 사이즈와 톤을 지정하세요' },
+      { icon: Figma, text: 'Figma에 Dott 플러그인을 설치하면 원클릭 Push가 가능합니다' },
+      { icon: Image, text: '생성된 배너는 HTML로도 복사 가능 — 이메일 마케팅에 바로 활용' },
+    ],
+    tryIt: '대시보드 → "세일 배너 만들어줘" 입력',
+  },
+  {
+    icon: Monitor,
+    tab: '미니펫',
+    title: '데스크톱 어디서든, Dott을 호출하세요',
+    color: '#E8A88E',
+    badge: 'macOS 전용',
+    desc: '항상 화면 위에 떠 있는 미니 AI 어시스턴트. 브라우저나 다른 앱에서 작업하다가도 바로 질문하고, 카피를 받고, 일정을 확인할 수 있습니다.',
+    tips: [
+      { icon: Lightbulb, text: '트레이 아이콘에서 미니펫 보기/숨기기를 전환할 수 있어요' },
+      { icon: MousePointerClick, text: '미니펫을 드래그해서 원하는 위치로 옮길 수 있습니다' },
+      { icon: Sparkles, text: '태스크 완료에 따라 펫의 기분이 바뀝니다 — 해피/뉴트럴/새드' },
+    ],
+    tryIt: '트레이 아이콘 → "미니펫 보기" 클릭',
+  },
+];
+
 const COMPARISONS = [
   { label: '사용 툴', before: '5~10개 왔다갔다', after: '1개 앱에 전부' },
   { label: 'AI 활용', before: '범용 챗봇 (맥락 없음)', after: '브랜드를 학습한 전문 AI' },
@@ -199,6 +322,7 @@ const BG_CTA = `
 export default function LandingPage() {
   const [animating, setAnimating] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
+  const [activeGuide, setActiveGuide] = useState(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
@@ -586,38 +710,120 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════ FEATURES — 딥 퍼플 ═══════════════ */}
+      {/* ═══════════════ FEATURE GUIDE — 딥 퍼플 ═══════════════ */}
       <section className="py-28 px-6 relative" style={{ background: BG_FEATURES }}>
         <div className="max-w-5xl mx-auto">
           <Section variant="blur">
-            <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Features</p>
+            <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Feature Guide</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-5">
               하나의 앱, 모든 마케팅
             </h2>
-            <p className="text-base text-white/80 text-center max-w-xl mx-auto mb-16">
-              각 기능이 유기적으로 연결되어, 데이터가 흐르고 AI가 맥락을 이해합니다.
+            <p className="text-base text-white/80 text-center max-w-xl mx-auto mb-12">
+              각 기능을 눌러보세요. 어떻게 쓰는지, 어디서 시작하는지 바로 알 수 있습니다.
             </p>
           </Section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((feat, i) => (
-              <Section key={i} delay={i * 100} variant="scale">
-                <div className="rounded-2xl p-7 hover-lift cursor-default h-full backdrop-blur-[16px] bg-white/10 border border-white/15 shadow-lg relative">
-                  {'badge' in feat && feat.badge && (
-                    <span className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/15 text-[#E8DCE8] border border-white/10">
-                      {feat.badge as string}
-                    </span>
-                  )}
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 bg-white/10">
-                    <feat.icon className="size-5 text-[#E8DCE8]" />
+          {/* Tab Bar */}
+          <Section delay={80} variant="up">
+            <div className="flex flex-col items-center gap-2.5 mb-10">
+              {[FEATURE_GUIDE.slice(0, 5), FEATURE_GUIDE.slice(5)].map((row, rowIdx) => (
+                <div key={rowIdx} className="flex justify-center gap-2">
+                  {row.map((feat, j) => {
+                    const i = rowIdx === 0 ? j : j + 5;
+                    const Icon = feat.icon;
+                    const isActive = activeGuide === i;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setActiveGuide(i)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-white/20 text-white border border-white/30 shadow-lg'
+                            : 'bg-white/5 text-white/60 border border-white/8 hover:bg-white/10 hover:text-white/80'
+                        }`}
+                      >
+                        <Icon className="size-4" />
+                        {feat.tab}
+                        {'badge' in feat && feat.badge && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/15 text-[#E8DCE8] border border-white/10">
+                            {feat.badge as string}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* Active Feature Detail */}
+          {(() => {
+            const feat = FEATURE_GUIDE[activeGuide];
+            const Icon = feat.icon;
+            return (
+              <Section variant="scale" key={activeGuide}>
+                <div className="rounded-3xl p-8 sm:p-10 backdrop-blur-[20px] bg-white/8 border border-white/12 shadow-2xl">
+                  {/* Header */}
+                  <div className="flex items-start gap-5 mb-8">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ background: `${feat.color}30` }}
+                    >
+                      <Icon className="size-7" style={{ color: feat.color }} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">{feat.title}</h3>
+                      <p className="text-base text-white/75 leading-relaxed">{feat.desc}</p>
+                    </div>
                   </div>
-                  <h3 className="text-base font-semibold text-white mb-1.5">{feat.title}</h3>
-                  <p className="text-sm font-medium text-[#E8DCE8] mb-3">{feat.subtitle}</p>
-                  <p className="text-sm text-white/75 leading-relaxed">{feat.desc}</p>
+
+                  {/* Tips */}
+                  <div className="space-y-3 mb-8">
+                    <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">사용 팁</p>
+                    {feat.tips.map((tip, j) => {
+                      const TipIcon = tip.icon;
+                      return (
+                        <div key={j} className="flex items-start gap-3 py-3 px-4 rounded-xl bg-white/5 border border-white/8">
+                          <TipIcon className="size-4 text-[#E8DCE8] shrink-0 mt-0.5" />
+                          <p className="text-sm text-white/80 leading-relaxed">{tip.text}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Try It CTA */}
+                  <div className="flex items-center gap-4 py-4 px-5 rounded-xl border border-dashed border-white/20 bg-white/5">
+                    <div className="size-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${feat.color}25` }}>
+                      <ArrowRight className="size-5" style={{ color: feat.color }} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">직접 해보기</p>
+                      <p className="text-sm text-white/90 font-medium">{feat.tryIt}</p>
+                    </div>
+                  </div>
                 </div>
               </Section>
-            ))}
-          </div>
+            );
+          })()}
+
+          {/* Quick summary grid below */}
+          <Section delay={120} variant="up">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-10">
+              {[
+                { num: '4', label: 'AI 전문가', sub: '마케팅·디자인·리서치·빌더' },
+                { num: '14', label: '기능 페이지', sub: '모든 마케팅 도구 내장' },
+                { num: '1', label: '대화창', sub: '자연어로 모든 걸 시작' },
+                { num: '∞', label: '가능성', sub: '당신의 브랜드에 맞게' },
+              ].map((stat, i) => (
+                <div key={i} className="text-center py-5 px-3 rounded-2xl bg-white/5 border border-white/8">
+                  <p className="text-2xl font-bold text-white mb-1">{stat.num}</p>
+                  <p className="text-sm font-medium text-[#E8DCE8] mb-0.5">{stat.label}</p>
+                  <p className="text-[11px] text-white/50">{stat.sub}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
         </div>
       </section>
 

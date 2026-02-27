@@ -7,6 +7,8 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import FloatingPet from './FloatingPet';
 import DemoBanner from './DemoBanner';
+import ElectronLogin from '@/components/auth/ElectronLogin';
+import ExitSummaryModal from '@/components/dashboard/ExitSummaryModal';
 
 /* ── Lazy-load all tab pages ── */
 const DashboardPage = lazy(() => import('@/app/page.client'));
@@ -58,10 +60,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isElectron, setIsElectron] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if ((window as any).electronAPI) setIsElectron(true);
+      if (sessionStorage.getItem('dott-guest') === 'true') setIsGuest(true);
       if (sessionStorage.getItem('dott-demo') === 'true') {
         setIsDemo(true);
         // Install demo fetch interceptor + preload ad analytics
@@ -122,8 +126,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Not authenticated and not demo — render children (landing page) full-screen
-  if (!session && !isDemo) {
+  // Not authenticated and not demo and not guest
+  if (!session && !isDemo && !isGuest) {
+    // Electron app: show login screen directly
+    if (isElectron) return <ElectronLogin />;
+    // Web: show landing page
     return <>{children}</>;
   }
 
@@ -134,7 +141,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // If pathname is not a known tab (e.g. /banner/[id], /chat), render normally
   if (!currentTab) {
     return (
-      <div className={`flex h-screen ${topOffset} px-3 pb-3 gap-3 app-gradient`}>
+      <div className={`flex h-screen ${topOffset} px-3 pb-0 gap-3 app-gradient`}>
         {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -143,13 +150,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
         <FloatingPet />
+        <ExitSummaryModal />
       </div>
     );
   }
 
   // Authenticated (or demo) with tab — render all visited tabs, show only active
   return (
-    <div className={`flex h-screen ${topOffset} px-3 pb-3 gap-3 app-gradient`}>
+    <div className={`flex h-screen ${topOffset} px-3 pb-0 gap-3 app-gradient`}>
       {isElectron && <div className="fixed top-0 left-0 right-0 h-12 z-50" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />}
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -175,6 +183,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <FloatingPet />
+      <ExitSummaryModal />
     </div>
   );
 }

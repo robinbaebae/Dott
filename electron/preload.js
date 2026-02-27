@@ -30,5 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTheme: () => ipcRenderer.invoke('get-theme'),
   setPetOpacity: (value) => ipcRenderer.send('pet-set-opacity', value),
   quitApp: () => ipcRenderer.send('quit-app'),
+  onShowExitSummary: (cb) => ipcRenderer.on('show-exit-summary', (_e, data) => cb(data)),
+  confirmExitSummary: () => ipcRenderer.send('exit-summary-confirmed'),
   platform: process.platform,
 });

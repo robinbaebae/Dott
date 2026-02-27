@@ -91,17 +91,24 @@ const PLAN_CACHE_TTL = 60 * 1000; // 1 minute
 // Theme sync
 let currentTheme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 
-// Start Next.js server in production
+// Start Next.js standalone server in production
 function startNextServer() {
   if (!isProd) return;
 
-  const serverPath = path.join(process.resourcesPath, 'app');
-  nextProcess = spawn(process.execPath, [
-    path.join(serverPath, 'node_modules', 'next', 'dist', 'bin', 'next'),
-    'start',
-  ], {
-    cwd: serverPath,
-    env: { ...process.env, PORT: '3000', NODE_ENV: 'production' },
+  const standalonePath = path.join(process.resourcesPath, 'next-standalone');
+  const serverScript = path.join(standalonePath, 'server.js');
+
+  nextProcess = spawn(process.execPath, [serverScript], {
+    cwd: standalonePath,
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      PORT: '3000',
+      HOSTNAME: '127.0.0.1',
+      NODE_ENV: 'production',
+      AUTH_TRUST_HOST: 'true',
+      AUTH_URL: 'http://localhost:3000',
+    },
   });
 
   nextProcess.stdout.on('data', (data) => {
@@ -164,9 +171,49 @@ function createMainWindow() {
     mainWindow.show();
   });
 
+  let exitSummaryPending = false;
+
   mainWindow.on('close', (e) => {
     if (!app.isQuitting) {
       e.preventDefault();
+      if (exitSummaryPending) return;
+      maybeShowExitSummary();
+    }
+  });
+
+  async function maybeShowExitSummary() {
+    try {
+      const appUrl = getAppUrl();
+      const headers = await getPetAuthHeaders();
+
+      const res = await fetch(`${appUrl}/api/activity-heatmap`, { headers });
+      const heatmap = res.ok ? await res.json() : { todayCount: 0, streak: 0 };
+
+      if (heatmap.todayCount < 3) {
+        mainWindow.hide();
+        return;
+      }
+
+      // Count completed tasks
+      const tasksRes = await fetch(`${appUrl}/api/tasks`, { headers });
+      const tasks = tasksRes.ok ? await tasksRes.json() : [];
+      const completedToday = tasks.filter((t) => t.status === 'done').length;
+
+      exitSummaryPending = true;
+      mainWindow.webContents.send('show-exit-summary', {
+        totalActions: heatmap.todayCount,
+        completedTasks: completedToday,
+        streak: heatmap.streak,
+        workMinutes: getCurrentWorkMinutes(),
+      });
+    } catch {
+      mainWindow.hide();
+    }
+  }
+
+  ipcMain.on('exit-summary-confirmed', () => {
+    exitSummaryPending = false;
+    if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.hide();
     }
   });
@@ -923,7 +970,9 @@ async function sendHourlyNotification() {
 // System tray (extended)
 // =========================================================
 function createTray() {
-  const trayIconPath = path.resolve(__dirname, '..', 'public', 'logo-dott.png');
+  const trayIconPath = isProd
+    ? path.join(process.resourcesPath, 'next-standalone', 'public', 'logo-dott.png')
+    : path.resolve(__dirname, '..', 'public', 'logo-dott.png');
   console.log('Tray icon path:', trayIconPath, 'exists:', require('fs').existsSync(trayIconPath));
   const trayIcon = nativeImage.createFromPath(trayIconPath).resize({ width: 16, height: 16 });
   console.log('Tray icon empty?', trayIcon.isEmpty());

@@ -13,6 +13,8 @@ import DailyBriefingPanel from './DailyBriefingPanel';
 import QuickActions from './QuickActions';
 import ActionPanel from './ActionPanel';
 import ContentCalendar from '@/components/content/ContentCalendar';
+import ActivityHeatmap from './ActivityHeatmap';
+import ResumePanel from './ResumePanel';
 import { useKnowbarStore } from '@/store/knowbar-store';
 import type { QuickActionCategory, KnowbarMessage } from '@/types';
 
@@ -752,8 +754,10 @@ export default function DottPrompt() {
               />
             ) : (
               <>
+                <ResumePanel />
                 <QuickActions onSelect={handleActionSelect} />
                 <DailyBriefingPanel />
+                <ActivityHeatmap />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TodayOverview />
                   <TodayTasks />
