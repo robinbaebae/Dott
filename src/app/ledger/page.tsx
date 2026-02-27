@@ -77,6 +77,7 @@ const EMPTY_FORM = {
 
 export default function LedgerPage() {
   const { status } = useSession();
+  const isGuest = typeof window !== 'undefined' && sessionStorage.getItem('dott-guest') === 'true';
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCat, setFilterCat] = useState('전체');
@@ -113,7 +114,7 @@ export default function LedgerPage() {
   }, [year, month, filterCat]);
 
   useEffect(() => {
-    if (status === 'authenticated') fetchExpenses();
+    if (status === 'authenticated' || isGuest) fetchExpenses();
   }, [status, fetchExpenses]);
 
   const prevMonth = () => {
@@ -287,7 +288,7 @@ export default function LedgerPage() {
   const inputClass =
     'w-full text-sm px-3 py-2 rounded-lg border border-border bg-card focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-muted-foreground/50';
 
-  if (status !== 'authenticated') {
+  if (status !== 'authenticated' && !isGuest) {
     return (
       <div className="flex items-center justify-center h-screen text-muted-foreground text-sm">
         로그인이 필요합니다.

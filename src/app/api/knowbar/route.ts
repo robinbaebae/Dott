@@ -794,6 +794,15 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error('KnowBar error:', errMsg, error);
+
+    // Detect CLI not found error and return user-friendly message
+    if (error instanceof Error && (error.name === 'ClaudeCliNotFoundError' || errMsg === 'CLAUDE_CLI_NOT_FOUND' || errMsg.includes('CLAUDE_CLI_NOT_FOUND'))) {
+      return NextResponse.json({
+        error: 'CLAUDE_CLI_NOT_FOUND',
+        userMessage: 'Claude Code CLI가 설치되어 있지 않아 AI 기능을 사용할 수 없습니다.\n\n설치 방법:\n1. 터미널을 열어주세요\n2. npm install -g @anthropic-ai/claude-code 를 입력해주세요\n3. claude 명령어로 로그인해주세요\n4. Dott을 재시작해주세요',
+      }, { status: 503 });
+    }
+
     return NextResponse.json({ error: `Failed: ${errMsg}` }, { status: 500 });
   }
 }

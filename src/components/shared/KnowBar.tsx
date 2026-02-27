@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Search, CheckCircle2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/api-error';
 
 export default function KnowBar() {
   const [query, setQuery] = useState('');
@@ -38,10 +39,11 @@ export default function KnowBar() {
           setTaskTitle(data.taskTitle);
         }
       } else {
-        setResponse('Something went wrong. Please try again.');
+        const msg = await getErrorMessage(res);
+        setResponse(msg);
       }
     } catch {
-      setResponse('An error occurred. Please try again.');
+      setResponse('연결에 문제가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
       setQuery('');

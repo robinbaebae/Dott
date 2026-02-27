@@ -942,6 +942,22 @@
   </div>
 
   <script>
+    // Logo URL (overridden by main process in production via __dottLogoUrl)
+    function getLogoUrl() {
+      return window.__dottLogoUrl || '../public/logo-dott.png';
+    }
+
+    // Replace all hardcoded logo src with the correct URL (for production asar)
+    function refreshLogos() {
+      const url = getLogoUrl();
+      document.querySelectorAll('img[src="../public/logo-dott.png"]').forEach(img => {
+        img.src = url;
+      });
+    }
+    // Run immediately + again after a short delay (in case main process injects __dottLogoUrl late)
+    refreshLogos();
+    setTimeout(refreshLogos, 300);
+
     let bubbleTimer = null;
     let chatOpen = false;
     let chatSending = false;
@@ -1516,7 +1532,7 @@
       if (role === 'assistant') {
         const avatar = document.createElement('div');
         avatar.className = 'msg-avatar';
-        avatar.innerHTML = '<img src="../public/logo-dott.png" alt="Dott" />';
+        avatar.innerHTML = '<img src="' + getLogoUrl() + '" alt="Dott" />';
         row.appendChild(avatar);
       }
 
@@ -1606,7 +1622,7 @@
 
       const avatar = document.createElement('div');
       avatar.className = 'msg-avatar';
-      avatar.innerHTML = '<img src="../public/logo-dott.png" alt="Dott" />';
+      avatar.innerHTML = '<img src="' + getLogoUrl() + '" alt="Dott" />';
       row.appendChild(avatar);
 
       const dots = document.createElement('div');

@@ -205,7 +205,7 @@ export default function Sidebar() {
               </div>
             )}
             <button
-              onClick={() => { sessionStorage.removeItem('dott-guest'); signIn('google', { callbackUrl: '/' }); }}
+              onClick={() => { sessionStorage.removeItem('dott-guest'); document.cookie = 'dott-guest=; path=/; max-age=0'; signIn('google', { callbackUrl: '/' }); }}
               title={collapsed ? 'Google 로그인' : undefined}
               className={`w-full flex items-center gap-3 ${collapsed ? 'justify-center px-1' : 'px-3'} py-2 rounded-xl text-[13px] text-muted-foreground hover:text-purple-700 hover:bg-purple-500/10 transition-colors cursor-pointer`}
             >

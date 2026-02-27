@@ -68,6 +68,7 @@ const EMPTY_FORM = {
 
 export default function PromotionPage() {
   const { status } = useSession();
+  const isGuest = typeof window !== 'undefined' && sessionStorage.getItem('dott-guest') === 'true';
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('전체');
@@ -100,7 +101,7 @@ export default function PromotionPage() {
   }, [filterStatus]);
 
   useEffect(() => {
-    if (status === 'authenticated') fetchPromotions();
+    if (status === 'authenticated' || isGuest) fetchPromotions();
   }, [status, fetchPromotions]);
 
   const openAdd = () => {
@@ -226,7 +227,7 @@ export default function PromotionPage() {
   const inputClass =
     'w-full text-sm px-3 py-2 rounded-lg border border-border bg-card focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-muted-foreground/50';
 
-  if (status !== 'authenticated') {
+  if (status !== 'authenticated' && !isGuest) {
     return (
       <div className="flex items-center justify-center h-screen text-muted-foreground text-sm">
         로그인이 필요합니다.

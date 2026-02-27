@@ -7,6 +7,7 @@ const {
   nativeTheme,
   Notification,
   screen,
+  utilityProcess,
 } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -98,17 +99,17 @@ function startNextServer() {
   const standalonePath = path.join(process.resourcesPath, 'next-standalone');
   const serverScript = path.join(standalonePath, 'server.js');
 
-  nextProcess = spawn(process.execPath, [serverScript], {
+  nextProcess = utilityProcess.fork(serverScript, [], {
     cwd: standalonePath,
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: '1',
       PORT: '3000',
       HOSTNAME: '127.0.0.1',
       NODE_ENV: 'production',
       AUTH_TRUST_HOST: 'true',
       AUTH_URL: 'http://localhost:3000',
     },
+    stdio: 'pipe',
   });
 
   nextProcess.stdout.on('data', (data) => {
@@ -266,6 +267,18 @@ function createPetWindow() {
 
   petWindow.loadFile(path.join(__dirname, 'pet.html'));
   petWindow.setVisibleOnAllWorkspaces(true);
+
+  // Inject logo path for production (asar can't serve images via relative path)
+  if (isProd) {
+    const logoPath = path.join(process.resourcesPath, 'next-standalone', 'public', 'logo-dott.png');
+    petWindow.webContents.on('did-finish-load', () => {
+      const fileUrl = 'file://' + logoPath.replace(/ /g, '%20');
+      petWindow.webContents.executeJavaScript(`
+        window.__dottLogoUrl = '${fileUrl}';
+        if (typeof refreshLogos === 'function') refreshLogos();
+      `);
+    });
+  }
 
   petWindow.webContents.on('context-menu', () => {
     Menu.buildFromTemplate([
@@ -1897,10 +1910,18 @@ app.on('activate', () => {
   createMainWindow();
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', async () => {
   app.isQuitting = true;
   stopAllIntervals();
-  if (nextProcess) {
+
+  // Clean up guest data before shutting down the server
+  if (isProd && nextProcess) {
+    try {
+      await fetch('http://localhost:3000/api/guest/cleanup', { method: 'POST' })
+        .catch(() => {});
+    } catch {
+      // Server might already be down — ignore
+    }
     nextProcess.kill();
   }
 });

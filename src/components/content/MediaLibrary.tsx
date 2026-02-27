@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Star } from 'lucide-react';
 import { BannerDesign } from '@/types';
 
 const FILTERS = ['All', 'Banners', 'Favorites'] as const;
@@ -12,6 +13,24 @@ export default function MediaLibrary() {
   const [filter, setFilter] = useState<string>('All');
   const [search, setSearch] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [favs, setFavs] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('dott-media-favs') || '[]');
+      setFavs(new Set(stored));
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggleFav = (id: string) => {
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      localStorage.setItem('dott-media-favs', JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const fetchBanners = useCallback(async () => {
     try {
@@ -29,6 +48,8 @@ export default function MediaLibrary() {
 
   const filtered = banners.filter((b) => {
     if (search && !b.copy.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filter === 'Banners' && !b.size) return false;
+    if (filter === 'Favorites' && !favs.has(b.id)) return false;
     return true;
   });
 
@@ -81,6 +102,12 @@ export default function MediaLibrary() {
               <Badge className="absolute top-2 right-2 text-[9px] bg-accent/10 text-accent border-accent/20">
                 {b.size}
               </Badge>
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleFav(b.id); }}
+                className="absolute top-2 left-2 p-1 rounded-full bg-black/30 hover:bg-black/50 transition-colors cursor-pointer"
+              >
+                <Star className={`size-3 ${favs.has(b.id) ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
+              </button>
               <iframe
                 srcDoc={b.html}
                 className="w-full h-full pointer-events-none"

@@ -24,10 +24,19 @@ export async function getUserApiKey(userEmail: string): Promise<string | null> {
 
 // ─── Claude CLI fallback (for Claude Pro subscribers without API key) ───
 
+// Custom error class for CLI-not-found scenarios
+export class ClaudeCliNotFoundError extends Error {
+  constructor() {
+    super('CLAUDE_CLI_NOT_FOUND');
+    this.name = 'ClaudeCliNotFoundError';
+  }
+}
+
 let _cachedCliPath: string | null = null;
+let _cliExists: boolean | null = null;
 
 function findClaudeCli(): string {
-  if (_cachedCliPath) return _cachedCliPath;
+  if (_cachedCliPath && _cliExists) return _cachedCliPath;
 
   const fs = require('fs');
   const home = process.env.HOME || require('os').homedir();
@@ -41,17 +50,17 @@ function findClaudeCli(): string {
   ];
 
   for (const p of candidates) {
-    try { if (fs.existsSync(p)) { _cachedCliPath = p; return p; } } catch { /* skip */ }
+    try { if (fs.existsSync(p)) { _cachedCliPath = p; _cliExists = true; return p; } } catch { /* skip */ }
   }
 
   // Last resort: use `which` to find it via shell PATH
   try {
     const resolved = execSync('which claude', { encoding: 'utf8', timeout: 3000 }).trim();
-    if (resolved) { _cachedCliPath = resolved; return resolved; }
+    if (resolved) { _cachedCliPath = resolved; _cliExists = true; return resolved; }
   } catch { /* not found */ }
 
-  _cachedCliPath = 'claude';
-  return 'claude';
+  _cliExists = false;
+  throw new ClaudeCliNotFoundError();
 }
 
 /**
@@ -63,7 +72,16 @@ function shellEscape(s: string): string {
 
 function runCli(args: string[], timeoutMs = 120000): Promise<string> {
   return new Promise((resolve, reject) => {
-    const cliPath = findClaudeCli();
+    let cliPath: string;
+    try {
+      cliPath = findClaudeCli();
+    } catch (e) {
+      if (e instanceof ClaudeCliNotFoundError) {
+        reject(e);
+        return;
+      }
+      throw e;
+    }
     console.log('[claude-cli] path:', cliPath);
 
     // Build shell command with proper escaping
@@ -88,7 +106,13 @@ function runCli(args: string[], timeoutMs = 120000): Promise<string> {
     }, (error, stdout, stderr) => {
       if (error) {
         console.error('[claude-cli] error:', error.message, '| stderr:', stderr?.slice(0, 200));
-        reject(new Error(`Claude CLI error: ${stderr || error.message}`));
+        // Detect "command not found" style errors
+        const errText = (stderr || error.message || '').toLowerCase();
+        if (errText.includes('not found') || errText.includes('enoent')) {
+          reject(new ClaudeCliNotFoundError());
+        } else {
+          reject(new Error(`Claude CLI error: ${stderr || error.message}`));
+        }
       } else {
         resolve(stdout.trim());
       }

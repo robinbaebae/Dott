@@ -351,8 +351,9 @@ type TabKey = (typeof TABS)[number]['key'];
 export default function ToolsPage() {
   const { status } = useSession();
   const [tab, setTab] = useState<TabKey>('keyword');
+  const isGuest = typeof window !== 'undefined' && sessionStorage.getItem('dott-guest') === 'true';
 
-  if (status !== 'authenticated') {
+  if (status !== 'authenticated' && !isGuest) {
     return (
       <div className="flex items-center justify-center h-screen text-muted-foreground text-sm">
         로그인이 필요합니다.

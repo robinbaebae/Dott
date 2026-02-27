@@ -1,9 +1,26 @@
 'use client';
 
 import { Bell, Search, X, Target, Layers, PenTool, Users, Lightbulb, Calendar, TrendingUp, BarChart3, CreditCard, Megaphone, Wrench, Settings, FileText, Home } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
+
+const SEARCH_ITEMS: { href: string; label: string; description: string; icon: LucideIcon }[] = [
+  { href: '/', label: 'Dashboard', description: '대시보드 홈', icon: Home },
+  { href: '/ads', label: 'Ad Analytics', description: '광고 성과 분석', icon: Target },
+  { href: '/analytics', label: 'Analytics', description: '사이트 분석', icon: BarChart3 },
+  { href: '/assets', label: 'Assets', description: '에셋 라이브러리', icon: Layers },
+  { href: '/content', label: 'Content', description: '콘텐츠 제작', icon: PenTool },
+  { href: '/influencer', label: 'Influencer', description: '인플루언서 검색', icon: Users },
+  { href: '/insight', label: 'Insight', description: '마케팅 인사이트', icon: Lightbulb },
+  { href: '/memo', label: 'Memo', description: '메모 관리', icon: FileText },
+  { href: '/tasks', label: 'Tasks', description: '태스크 관리', icon: Calendar },
+  { href: '/trends', label: 'Trends', description: '트렌드 리서치', icon: TrendingUp },
+  { href: '/ledger', label: 'Ledger', description: '법인카드 가계부', icon: CreditCard },
+  { href: '/promotion', label: 'Promotion', description: '프로모션 설계', icon: Megaphone },
+  { href: '/tools', label: 'Utilities', description: '마케팅 도구', icon: Wrench },
+  { href: '/settings', label: 'Settings', description: '환경 설정', icon: Settings },
+];
 
 interface Notification {
   id: string;
@@ -83,6 +100,35 @@ export default function TopBar() {
   const [unread, setUnread] = useState(0);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return SEARCH_ITEMS;
+    const q = searchQuery.toLowerCase();
+    return SEARCH_ITEMS.filter(
+      (item) => item.label.toLowerCase().includes(q) || item.description.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  // Cmd+K to open search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+        setSearchQuery('');
+      }
+      if (e.key === 'Escape') setSearchOpen(false);
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
 
   // Load read IDs from localStorage
   useEffect(() => {
@@ -143,7 +189,11 @@ export default function TopBar() {
 
       {/* Right side: Search + Notifications */}
       <div className="flex items-center gap-1">
-        <button className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer">
+        <button
+          onClick={() => { setSearchOpen(true); setSearchQuery(''); }}
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+          title="검색 (⌘K)"
+        >
           <Search className="size-4" />
         </button>
 
@@ -227,6 +277,61 @@ export default function TopBar() {
           )}
         </div>
       </div>
+
+      {/* Search Modal */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]" onClick={() => setSearchOpen(false)}>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-lg glass-float rounded-xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+              <Search className="size-4 text-muted-foreground shrink-0" />
+              <input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchResults.length > 0) {
+                    router.push(searchResults[0].href);
+                    setSearchOpen(false);
+                  }
+                }}
+                placeholder="페이지 검색..."
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+              <kbd className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border">
+                ESC
+              </kbd>
+            </div>
+            <div className="max-h-72 overflow-y-auto py-1">
+              {searchResults.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  검색 결과가 없습니다
+                </div>
+              ) : (
+                searchResults.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => { router.push(item.href); setSearchOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer"
+                    >
+                      <Icon className="size-4 text-muted-foreground shrink-0" />
+                      <div className="text-left">
+                        <p className="text-sm font-medium">{item.label}</p>
+                        <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
