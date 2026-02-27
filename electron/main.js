@@ -8,9 +8,12 @@ const {
   Notification,
   screen,
   utilityProcess,
+  ipcMain,
 } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const { spawn, exec } = require('child_process');
 
 const DEV_URL = 'http://localhost:3000';
 const isProd = app.isPackaged;
@@ -760,8 +763,6 @@ function getClaudePlanInfo() {
   }
   try {
     const { execSync } = require('child_process');
-    const fs = require('fs');
-    const os = require('os');
 
     // Get auth status
     let authInfo = null;
@@ -1190,7 +1191,6 @@ function stopAllIntervals() {
 // =========================================================
 // IPC handlers
 // =========================================================
-const { ipcMain } = require('electron');
 
 ipcMain.on('open-main', () => {
   createMainWindow();
@@ -1203,6 +1203,48 @@ ipcMain.on('show-notification', (_, { title, body }) => {
 ipcMain.on('content-step-notification', (_, { step, message }) => {
   sendPetMessage(message);
   showNotification('Dott 콘텐츠', message);
+});
+
+// =========================================================
+// Chrome Bookmarks Reader
+// =========================================================
+
+ipcMain.handle('read-chrome-bookmarks', async (_event, profileName) => {
+  const chromeBase = path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome');
+
+  // No profileName → return list of profiles that have a Bookmarks file
+  if (!profileName) {
+    try {
+      const entries = fs.readdirSync(chromeBase, { withFileTypes: true });
+      const profiles = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const bookmarkPath = path.join(chromeBase, entry.name, 'Bookmarks');
+        if (fs.existsSync(bookmarkPath)) {
+          // Try to read profile name from Preferences
+          let displayName = entry.name;
+          try {
+            const prefs = JSON.parse(fs.readFileSync(path.join(chromeBase, entry.name, 'Preferences'), 'utf-8'));
+            if (prefs.profile?.name) displayName = prefs.profile.name;
+          } catch { /* ignore */ }
+          profiles.push({ dirName: entry.name, displayName });
+        }
+      }
+      return { profiles };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  // profileName provided → return bookmark roots
+  const bookmarkPath = path.join(chromeBase, profileName, 'Bookmarks');
+  try {
+    const raw = fs.readFileSync(bookmarkPath, 'utf-8');
+    const data = JSON.parse(raw);
+    return { roots: data.roots };
+  } catch (err) {
+    return { error: err.message };
+  }
 });
 
 // =========================================================
@@ -1434,7 +1476,6 @@ ipcMain.handle('pet-compose-email', async (_event, data) => {
 // =========================================================
 // Pet Chat Handler (Claude Code CLI via spawn)
 // =========================================================
-const fs = require('fs');
 const petSessionFilePath = path.join(app.getPath('userData'), 'pet-session-id.txt');
 
 function loadPetSessionId() {
@@ -1716,7 +1757,6 @@ async function checkNewTrends() {
 // =========================================================
 // Meeting DND (Do Not Disturb) Mode
 // =========================================================
-const { exec } = require('child_process');
 
 async function checkMeetingStatus() {
   try {

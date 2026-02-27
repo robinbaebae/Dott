@@ -397,7 +397,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ HERO — 밝은 배경 ═══════════════ */}
       <section
-        className="flex flex-col items-center justify-center px-6 pt-24 pb-10 relative"
+        className="flex flex-col items-center justify-center px-6 pt-24 pb-20 relative"
         style={{ background: BG_HERO }}
       >
         <Section variant="scale">
