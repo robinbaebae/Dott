@@ -371,22 +371,22 @@ export default function LandingPage() {
 
       {/* ═══════════════ NAV ═══════════════ */}
       <nav className="fixed top-0 inset-x-0 z-40">
-        <div className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3 glass-card rounded-full px-5 py-2.5">
+        <div className="mx-auto max-w-6xl px-6 py-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <img src="/logo-dott.png" alt="Dott" className="w-8 h-8 rounded-lg" />
             <span className="text-base font-semibold text-[#5B4D6E]">Dott</span>
           </div>
           {isElectron ? (
             <button
               onClick={handleGetStarted}
-              className="glass-card rounded-full px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover-lift cursor-pointer hover:elevation-2 transition-all"
+              className="px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover:text-[#4A3D55] cursor-pointer transition-all bg-transparent border-none shadow-none"
             >
               시작하기
             </button>
           ) : (
             <a
               href="https://github.com/robinbaebae/Dott/releases/latest/download/Dott.dmg"
-              className="glass-card rounded-full px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover-lift cursor-pointer hover:elevation-2 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 text-sm font-medium text-[#5B4D6E] hover:text-[#4A3D55] cursor-pointer transition-all flex items-center gap-2 bg-transparent border-none shadow-none"
             >
               <Download className="size-4" />
               앱 다운로드
@@ -397,7 +397,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ HERO — 밝은 배경 ═══════════════ */}
       <section
-        className="min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 relative"
+        className="flex flex-col items-center justify-center px-6 pt-24 pb-10 relative"
         style={{ background: BG_HERO }}
       >
         <Section variant="scale">
@@ -451,6 +451,158 @@ export default function LandingPage() {
               )}
             </div>
 
+            {/* Setup Guide 토글 */}
+            <div className="mt-10 max-w-4xl mx-auto w-full">
+              <button
+                onClick={() => setSetupOpen((v) => !v)}
+                className="inline-flex flex-col items-center gap-1.5 cursor-pointer group mx-auto"
+              >
+                <p className="text-xs font-medium text-[#7B5B8B]/70 tracking-widest uppercase">Getting Started</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-semibold text-[#4A3D55]">시작하기 전에 준비할 것들</span>
+                  <ChevronDown className={`size-4 text-[#7B5B8B] transition-transform duration-300 ${setupOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              <p className="text-xs text-[#8B82A0] mt-1.5">
+                Google 계정 + Claude 계정 + Node.js만 준비하면 됩니다.{' '}
+                {!setupOpen && <span className="text-[#7B5B8B] font-medium cursor-pointer" onClick={() => setSetupOpen(true)}>자세히 보기 ↓</span>}
+              </p>
+
+              <div
+                className="grid transition-[grid-template-rows] duration-500 ease-out"
+                style={{ gridTemplateRows: setupOpen ? '1fr' : '0fr' }}
+              >
+                <div className="overflow-hidden">
+                <div className="pt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    {[
+                      { icon: Globe, name: 'Google 계정', desc: '로그인 & 캘린더/Gmail 연동', free: true },
+                      { icon: Sparkles, name: 'Claude 계정', desc: 'AI 기능의 핵심 엔진', free: false },
+                      { icon: Terminal, name: 'Node.js', desc: 'Claude CLI 설치에 필요', free: true },
+                    ].map((item, i) => (
+                      <div key={i} className="glass-card rounded-2xl p-5 text-center">
+                        <div className="size-10 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center mx-auto mb-3">
+                          <item.icon className="size-5 text-[#7B5B8B]" />
+                        </div>
+                        <p className="text-sm font-semibold text-[#2D2235] mb-1">{item.name}</p>
+                        <p className="text-xs text-[#7E6E78]">{item.desc}</p>
+                        <span className={`inline-block mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full ${item.free ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {item.free ? '무료' : '유료 구독'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="glass-card rounded-2xl p-6 mb-8">
+                    <div className="flex items-start gap-4">
+                      <div className="size-10 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
+                        <Sparkles className="size-5 text-[#7B5B8B]" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-[#2D2235] mb-2">왜 Claude 계정이 필요한가요?</h3>
+                        <p className="text-sm text-[#4A3D55] leading-relaxed">
+                          Dott의 모든 AI 기능 — 대화, 콘텐츠 생성, 배너 제작, 트렌드 분석 — 은 Anthropic의 <strong>Claude AI</strong>가 구동합니다.
+                          Claude CLI를 통해 사용자의 로컬 환경에서 직접 AI가 실행되므로, <strong>데이터가 외부 서버에 저장되지 않아</strong> 안전합니다.
+                          Claude 계정이 있으면 월 사용량에 따라 AI를 이용할 수 있습니다.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="glass-card rounded-2xl p-7">
+                      <div className="flex items-start gap-5">
+                        <div className="size-12 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
+                          <Download className="size-6 text-[#7B5B8B]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xs font-bold text-[#7B5B8B]/50 bg-[#7B5B8B]/10 rounded-full px-2.5 py-0.5">STEP 1</span>
+                            <h3 className="text-lg font-semibold text-[#2D2235]">macOS 앱 다운로드 & 설치</h3>
+                          </div>
+                          <p className="text-sm text-[#4A3D55] leading-relaxed mb-4">
+                            상단의 <strong>macOS 앱 다운로드</strong> 버튼으로 <strong>Dott.dmg</strong> 파일을 받고, 열어서 Applications 폴더에 드래그하세요.
+                          </p>
+                          <div className="rounded-xl bg-amber-50 border border-amber-200/60 p-4">
+                            <div className="flex items-start gap-3">
+                              <Shield className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-800 mb-1">macOS 보안 경고가 뜨나요?</p>
+                                <p className="text-sm text-amber-700/80 leading-relaxed">
+                                  처음 실행 시 <strong>&ldquo;확인되지 않은 개발자&rdquo;</strong> 경고가 나타날 수 있습니다.<br />
+                                  <strong>시스템 설정 → 개인정보 보호 및 보안</strong>으로 이동하여 하단의 <strong>&ldquo;확인 없이 열기&rdquo;</strong>를 클릭해주세요.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card rounded-2xl p-7">
+                      <div className="flex items-start gap-5">
+                        <div className="size-12 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
+                          <Sparkles className="size-6 text-[#7B5B8B]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xs font-bold text-[#7B5B8B]/50 bg-[#7B5B8B]/10 rounded-full px-2.5 py-0.5">STEP 2</span>
+                            <h3 className="text-lg font-semibold text-[#2D2235]">Claude 계정 생성 & CLI 설치</h3>
+                          </div>
+                          <p className="text-sm text-[#4A3D55] leading-relaxed mb-3">
+                            Anthropic에서 Claude 계정을 만들고, 터미널에서 CLI를 설치합니다.
+                          </p>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-[#7B5B8B]/40 bg-[#7B5B8B]/8 rounded-full size-6 flex items-center justify-center shrink-0">a</span>
+                              <p className="text-sm text-[#4A3D55]">
+                                <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-[#7B5B8B] font-medium hover:underline">console.anthropic.com</a>에서 계정을 생성하세요.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-[#7B5B8B]/40 bg-[#7B5B8B]/8 rounded-full size-6 flex items-center justify-center shrink-0">b</span>
+                              <p className="text-sm text-[#4A3D55]">터미널을 열고 아래 명령어를 실행하세요.</p>
+                            </div>
+                          </div>
+                          <code className="block mt-3 px-4 py-3 rounded-xl bg-[#2D2235] text-sm font-mono text-[#E8DCE8] select-all">
+                            npm install -g @anthropic-ai/claude-code
+                          </code>
+                          <div className="flex items-center gap-3 mt-3">
+                            <span className="text-xs font-bold text-[#7B5B8B]/40 bg-[#7B5B8B]/8 rounded-full size-6 flex items-center justify-center shrink-0">c</span>
+                            <p className="text-sm text-[#4A3D55]">
+                              터미널에서 <code className="px-1.5 py-0.5 rounded bg-[#7B5B8B]/10 text-[11px] font-mono text-[#5B4D6E]">claude</code> 을 입력하여 Claude 계정으로 로그인하세요.
+                            </p>
+                          </div>
+                          <p className="text-xs text-[#7E6E78] mt-3">
+                            Node.js가 설치되어 있어야 합니다. 없다면 <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-[#7B5B8B] hover:underline">nodejs.org</a>에서 먼저 설치하세요.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card rounded-2xl p-7">
+                      <div className="flex items-start gap-5">
+                        <div className="size-12 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
+                          <LogIn className="size-6 text-[#7B5B8B]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xs font-bold text-[#7B5B8B]/50 bg-[#7B5B8B]/10 rounded-full px-2.5 py-0.5">STEP 3</span>
+                            <h3 className="text-lg font-semibold text-[#2D2235]">Dott 실행 & Google 로그인</h3>
+                          </div>
+                          <p className="text-sm text-[#4A3D55] leading-relaxed">
+                            Dott 앱을 실행하고 <strong>Google 계정</strong>으로 로그인하면 준비 완료!<br />
+                            Google 캘린더와 Gmail도 자동으로 연동되어 일정 관리와 이메일 마케팅까지 가능합니다.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-6 flex items-center gap-6 text-sm text-[#8B82A0]">
               <span className="flex items-center gap-1.5">
                 <Monitor className="size-3.5" /> macOS 데스크톱 앱
@@ -464,174 +616,13 @@ export default function LandingPage() {
           </div>
         </Section>
 
-        <div className="mt-20 animate-bounce">
+        <div className="mt-12 animate-bounce">
           <ChevronDown className="size-6 text-[#8B82A0]" />
         </div>
       </section>
 
-      {/* ═══════════════ SETUP GUIDE (토글) ═══════════════ */}
-      <section className="py-16 px-6 relative" style={{ background: BG_GUIDE }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center">
-            <button
-              onClick={() => setSetupOpen((v) => !v)}
-              className="inline-flex flex-col items-center gap-2 cursor-pointer group"
-            >
-              <p className="text-sm font-medium text-[#7B5B8B] tracking-widest uppercase">Getting Started</p>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl sm:text-3xl font-bold text-[#2D2235]">
-                  시작하기 전에 준비할 것들
-                </h2>
-                <ChevronDown className={`size-5 text-[#7B5B8B] transition-transform duration-300 ${setupOpen ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
-            <p className="text-sm text-[#4A3D55] max-w-xl mx-auto mt-3">
-              Google 계정 + Claude 계정 + Node.js만 준비하면 됩니다.{' '}
-              {!setupOpen && <span className="text-[#7B5B8B] font-medium cursor-pointer" onClick={() => setSetupOpen(true)}>자세히 보기 ↓</span>}
-            </p>
-          </div>
-
-          <div
-            className="grid transition-[grid-template-rows] duration-500 ease-out"
-            style={{ gridTemplateRows: setupOpen ? '1fr' : '0fr' }}
-          >
-            <div className="overflow-hidden">
-            <div className="pt-8">
-              {/* 필요한 계정 요약 */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                {[
-                  { icon: Globe, name: 'Google 계정', desc: '로그인 & 캘린더/Gmail 연동', free: true },
-                  { icon: Sparkles, name: 'Claude 계정', desc: 'AI 기능의 핵심 엔진', free: false },
-                  { icon: Terminal, name: 'Node.js', desc: 'Claude CLI 설치에 필요', free: true },
-                ].map((item, i) => (
-                  <div key={i} className="glass-card rounded-2xl p-5 text-center">
-                    <div className="size-10 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center mx-auto mb-3">
-                      <item.icon className="size-5 text-[#7B5B8B]" />
-                    </div>
-                    <p className="text-sm font-semibold text-[#2D2235] mb-1">{item.name}</p>
-                    <p className="text-xs text-[#7E6E78]">{item.desc}</p>
-                    <span className={`inline-block mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full ${item.free ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {item.free ? '무료' : '유료 구독'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Why Claude? */}
-              <div className="glass-card rounded-2xl p-6 mb-8">
-                <div className="flex items-start gap-4">
-                  <div className="size-10 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="size-5 text-[#7B5B8B]" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#2D2235] mb-2">왜 Claude 계정이 필요한가요?</h3>
-                    <p className="text-sm text-[#4A3D55] leading-relaxed">
-                      Dott의 모든 AI 기능 — 대화, 콘텐츠 생성, 배너 제작, 트렌드 분석 — 은 Anthropic의 <strong>Claude AI</strong>가 구동합니다.
-                      Claude CLI를 통해 사용자의 로컬 환경에서 직접 AI가 실행되므로, <strong>데이터가 외부 서버에 저장되지 않아</strong> 안전합니다.
-                      Claude 계정이 있으면 월 사용량에 따라 AI를 이용할 수 있습니다.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step by step */}
-              <div className="space-y-5">
-                <div className="glass-card rounded-2xl p-7">
-                  <div className="flex items-start gap-5">
-                    <div className="size-12 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
-                      <Download className="size-6 text-[#7B5B8B]" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xs font-bold text-[#7B5B8B]/50 bg-[#7B5B8B]/10 rounded-full px-2.5 py-0.5">STEP 1</span>
-                        <h3 className="text-lg font-semibold text-[#2D2235]">macOS 앱 다운로드 & 설치</h3>
-                      </div>
-                      <p className="text-sm text-[#4A3D55] leading-relaxed mb-4">
-                        상단의 <strong>macOS 앱 다운로드</strong> 버튼으로 <strong>Dott.dmg</strong> 파일을 받고, 열어서 Applications 폴더에 드래그하세요.
-                      </p>
-                      <div className="rounded-xl bg-amber-50 border border-amber-200/60 p-4">
-                        <div className="flex items-start gap-3">
-                          <Shield className="size-5 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-amber-800 mb-1">macOS 보안 경고가 뜨나요?</p>
-                            <p className="text-sm text-amber-700/80 leading-relaxed">
-                              처음 실행 시 <strong>&ldquo;확인되지 않은 개발자&rdquo;</strong> 경고가 나타날 수 있습니다.<br />
-                              <strong>시스템 설정 → 개인정보 보호 및 보안</strong>으로 이동하여 하단의 <strong>&ldquo;확인 없이 열기&rdquo;</strong>를 클릭해주세요.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="glass-card rounded-2xl p-7">
-                  <div className="flex items-start gap-5">
-                    <div className="size-12 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
-                      <Sparkles className="size-6 text-[#7B5B8B]" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xs font-bold text-[#7B5B8B]/50 bg-[#7B5B8B]/10 rounded-full px-2.5 py-0.5">STEP 2</span>
-                        <h3 className="text-lg font-semibold text-[#2D2235]">Claude 계정 생성 & CLI 설치</h3>
-                      </div>
-                      <p className="text-sm text-[#4A3D55] leading-relaxed mb-3">
-                        Anthropic에서 Claude 계정을 만들고, 터미널에서 CLI를 설치합니다.
-                      </p>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-[#7B5B8B]/40 bg-[#7B5B8B]/8 rounded-full size-6 flex items-center justify-center shrink-0">a</span>
-                          <p className="text-sm text-[#4A3D55]">
-                            <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-[#7B5B8B] font-medium hover:underline">console.anthropic.com</a>에서 계정을 생성하세요.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-[#7B5B8B]/40 bg-[#7B5B8B]/8 rounded-full size-6 flex items-center justify-center shrink-0">b</span>
-                          <p className="text-sm text-[#4A3D55]">터미널을 열고 아래 명령어를 실행하세요.</p>
-                        </div>
-                      </div>
-                      <code className="block mt-3 px-4 py-3 rounded-xl bg-[#2D2235] text-sm font-mono text-[#E8DCE8] select-all">
-                        npm install -g @anthropic-ai/claude-code
-                      </code>
-                      <div className="flex items-center gap-3 mt-3">
-                        <span className="text-xs font-bold text-[#7B5B8B]/40 bg-[#7B5B8B]/8 rounded-full size-6 flex items-center justify-center shrink-0">c</span>
-                        <p className="text-sm text-[#4A3D55]">
-                          터미널에서 <code className="px-1.5 py-0.5 rounded bg-[#7B5B8B]/10 text-[11px] font-mono text-[#5B4D6E]">claude</code> 을 입력하여 Claude 계정으로 로그인하세요.
-                        </p>
-                      </div>
-                      <p className="text-xs text-[#7E6E78] mt-3">
-                        Node.js가 설치되어 있어야 합니다. 없다면 <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-[#7B5B8B] hover:underline">nodejs.org</a>에서 먼저 설치하세요.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="glass-card rounded-2xl p-7">
-                  <div className="flex items-start gap-5">
-                    <div className="size-12 rounded-xl bg-[#7B5B8B]/10 flex items-center justify-center shrink-0">
-                      <LogIn className="size-6 text-[#7B5B8B]" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xs font-bold text-[#7B5B8B]/50 bg-[#7B5B8B]/10 rounded-full px-2.5 py-0.5">STEP 3</span>
-                        <h3 className="text-lg font-semibold text-[#2D2235]">Dott 실행 & Google 로그인</h3>
-                      </div>
-                      <p className="text-sm text-[#4A3D55] leading-relaxed">
-                        Dott 앱을 실행하고 <strong>Google 계정</strong>으로 로그인하면 준비 완료!<br />
-                        Google 캘린더와 Gmail도 자동으로 연동되어 일정 관리와 이메일 마케팅까지 가능합니다.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-      </section>
-
       {/* ═══════════════ PAIN POINTS — 밝은 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_PAIN }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_PAIN }}>
         <div className="max-w-5xl mx-auto">
           <Section variant="blur">
             <p className="text-sm font-medium text-[#7B5B8B] tracking-widest uppercase mb-4 text-center">Problem</p>
@@ -662,7 +653,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ SOLUTION — 중간 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_SOLUTION }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_SOLUTION }}>
         <div className="max-w-5xl mx-auto">
           <Section variant="blur">
             <p className="text-sm font-medium text-[#7B5B8B] tracking-widest uppercase mb-4 text-center">Solution</p>
@@ -695,7 +686,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ HOW IT WORKS — 진해지는 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_HOWITWORKS }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_HOWITWORKS }}>
         <div className="max-w-4xl mx-auto">
           <Section variant="up">
             <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">How it works</p>
@@ -719,7 +710,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ FEATURE GUIDE — 딥 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_FEATURES }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_FEATURES }}>
         <div className="max-w-5xl mx-auto">
           <Section variant="blur">
             <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Feature Guide</p>
@@ -836,7 +827,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ COMPARISON — 어두운 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_COMPARISON }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_COMPARISON }}>
         <div className="max-w-3xl mx-auto">
           <Section variant="up">
             <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Comparison</p>
@@ -876,7 +867,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ USE CASES — 다크 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_USECASES }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_USECASES }}>
         <div className="max-w-4xl mx-auto">
           <Section variant="blur">
             <p className="text-sm font-medium text-[#E8DCE8] tracking-widest uppercase mb-4 text-center">Use cases</p>
@@ -903,7 +894,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ TECH + FINAL CTA — 가장 어두운 퍼플 ═══════════════ */}
-      <section className="py-28 px-6 relative" style={{ background: BG_CTA }}>
+      <section className="py-20 px-6 relative" style={{ background: BG_CTA }}>
         <div className="max-w-3xl mx-auto text-center mb-20">
           <Section variant="up">
             <p className="text-sm text-white/50 mb-3">Available on</p>
