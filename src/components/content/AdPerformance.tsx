@@ -253,73 +253,7 @@ function PerformanceCharts({
         </ResponsiveContainer>
       </div>
 
-      {/* Comparison: Google vs Meta side-by-side mini chart */}
-      <div className="grid grid-cols-2 gap-3">
-        <MiniChart
-          data={generateDailyData('google').slice(-7)}
-          metric={metric}
-          label="Google Ads"
-          color="#4285F4"
-          formatValue={formatValue}
-          active={platform === 'google'}
-        />
-        <MiniChart
-          data={generateDailyData('meta').slice(-7)}
-          metric={metric}
-          label="Meta Ads"
-          color="#0668E1"
-          formatValue={formatValue}
-          active={platform === 'meta'}
-        />
-      </div>
-    </div>
-  );
-}
-
-function MiniChart({
-  data,
-  metric,
-  label,
-  color,
-  formatValue,
-  active,
-}: {
-  data: TimeData[];
-  metric: ChartMetric;
-  label: string;
-  color: string;
-  formatValue: (v: number) => string;
-  active: boolean;
-}) {
-  const total = data.reduce((s, d) => s + (d[metric] as number), 0);
-  const avg = metric === 'roas' ? total / data.length : total;
-
-  return (
-    <div className={`rounded-lg border p-3 ${active ? 'border-primary/40 bg-primary/5' : 'border-border'}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium">{label}</span>
-        <span className="text-xs text-muted-foreground">
-          7d: {metric === 'roas' ? `${avg.toFixed(1)}x avg` : formatValue(avg)}
-        </span>
-      </div>
-      <ResponsiveContainer width="100%" height={80}>
-        <AreaChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`mini-${label}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey={metric}
-            stroke={color}
-            strokeWidth={1.5}
-            fill={`url(#mini-${label})`}
-            dot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      {/* Comparison mini charts removed — requires live data from both platforms */}
     </div>
   );
 }
@@ -568,18 +502,17 @@ export default function AdPerformance() {
   };
 
   const isMetaLive = platform === 'meta' && metaConnected;
-  const campaigns = platform === 'google'
-    ? GOOGLE_CAMPAIGNS
-    : metaConnected && metaCampaigns.length > 0
-      ? metaCampaigns
-      : META_CAMPAIGNS;
+  const campaigns = platform === 'meta' && metaConnected && metaCampaigns.length > 0
+    ? metaCampaigns
+    : [];
 
   const currentTimeData = isMetaLive && metaTimeData[period].length > 0
     ? metaTimeData[period]
     : undefined;
 
-  const badgeLabel = platform === 'meta' && metaConnected ? 'Live' : 'Mock';
-  const badgeStyle = platform === 'meta' && metaConnected
+  const hasData = campaigns.length > 0;
+  const badgeLabel = isMetaLive ? 'Live' : '';
+  const badgeStyle = isMetaLive
     ? 'text-green-600 bg-green-500/10'
     : 'text-muted-foreground bg-muted';
 
@@ -589,7 +522,7 @@ export default function AdPerformance() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">Ad Performance</CardTitle>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded ${badgeStyle}`}>{badgeLabel}</span>
+            {badgeLabel && <span className={`text-[10px] px-1.5 py-0.5 rounded ${badgeStyle}`}>{badgeLabel}</span>}
           </div>
           <div className="flex items-center gap-3">
             {/* Refresh button (Meta connected only) */}
@@ -646,13 +579,23 @@ export default function AdPerformance() {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Connect Meta Ads prompt */}
+        {/* Connect prompt when not connected */}
+        {platform === 'google' && (
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center">
+            <Link2 className="size-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm font-medium mb-1">Google Ads 연동 준비 중</p>
+            <p className="text-xs text-muted-foreground">
+              Google Ads API 연동이 완료되면 캠페인 성과를 확인할 수 있습니다
+            </p>
+          </div>
+        )}
+
         {platform === 'meta' && !metaConnected && (
-          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 mb-4 text-center">
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center">
             <Link2 className="size-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm font-medium mb-1">Connect Meta Ads</p>
             <p className="text-xs text-muted-foreground mb-3">
-              Link your Meta ad account to see real campaign performance data.
+              Meta 광고 계정을 연동하면 캠페인 성과 데이터를 확인할 수 있습니다
             </p>
             <a
               href="/api/instagram/auth"
@@ -660,23 +603,25 @@ export default function AdPerformance() {
             >
               Connect Meta Ads
             </a>
-            <p className="text-[10px] text-muted-foreground mt-3">
-              Showing mock data below. Connect to replace with live data.
-            </p>
           </div>
         )}
 
         {/* Loading state */}
         {platform === 'meta' && metaConnected && isLoading && (
-          <div className="rounded-lg border border-border bg-muted/30 p-4 mb-4 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
             Loading Meta Ads data...
           </div>
         )}
 
-        <WeeklySummary platform={platform} timeData={currentTimeData} />
-        <SummaryCards campaigns={campaigns} />
-        <PerformanceCharts platform={platform} period={period} timeData={currentTimeData} />
-        <CampaignTable campaigns={campaigns} />
+        {/* Live data views */}
+        {hasData && (
+          <>
+            <WeeklySummary platform={platform} timeData={currentTimeData} />
+            <SummaryCards campaigns={campaigns} />
+            <PerformanceCharts platform={platform} period={period} timeData={currentTimeData} />
+            <CampaignTable campaigns={campaigns} />
+          </>
+        )}
       </CardContent>
     </Card>
   );

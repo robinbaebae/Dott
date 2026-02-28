@@ -74,12 +74,10 @@ export default function InstagramPosts() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Connect Instagram to view your post performance
+            <p className="text-sm font-medium text-muted-foreground mb-1">Instagram 연동 준비 중</p>
+            <p className="text-xs text-muted-foreground/70">
+              Instagram API 연동이 완료되면 포스트 성과를 확인할 수 있습니다
             </p>
-            <Button asChild>
-              <a href="/api/instagram/auth">Connect Instagram</a>
-            </Button>
           </div>
         </CardContent>
       </Card>

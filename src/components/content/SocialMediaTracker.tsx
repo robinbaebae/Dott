@@ -102,7 +102,7 @@ export default function SocialMediaTracker() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Connect Instagram or Threads below to see your performance summary.
+            Instagram 또는 Threads를 연동하면 성과 요약을 확인할 수 있습니다
           </p>
         </CardContent>
       </Card>
