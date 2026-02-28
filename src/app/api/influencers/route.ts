@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireAuth } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/activity";
+import { sanitizeFilterValue } from "@/lib/postgrest-sanitize";
 
 // GET: List influencers with optional platform filter and name/handle search
 export async function GET(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     if (search) {
       query = query.or(
-        `name.ilike.%${search}%,handle.ilike.%${search}%`
+        `name.ilike.%${sanitizeFilterValue(search)}%,handle.ilike.%${sanitizeFilterValue(search)}%`
       );
     }
 

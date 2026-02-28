@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Copy, Check, Plus, Trash2 } from 'lucide-react';
 import { SectionTitle } from './shared';
 
@@ -28,7 +28,8 @@ export default function UtmForm({ onResult }: { onResult: (l: string, c: string)
   const [campaign, setCampaign] = useState('');
   const [term, setTerm] = useState('');
   const [content, setContent] = useState('');
-  const [customParams, setCustomParams] = useState<{ key: string; value: string }[]>([]);
+  const [customParams, setCustomParams] = useState<{ id: number; key: string; value: string }[]>([]);
+  const paramIdRef = useRef(0);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<UtmHistoryItem[]>([]);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -118,7 +119,7 @@ export default function UtmForm({ onResult }: { onResult: (l: string, c: string)
 
       {/* Custom params */}
       {customParams.map((p, i) => (
-        <div key={i} className="flex gap-2 items-end">
+        <div key={p.id} className="flex gap-2 items-end">
           <div className="flex-1">
             <input type="text" value={p.key} onChange={(e) => setCustomParams((prev) => prev.map((x, j) => j === i ? { ...x, key: e.target.value } : x))} placeholder="key" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
@@ -131,7 +132,7 @@ export default function UtmForm({ onResult }: { onResult: (l: string, c: string)
         </div>
       ))}
       <button
-        onClick={() => setCustomParams((prev) => [...prev, { key: '', value: '' }])}
+        onClick={() => setCustomParams((prev) => [...prev, { id: ++paramIdRef.current, key: '', value: '' }])}
         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
       >
         <Plus className="size-3" /> 커스텀 파라미터 추가

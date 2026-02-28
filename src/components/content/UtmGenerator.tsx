@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, Plus, X, Clock } from 'lucide-react';
 
 interface CustomParam {
+  id: number;
   key: string;
   value: string;
 }
@@ -26,6 +27,7 @@ export default function UtmGenerator() {
   const [term, setTerm] = useState('');
   const [content, setContent] = useState('');
   const [customParams, setCustomParams] = useState<CustomParam[]>([]);
+  const paramIdRef = useRef(0);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<UtmHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -71,7 +73,7 @@ export default function UtmGenerator() {
   };
 
   const addCustomParam = () => {
-    setCustomParams([...customParams, { key: '', value: '' }]);
+    setCustomParams([...customParams, { id: ++paramIdRef.current, key: '', value: '' }]);
   };
 
   const updateCustomParam = (index: number, field: 'key' | 'value', val: string) => {
@@ -119,7 +121,7 @@ export default function UtmGenerator() {
           <div className="border rounded-lg divide-y max-h-[200px] overflow-y-auto">
             {history.map((entry, i) => (
               <button
-                key={i}
+                key={`${entry.url}-${entry.date}`}
                 onClick={() => loadFromHistory(entry)}
                 className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
               >
@@ -168,7 +170,7 @@ export default function UtmGenerator() {
 
         {/* Custom parameters */}
         {customParams.map((param, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={param.id} className="flex items-center gap-2">
             <Input
               placeholder="Parameter name"
               value={param.key}

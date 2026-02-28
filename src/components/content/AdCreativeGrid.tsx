@@ -39,7 +39,7 @@ export default function AdCreativeGrid({ creatives, adCopies }: Props) {
         const dim = SIZE_DIMENSIONS[c.size] || { w: 120, h: 80 };
 
         return (
-          <div key={i} className="border rounded-lg p-3 space-y-2">
+          <div key={c.banner_id} className="border rounded-lg p-3 space-y-2">
             {/* Size placeholder */}
             <div
               className="bg-muted/60 rounded flex items-center justify-center mx-auto"

@@ -145,7 +145,7 @@ export default function ContentRepurposer() {
         {results.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {results.map((r, i) => (
-              <Card key={i} className="hover:shadow-md transition-shadow">
+              <Card key={r.platform} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <Badge

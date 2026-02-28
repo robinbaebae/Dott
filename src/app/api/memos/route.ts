@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase';
 import { logActivity } from '@/lib/activity';
+import { sanitizeFilterValue } from '@/lib/postgrest-sanitize';
 
 export async function GET(req: NextRequest) {
   const userEmail = await requireAuth();
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (search) {
-    query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+    query = query.or(`title.ilike.%${sanitizeFilterValue(search)}%,content.ilike.%${sanitizeFilterValue(search)}%`);
   }
   if (tag) {
     query = query.contains('tags', [tag]);

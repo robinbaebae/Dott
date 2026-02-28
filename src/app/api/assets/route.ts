@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAuth } from '@/lib/auth-guard';
+import { sanitizeFilterValue } from '@/lib/postgrest-sanitize';
 
 export async function GET(req: NextRequest) {
   const userEmail = await requireAuth();
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
       .eq('user_id', userEmail)
       .order('created_at', { ascending: false })
       .limit(50);
-    if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    if (search) query = query.or(`title.ilike.%${sanitizeFilterValue(search)}%,description.ilike.%${sanitizeFilterValue(search)}%`);
     const { data } = await query;
     results.swipes = (data || []).map((s) => ({
       ...s,

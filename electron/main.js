@@ -283,12 +283,25 @@ function createPetWindow() {
     });
   }
 
-  petWindow.webContents.on('context-menu', () => {
-    Menu.buildFromTemplate([
-      { label: '복사', role: 'copy' },
-      { label: '붙여넣기', role: 'paste' },
-      { label: '전체 선택', role: 'selectAll' },
-    ]).popup(petWindow);
+  petWindow.webContents.on('context-menu', (event, params) => {
+    const template = [];
+    if (params.isEditable) {
+      template.push(
+        { label: '실행 취소', role: 'undo' },
+        { label: '다시 실행', role: 'redo' },
+        { type: 'separator' },
+        { label: '잘라내기', role: 'cut' },
+        { label: '복사', role: 'copy' },
+        { label: '붙여넣기', role: 'paste' },
+        { label: '전체 선택', role: 'selectAll' },
+      );
+    } else {
+      template.push(
+        { label: '복사', role: 'copy', enabled: params.selectionText.length > 0 },
+        { label: '전체 선택', role: 'selectAll' },
+      );
+    }
+    Menu.buildFromTemplate(template).popup(petWindow);
   });
 
   petWindow.on('closed', () => {
@@ -1490,14 +1503,24 @@ function savePetSessionId(id) {
 let petSessionId = loadPetSessionId();
 
 ipcMain.handle('pet-chat', async (_event, { message, history }) => {
-  console.log('[pet-chat] Received message:', message);
+  const logFile = path.join(app.getPath('userData'), 'pet-chat-debug.log');
+  const log = (msg) => { const line = `[${new Date().toISOString()}] ${msg}\n`; console.log(line.trim()); try { fs.appendFileSync(logFile, line); } catch {} };
+  log(`[pet-chat] Received: ${message}`);
   try {
     const authHeaders = await getPetAuthHeaders();
+    log(`[pet-chat] Auth headers: ${JSON.stringify(Object.keys(authHeaders))}`);
+    log(`[pet-chat] URL: ${getAppUrl()}/api/knowbar`);
+    const startTime = Date.now();
     const res = await fetch(`${getAppUrl()}/api/knowbar`, {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({ message, history: history || [] }),
     });
+    log(`[pet-chat] Response: status=${res.status}, time=${Date.now() - startTime}ms`);
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      log(`[pet-chat] Error body: ${errBody.slice(0, 500)}`);
+    }
     if (res.ok) {
       const data = await res.json();
       const responseText = data.response || '응답을 받지 못했습니다.';
@@ -1552,7 +1575,7 @@ ipcMain.handle('pet-chat', async (_event, { message, history }) => {
     }
     return { text: '응답을 받지 못했습니다.', actions: {} };
   } catch (err) {
-    console.error('[pet-chat] error:', err.message);
+    log(`[pet-chat] CATCH error: ${err.message}\n${err.stack}`);
     return { text: 'Dott 연결에 실패했습니다.', actions: {} };
   }
 });
@@ -1901,6 +1924,25 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
+  // macOS Edit menu — enables Cmd+C/V/X/A system shortcuts
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      { role: 'appMenu' },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectAll' },
+        ],
+      },
+    ]));
+  }
+
   // Auto-launch on system startup
   app.setLoginItemSettings({
     openAtLogin: true,

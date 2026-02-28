@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { isBlockNoteContent, blocksToPlainText } from '@/lib/memo-utils';
+import { sanitizeFilterValue } from '@/lib/postgrest-sanitize';
 import type { Block } from '@blocknote/core';
 
 /**
@@ -60,7 +61,7 @@ export async function getMemosContextForChat(
         .from('memos')
         .select('title, content, tags, pinned, updated_at')
         .eq('user_id', userEmail)
-        .or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`)
+        .or(`title.ilike.%${sanitizeFilterValue(searchQuery)}%,content.ilike.%${sanitizeFilterValue(searchQuery)}%`)
         .order('updated_at', { ascending: false })
         .limit(5);
       searchMemos = data || [];

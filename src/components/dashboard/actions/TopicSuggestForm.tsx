@@ -79,7 +79,7 @@ export default function TopicSuggestForm({ onSelect }: TopicSuggestFormProps) {
           <div className="space-y-2 max-h-72 overflow-auto">
             {suggestions.map((s, i) => (
               <button
-                key={i}
+                key={s.title}
                 onClick={() => onSelect(s.title, contentType)}
                 className="w-full text-left p-3 rounded-lg border border-border bg-card hover:border-accent/40 hover:bg-accent/5 transition-all cursor-pointer group"
               >

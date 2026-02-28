@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase';
 import { generateCompletion, getUserApiKey } from './claude';
 import { COMPETITOR_BRIEFING_PROMPT, AD_ANALYSIS_PROMPT } from './prompts';
+import { sanitizeFilterValue } from './postgrest-sanitize';
 import { Competitor, CompetitorBriefing, CompetitorAd } from '@/types';
 
 // ---- Competitor CRUD ----
@@ -94,7 +95,7 @@ export async function generateBriefing(
   const { data: articles } = await supabaseAdmin
     .from('trend_articles')
     .select('title, source, pub_date')
-    .or(`title.ilike.%${competitor.name}%`)
+    .or(`title.ilike.%${sanitizeFilterValue(competitor.name)}%`)
     .order('pub_date', { ascending: false })
     .limit(10);
 

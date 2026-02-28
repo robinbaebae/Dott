@@ -47,9 +47,47 @@ const AGENT_INFO: Record<string, { name: string; icon: string; name_ko: string }
 };
 
 /**
- * Classify user input via Orchestrator
+ * Fast local keyword-based classification (no AI call).
+ * Used as primary classifier when no API key is available (CLI fallback mode).
+ */
+function classifyLocal(message: string): ClassifyResult {
+  const m = message.toLowerCase();
+
+  // Design agent keywords
+  if (/배너|디자인|크리에이티브|시각|로고|썸네일|이미지|피그마|figma|banner|design|thumbnail/i.test(m)) {
+    return { agentId: 'design', skill: 'design', reasoning: 'keyword:design', isAsync: true, needsWebSearch: false, searchQuery: '' };
+  }
+
+  // Research agent keywords
+  if (/트렌드|경쟁사|시장|키워드|분석|조사|리서치|seo|검색량|market|trend|competitor|research/i.test(m)) {
+    const searchQuery = m.replace(/트렌드|경쟁사|시장|분석|조사|리서치|알려줘|찾아줘|해줘/g, '').trim().slice(0, 60);
+    return { agentId: 'research', skill: 'research', reasoning: 'keyword:research', isAsync: false, needsWebSearch: true, searchQuery: searchQuery || message.slice(0, 60) };
+  }
+
+  // Service builder keywords
+  if (/개발|코딩|기능|버그|시스템|api|코드|서버|배포|deploy|build|code/i.test(m)) {
+    return { agentId: 'service_builder', skill: 'dev', reasoning: 'keyword:service_builder', isAsync: false, needsWebSearch: false, searchQuery: '' };
+  }
+
+  // Web search triggers (real-time info)
+  if (/날씨|뉴스|현재|오늘|내일|최신|실시간|가격|환율|주가|weather|news|current|today/i.test(m)) {
+    return { agentId: 'marketing', skill: 'general', reasoning: 'keyword:websearch', isAsync: false, needsWebSearch: true, searchQuery: message.slice(0, 80) };
+  }
+
+  // Default: marketing agent
+  return { agentId: 'marketing', skill: 'general', reasoning: 'keyword:default', isAsync: false, needsWebSearch: false, searchQuery: '' };
+}
+
+/**
+ * Classify user input via Orchestrator (AI call).
+ * Falls back to local keyword matching if no API key.
  */
 export async function classifyTask(apiKey: string | null, message: string): Promise<ClassifyResult> {
+  // Fast path: no API key → use local keyword matching (skip CLI call)
+  if (!apiKey) {
+    return classifyLocal(message);
+  }
+
   try {
     const prompt = `${ORCHESTRATOR_CLASSIFY_PROMPT}\n\n---\nUser input: ${message}`;
     const result = await withTimeout(
@@ -71,17 +109,11 @@ export async function classifyTask(apiKey: string | null, message: string): Prom
       };
     }
   } catch (err) {
-    console.error('Classification failed:', err);
+    console.error('Classification failed, falling back to local:', err);
+    return classifyLocal(message);
   }
 
-  return {
-    agentId: 'marketing',
-    skill: '',
-    reasoning: 'Default routing',
-    isAsync: false,
-    needsWebSearch: false,
-    searchQuery: '',
-  };
+  return classifyLocal(message);
 }
 
 /**
@@ -214,9 +246,11 @@ export async function executeAgentTask(
     .single();
 
   try {
+    // CLI fallback is slower — allow more time
+    const timeoutMs = apiKey ? 90000 : 110000;
     const response = await withTimeout(
       generateCompletion(apiKey, systemPrompt, message),
-      90000,
+      timeoutMs,
       `${info.name_ko} 응답 시간 초과`
     );
 

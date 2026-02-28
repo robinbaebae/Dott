@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAuth } from '@/lib/auth-guard';
+import { sanitizeFilterValue } from '@/lib/postgrest-sanitize';
 
 function classifyUrl(url: string): string {
   const lower = url.toLowerCase();
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
     query = query.eq('content_type', contentType);
   }
   if (q) {
-    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,memo.ilike.%${q}%`);
+    query = query.or(`title.ilike.%${sanitizeFilterValue(q)}%,description.ilike.%${sanitizeFilterValue(q)}%,memo.ilike.%${sanitizeFilterValue(q)}%`);
   }
 
   const { data, error } = await query;
