@@ -271,6 +271,15 @@ function createPetWindow() {
   petWindow.loadFile(path.join(__dirname, 'pet.html'));
   petWindow.setVisibleOnAllWorkspaces(true);
 
+  // 로드 완료 후 크기 강제 (macOS 윈도우 복원으로 크기 변경 방지)
+  petWindow.webContents.on('did-finish-load', () => {
+    if (petWindow && !petWindow.isDestroyed()) {
+      const [currentX] = petWindow.getPosition();
+      const displayHeight = screen.getPrimaryDisplay().workAreaSize.height;
+      petWindow.setBounds({ x: currentX, y: displayHeight - 160, width: 250, height: 160 });
+    }
+  });
+
   // Inject logo path for production (asar can't serve images via relative path)
   if (isProd) {
     const logoPath = path.join(process.resourcesPath, 'next-standalone', 'public', 'logo-dott.png');

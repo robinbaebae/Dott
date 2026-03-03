@@ -1006,6 +1006,9 @@
     const DEFAULT_SIZE = { width: 250, height: 140 };
     const CHAT_SIZE = { width: 380, height: 660 };
 
+    // 초기 로드 시 창 크기를 DEFAULT_SIZE로 강제 (macOS 윈도우 복원 방지)
+    resizeWindow(DEFAULT_SIZE.width, DEFAULT_SIZE.height);
+
     // ===== Drag + Click handling =====
     let isDragging = false;
     let dragStartX = 0;

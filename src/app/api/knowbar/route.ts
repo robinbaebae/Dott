@@ -7,6 +7,9 @@ import { BANNER_GENERATION_PROMPT, BANNER_EDIT_PROMPT, FIGMA_DESIGN_PROMPT, FIGM
 import { getBrandGuideContext } from '@/lib/brand-guide';
 import { requireAuth } from '@/lib/auth-guard';
 
+// Vercel serverless 타임아웃 확장 (기본 10초 → 60초)
+export const maxDuration = 60;
+
 const isDev = process.env.NODE_ENV === 'development';
 
 // Detection instructions injected so all agents can use structured response tags

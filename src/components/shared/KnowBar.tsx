@@ -4,6 +4,39 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Search, CheckCircle2 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api-error';
 
+// AI 응답 대기 중 랜덤 안내 메시지 — 독립 컴포넌트로 자체 타이머 순환
+const LOADING_MESSAGES = [
+  '생각하는 중...',
+  '정보 모으는 중...',
+  '분석하고 있어요...',
+  '잠시만 기다려주세요...',
+  '열심히 찾고 있어요...',
+  '답변 준비 중...',
+  '데이터 확인 중...',
+  '거의 다 됐어요...',
+];
+
+function RotatingLoadingMsg() {
+  const [idx, setIdx] = useState(
+    () => Math.floor(Math.random() * LOADING_MESSAGES.length)
+  );
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIdx((prev) => {
+        let next = Math.floor(Math.random() * LOADING_MESSAGES.length);
+        while (next === prev) next = Math.floor(Math.random() * LOADING_MESSAGES.length);
+        return next;
+      });
+    }, 2500);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span key={idx} className="text-sm text-white/60 animate-in fade-in duration-500">
+      {LOADING_MESSAGES[idx]}
+    </span>
+  );
+}
+
 export default function KnowBar() {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
@@ -142,7 +175,7 @@ export default function KnowBar() {
         </div>
       )}
 
-      {/* Loading bubble */}
+      {/* Loading bubble — 랜덤 안내 메시지 표시 */}
       {isLoading && !response && (
         <div className="flex items-start gap-3 animate-in fade-in duration-200">
           <div className="shrink-0 mt-1">
@@ -150,10 +183,13 @@ export default function KnowBar() {
           </div>
           <div>
             <div className="bg-[#1a1a1a] rounded-2xl px-5 py-4 shadow-lg">
-              <div className="flex items-center gap-1.5">
-                <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:0ms]" />
-                <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:150ms]" />
-                <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:300ms]" />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:0ms]" />
+                  <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:150ms]" />
+                  <div className="size-2 rounded-full bg-white/50 animate-bounce [animation-delay:300ms]" />
+                </div>
+                <RotatingLoadingMsg />
               </div>
             </div>
           </div>

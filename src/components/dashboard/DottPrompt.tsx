@@ -12,6 +12,39 @@ import TodayTasks from './TodayTasks';
 import DailyBriefingPanel from './DailyBriefingPanel';
 import QuickActions from './QuickActions';
 import ActionPanel from './ActionPanel';
+
+// AI 응답 대기 중 랜덤 안내 메시지 — 독립 컴포넌트로 자체 타이머 순환
+const LOADING_MESSAGES = [
+  'Dott이 생각하는 중...',
+  '정보 모으는 중...',
+  '분석하고 있어요...',
+  '잠시만 기다려주세요...',
+  '열심히 찾고 있어요...',
+  '답변 준비 중...',
+  '데이터 확인 중...',
+  '거의 다 됐어요...',
+];
+
+function RotatingLoadingMsg() {
+  const [idx, setIdx] = useState(
+    () => Math.floor(Math.random() * LOADING_MESSAGES.length)
+  );
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIdx((prev) => {
+        let next = Math.floor(Math.random() * LOADING_MESSAGES.length);
+        while (next === prev) next = Math.floor(Math.random() * LOADING_MESSAGES.length);
+        return next;
+      });
+    }, 2500);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span key={idx} className="text-xs text-muted-foreground animate-in fade-in duration-500">
+      {LOADING_MESSAGES[idx]}
+    </span>
+  );
+}
 import ContentCalendar from '@/components/content/ContentCalendar';
 import ActivityHeatmap from './ActivityHeatmap';
 import ResumePanel from './ResumePanel';
@@ -795,7 +828,7 @@ export default function DottPrompt() {
                 <div className="p-4 rounded-2xl glass-card">
                   <div className="flex items-center gap-2 mb-2">
                     <img src="/logo-dott.png" alt="Dott" className="size-5 rounded-lg" />
-                    <span className="text-xs text-muted-foreground">Dott이 생각하는 중...</span>
+                    <RotatingLoadingMsg />
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="size-2 rounded-full bg-accent/50 animate-bounce [animation-delay:0ms]" />
