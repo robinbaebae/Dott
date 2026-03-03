@@ -3,6 +3,8 @@ import { getKeywordTrends, createWatchlistSnapshot, getKeywordHistory } from '@/
 import { getWatchlist } from '@/lib/keyword-watchlist';
 import { requireAuth } from '@/lib/auth-guard';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export async function GET(req: NextRequest) {
   const userEmail = await requireAuth();
   if (userEmail instanceof NextResponse) return userEmail;
@@ -40,9 +42,9 @@ export async function POST() {
   try {
     const watchlist = await getWatchlist(userEmail);
     const keywords = watchlist.map((w) => w.keyword);
-    console.log(`[keyword-trends] Creating snapshot for ${keywords.length} keywords:`, keywords);
+    if (isDev) console.log(`[keyword-trends] Creating snapshot for ${keywords.length} keywords:`, keywords);
     const snapshot = await createWatchlistSnapshot(keywords);
-    console.log(`[keyword-trends] Snapshot created: ${snapshot.length} entries`);
+    if (isDev) console.log(`[keyword-trends] Snapshot created: ${snapshot.length} entries`);
     return NextResponse.json({ created: snapshot.length, data: snapshot });
   } catch (error) {
     console.error('POST /api/trends/keyword-trends error:', error);

@@ -7,6 +7,8 @@ import { BANNER_GENERATION_PROMPT, BANNER_EDIT_PROMPT, FIGMA_DESIGN_PROMPT, FIGM
 import { getBrandGuideContext } from '@/lib/brand-guide';
 import { requireAuth } from '@/lib/auth-guard';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Detection instructions injected so all agents can use structured response tags
 const DETECTION_INSTRUCTIONS = `
 
@@ -100,7 +102,7 @@ export async function POST(req: NextRequest) {
   const history: { role: string; content: string }[] = body.history || [];
   const lastBannerId: string | undefined = body.lastBannerId;
   const lastFigmaDesignId: string | undefined = body.lastFigmaDesignId;
-  console.log('[knowbar] message:', message, '| lastBannerId:', lastBannerId, '| lastFigmaDesignId:', lastFigmaDesignId);
+  if (isDev) console.log('[knowbar] message:', message, '| lastBannerId:', lastBannerId, '| lastFigmaDesignId:', lastFigmaDesignId);
   if (!message || typeof message !== 'string') {
     return NextResponse.json({ error: 'message required' }, { status: 400 });
   }
@@ -111,7 +113,7 @@ export async function POST(req: NextRequest) {
     const isDesignEdit = lastFigmaDesignId && /수정|바꿔|변경|키워|줄여|추가|제거|색상|컬러|폰트|텍스트|배경|edit|change|modify/i.test(message);
 
     if (isDesignRequest || isDesignEdit) {
-      console.log('[knowbar] Design shortcut — skipping full pipeline');
+      if (isDev) console.log('[knowbar] Design shortcut — skipping full pipeline');
 
       let brandContext = '';
       try { brandContext = await getBrandGuideContext(userEmail); } catch { /* */ }
@@ -215,7 +217,7 @@ export async function POST(req: NextRequest) {
     });
 
     const responseText = result.response;
-    console.log('[knowbar] raw response (first 300):', responseText.slice(0, 300));
+    if (isDev) console.log('[knowbar] raw response (first 300):', responseText.slice(0, 300));
 
     // Step 3: Check for task creation
     const taskMatch = responseText.match(/<task>\s*(\{[^}]+\})\s*<\/task>/);
@@ -378,7 +380,7 @@ export async function POST(req: NextRequest) {
     const bannerShowMatch = responseText.match(/<banner_show>\s*(\{[\s\S]*?\})\s*<\/banner_show>/);
     const mentionsBanner = /배너|헤더|이미지|불러|보여|banner|header|image/i.test(responseText);
 
-    console.log('[knowbar] banner check — bannerId:', bannerId, '| lastBannerId:', lastBannerId, '| bannerShowMatch:', !!bannerShowMatch, '| mentionsBanner:', mentionsBanner);
+    if (isDev) console.log('[knowbar] banner check — bannerId:', bannerId, '| lastBannerId:', lastBannerId, '| bannerShowMatch:', !!bannerShowMatch, '| mentionsBanner:', mentionsBanner);
 
     if (!bannerId && (bannerShowMatch || (lastBannerId && mentionsBanner))) {
       try {
@@ -400,7 +402,7 @@ export async function POST(req: NextRequest) {
           targetId = latest?.id;
         }
 
-        console.log('[knowbar] fetching banner:', targetId);
+        if (isDev) console.log('[knowbar] fetching banner:', targetId);
 
         if (targetId) {
           const { data: existing, error: bannerErr } = await supabaseAdmin
@@ -409,7 +411,7 @@ export async function POST(req: NextRequest) {
             .eq('id', targetId)
             .single();
 
-          console.log('[knowbar] banner fetch result — found:', !!existing?.html, '| error:', bannerErr?.message);
+          if (isDev) console.log('[knowbar] banner fetch result — found:', !!existing?.html, '| error:', bannerErr?.message);
 
           if (existing?.html) {
             bannerId = existing.id;
@@ -759,7 +761,7 @@ export async function POST(req: NextRequest) {
       bannerId,
     });
 
-    console.log('[knowbar] FINAL — bannerId:', bannerId, '| bannerHtml length:', bannerHtml?.length ?? 0, '| blogTitle:', blogTitle);
+    if (isDev) console.log('[knowbar] FINAL — bannerId:', bannerId, '| bannerHtml length:', bannerHtml?.length ?? 0, '| blogTitle:', blogTitle);
 
     return NextResponse.json({
       response: cleanResponse,
