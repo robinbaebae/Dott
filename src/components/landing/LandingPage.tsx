@@ -323,7 +323,7 @@ export default function LandingPage() {
   const [animating, setAnimating] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
   const [activeGuide, setActiveGuide] = useState(0);
-  const [setupOpen, setSetupOpen] = useState(false);
+  // setupOpen 토글 제거 — Getting Started 섹션 항상 펼침 처리
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
@@ -451,29 +451,26 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Setup Guide 토글 */}
-            <div className="mt-10 max-w-4xl mx-auto w-full">
-              <button
-                onClick={() => setSetupOpen((v) => !v)}
-                className="inline-flex flex-col items-center gap-1.5 cursor-pointer group mx-auto"
-              >
-                <p className="text-xs font-medium text-[#7B5B8B]/70 tracking-widest uppercase">Getting Started</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-semibold text-[#4A3D55]">시작하기 전에 준비할 것들</span>
-                  <ChevronDown className={`size-4 text-[#7B5B8B] transition-transform duration-300 ${setupOpen ? 'rotate-180' : ''}`} />
+            {/* Setup Guide — 핵심 섹션, 항상 펼침 + 강조 */}
+            <div className="mt-14 max-w-4xl mx-auto w-full">
+              <div className="relative rounded-3xl border-2 border-[#7B5B8B]/25 bg-gradient-to-b from-[#7B5B8B]/[0.06] to-transparent p-8 sm:p-10">
+                {/* 강조 뱃지 */}
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1.5 bg-[#5B4D6E] text-white text-[11px] font-bold tracking-wider uppercase px-4 py-1.5 rounded-full shadow-lg shadow-[#5B4D6E]/20">
+                    <Sparkles className="size-3.5" />
+                    가장 중요
+                  </span>
                 </div>
-              </button>
-              <p className="text-xs text-[#8B82A0] mt-1.5">
-                Google 계정 + Claude 계정 + Node.js만 준비하면 됩니다.{' '}
-                {!setupOpen && <span className="text-[#7B5B8B] font-medium cursor-pointer" onClick={() => setSetupOpen(true)}>자세히 보기 ↓</span>}
-              </p>
 
-              <div
-                className="grid transition-[grid-template-rows] duration-500 ease-out"
-                style={{ gridTemplateRows: setupOpen ? '1fr' : '0fr' }}
-              >
-                <div className="overflow-hidden">
-                <div className="pt-6">
+                <div className="text-center mb-6">
+                  <p className="text-xs font-medium text-[#7B5B8B]/70 tracking-widest uppercase mb-1.5">Getting Started</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#2D2235]">시작하기 전에 준비할 것들</h2>
+                  <p className="text-sm text-[#8B82A0] mt-2">
+                    Google 계정 + Claude 계정 + Node.js만 준비하면 됩니다.
+                  </p>
+                </div>
+
+                <div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                     {[
                       { icon: Globe, name: 'Google 계정', desc: '로그인 & 캘린더/Gmail 연동', free: true },
@@ -598,7 +595,6 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                </div>
                 </div>
               </div>
             </div>
